@@ -1,0 +1,14 @@
+[Desktop Entry]
+Comment=
+Exec=python3 /path/to/your/folder/kiosk.py
+GenericName=
+Icon=/home/Debook/Projects/ID Bio HTML Project/CVAFPI-LOGO.png
+MimeType=
+Name=ID Bio System
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=

@@ -1,0 +1,5 @@
+# /home/{User}/ID Bio HTML Project/Startup
+#!/bin/bash
+export QT_QPA_PLATFORM=xcb
+export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu"
+python3 /home/{User}/ID\ Bio\ HTML\ Project/kiosk.py
