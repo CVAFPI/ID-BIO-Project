@@ -103,11 +103,3 @@ cp ~/"Projects/ID Bio HTML Project/id_bio.desktop" ~/.config/autostart/
 
 3. Data Loss Safety: Scan logs are directly flushed to data.csv and logs/logs_YYYY-MM-DD.csv upon scan. Sudden power loss will not lose past scanned records.
 
-CONTACTS!:
-
-Email: hoyoverse.edit@gmail.com
-Discord: lance_coding (Lance@gentoo)
-Facebook: https://www.facebook.com/share/1EyYiAQK6n/
-
-Lead: juaban, Lance Gabriel E.
-AI Helper: GEMINI AI (GOOGLE)
