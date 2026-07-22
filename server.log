@@ -1,27 +1,16 @@
+[*] Starting CVAFPI Core Server...
+[*] ML Engine detected: Google LiteRT (ai-edge-litert)
  * Serving Flask app 'app'
  * Debug mode: on
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
+ * Running on http://192.168.100.144:5000
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 686-266-516
-127.0.0.1 - - [21/Jul/2026 13:50:22] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:50:32] "[36mGET /launchpad.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:32] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-127.0.0.1 - - [21/Jul/2026 13:50:34] "[36mGET /scanner.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:34] "[36mGET /CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:34] "GET /api/logs/today HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:50:53] "POST /api/scan HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:50:53] "[36mGET /launchpad.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:55] "[36mGET /manager.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:55] "[36mGET /CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:50:55] "GET /api/data HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:51:11] "[36mGET /launchpad.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:51:11] "[36mGET /scanner.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:51:11] "[36mGET /CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [21/Jul/2026 13:51:11] "GET /api/logs/today HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:51:14] "POST /api/scan HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:51:14] "GET /api/logs/today HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:52:21] "POST /api/scan HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 13:52:21] "[36mGET /launchpad.html HTTP/1.1[0m" 304 -
+ * Debugger PIN: 558-368-366
+127.0.0.1 - - [22/Jul/2026 15:36:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 15:36:29] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 15:36:54] "[33mGET /logs-manager.html HTTP/1.1[0m" 404 -
+127.0.0.1 - - [22/Jul/2026 15:37:31] "[33mGET /logs-manager.html HTTP/1.1[0m" 404 -

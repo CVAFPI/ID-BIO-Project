@@ -2,10 +2,11 @@ import os
 import sys
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 
-app = Flask(__name__)
+# Load HTML files and static assets directly from root directory
+app = Flask(__name__, template_folder='.', static_folder='.')
 
 # ==============================================================================
-# CROSS-PLATFORM ML ENGINE DETECTION (ARM64 & x86_64 Compatible)
+# CROSS-PLATFORM ML ENGINE DETECTION
 # ==============================================================================
 ML_ENGINE = None
 
@@ -28,39 +29,36 @@ print(f"[*] ML Engine detected: {ML_ENGINE}")
 
 
 # ==============================================================================
-# PAGE ROUTE HANDLERS
+# PAGE ROUTE HANDLERS (Supports button links ending in .html)
 # ==============================================================================
 
 @app.route('/')
-def index():
-    """Main Entry Point - Renders the Launchpad Dashboard."""
+@app.route('/launchpad')
+@app.route('/launchpad.html')
+def launchpad():
     return render_template('launchpad.html')
 
 
 @app.route('/scanner')
+@app.route('/scanner.html')
 def scanner():
-    """
-    Barcode / HID Scanner Interface.
-    Works natively with USB Barcode Scanners (HID Keyboard Emulation)
-    without requiring physical camera hardware.
-    """
     return render_template('scanner.html')
 
 
 @app.route('/manager')
+@app.route('/manager.html')
 def manager():
-    """System / Database Management Interface."""
     return render_template('manager.html')
 
 
 @app.route('/logs-manager')
+@app.route('/logs-manager.html')
 def logs_manager():
-    """Attendance and Log Records Interface."""
     return render_template('logs-manager.html')
 
 
 # ==============================================================================
-# ERROR HANDLERS (Prevents generic blank 500 pages during debugging)
+# ERROR HANDLERS
 # ==============================================================================
 
 @app.errorhandler(404)
@@ -70,7 +68,7 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    return f"<h2>500 - Internal Server Error</h2><p>Details: {e}</p><p>Check terminal output for traceback.</p>", 500
+    return f"<h2>500 - Internal Server Error</h2><p>Details: {e}</p>", 500
 
 
 # ==============================================================================
@@ -78,6 +76,5 @@ def internal_server_error(e):
 # ==============================================================================
 
 if __name__ == '__main__':
-    # Binds to 0.0.0.0 so both local browser and network clients can connect
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
