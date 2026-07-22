@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                 CVA FPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
+#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
 # ==============================================================================
 
 # --- COLOR DEFINITIONS ---
@@ -20,8 +20,8 @@ VENV_DIR="${APP_DIR}/venv"
 clear
 echo -e "${CYAN}"
 echo "======================================================================"
-echo "                   CVAFPI IDENTIFICATION SYSTEM                       "
-echo "                     Kiosk Engine Auto-Launcher                       "
+echo "                    CVAFPI IDENTIFICATION SYSTEM                      "
+echo "                      Kiosk Engine Auto-Launcher                      "
 echo "======================================================================"
 echo -e "${NC}"
 
@@ -40,8 +40,34 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM EXIT
 
-# --- STEP 1: DISABLE SCREEN SAVER & POWER SAVING ---
-echo -e "${CYAN}[1/4] Configuring display settings...${NC}"
+# --- STEP 1: SYSTEM & DEPENDENCY AUTO-UPDATER (APT) ---
+echo -e "${CYAN}[1/5] Checking system updates & installing dependencies...${NC}"
+echo -e "${YELLOW}[*] Running system package updates (this keeps Chromium & system libraries stable)...${NC}"
+
+# Ensure sudo elevated privileges
+sudo apt update -y && sudo apt upgrade -y
+
+# Array of essential APT packages needed for graphics, emojis, backend & kiosk
+REQUIRED_PACKAGES=(
+    "python3"
+    "python3-venv"
+    "python3-pip"
+    "chromium"
+    "fonts-noto-color-emoji"
+    "fonts-font-awesome"
+    "fonts-symbola"
+    "unclutter"
+    "x11-xserver-utils"
+    "curl"
+    "lsof"
+)
+
+echo -e "${CYAN}[*] Verifying required system packages...${NC}"
+sudo apt install -y "${REQUIRED_PACKAGES[@]}"
+echo -e "${GREEN}[✓] All system packages are updated and verified.${NC}"
+
+# --- STEP 2: DISABLE SCREEN SAVER & POWER SAVING ---
+echo -e "${CYAN}[2/5] Configuring display settings...${NC}"
 if command -v xset &> /dev/null; then
     xset s off 2>/dev/null
     xset -dpms 2>/dev/null
@@ -51,17 +77,32 @@ else
     echo -e "${YELLOW}[!] 'xset' not found, skipping screen sleep configuration.${NC}"
 fi
 
-# --- STEP 2: ACTIVATE PYTHON VIRTUAL ENVIRONMENT ---
-echo -e "${CYAN}[2/4] Initializing Python Backend Environment...${NC}"
-if [ -d "$VENV_DIR" ]; then
-    source "${VENV_DIR}/bin/activate"
-    echo -e "${GREEN}[✓] Virtual environment activated.${NC}"
-else
-    echo -e "${YELLOW}[!] Virtual environment not found at ${VENV_DIR}. Using system Python.${NC}"
+# --- STEP 3: INITIALIZE & AUTO-UPDATE PYTHON ENVIRONMENT (PIP/VENV) ---
+echo -e "${CYAN}[3/5] Setting up Python Virtual Environment & Packages...${NC}"
+
+# Create virtualenv automatically if it doesn't exist
+if [ ! -d "$VENV_DIR" ]; then
+    echo -e "${YELLOW}[!] Virtual environment not found. Creating a new one at ${VENV_DIR}...${NC}"
+    python3 -m venv "$VENV_DIR"
 fi
 
-# --- STEP 3: START FLASK BACKEND SERVER ---
-echo -e "${CYAN}[3/4] Launching CVAFPI Core Server (app.py)...${NC}"
+source "${VENV_DIR}/bin/activate"
+echo -e "${GREEN}[✓] Virtual environment activated.${NC}"
+
+# Auto-install or upgrade Flask and Python dependencies
+echo -e "${CYAN}[*] Auto-updating Python libraries (Flask, etc.)...${NC}"
+pip install --upgrade pip setuptools wheel --quiet
+
+if [ -f "${APP_DIR}/requirements.txt" ]; then
+    pip install -r "${APP_DIR}/requirements.txt" --upgrade --quiet
+    echo -e "${GREEN}[✓] Requirements updated from requirements.txt.${NC}"
+else
+    pip install flask --upgrade --quiet
+    echo -e "${GREEN}[✓] Flask updated to latest version.${NC}"
+fi
+
+# --- STEP 4: START FLASK BACKEND SERVER ---
+echo -e "${CYAN}[4/5] Launching CVAFPI Core Server (app.py)...${NC}"
 
 if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
     echo -e "${YELLOW}[!] Port $PORT is already active. Reusing existing server instance.${NC}"
@@ -78,17 +119,17 @@ else
     echo -e "\n${GREEN}[✓] Server is live and operational!${NC}"
 fi
 
-# --- STEP 4: LAUNCH CHROMIUM IN FULL KIOSK LOCKDOWN ---
-echo -e "${CYAN}[4/4] Starting Kiosk Browser Interface...${NC}"
+# --- STEP 5: LAUNCH CHROMIUM IN FULL KIOSK LOCKDOWN ---
+echo -e "${CYAN}[5/5] Starting Kiosk Browser Interface...${NC}"
 
 # Find browser executable
 BROWSER=""
-if command -v chromium-browser &> /dev/null; then
+if command -v chromium &> /dev/null; then
+    BROWSER="chromium"
+elif command -v chromium-browser &> /dev/null; then
     BROWSER="chromium-browser"
 elif command -v google-chrome &> /dev/null; then
     BROWSER="google-chrome"
-elif command -v chromium &> /dev/null; then
-    BROWSER="chromium"
 else
     echo -e "${RED}[!] No supported browser (Chromium/Chrome) found!${NC}"
     exit 1

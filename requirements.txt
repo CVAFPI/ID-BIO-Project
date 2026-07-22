@@ -1,0 +1,25 @@
+# ==============================================================================
+# CVAFPI IDENTIFICATION SYSTEM - Python Backend Dependencies
+# ==============================================================================
+
+# --- Core Web Framework & Backend Engine ---
+Flask>=3.0.0,<4.0.0
+Werkzeug>=3.0.0
+Jinja2>=3.1.0
+itsdangerous>=2.1.0
+click>=8.1.0
+
+# --- Biometrics, Computer Vision & Image Processing ---
+# Use opencv-python-headless to avoid missing GUI library dependencies in minimal Linux environments
+opencv-python-headless>=4.8.0.76
+numpy>=1.26.0
+Pillow>=10.0.0
+
+# --- Machine Learning & AI Inference Backend ---
+# TFLite Runtime provides lightweight CPU inference for facial/biometric identification models
+tflite-runtime>=2.14.0; platform_system != "Windows"
+
+# --- HTTP Communication & Utilities ---
+requests>=2.31.0
+python-dotenv>=1.0.0
+urllib3>=2.0.0
