@@ -40,31 +40,25 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM EXIT
 
-# --- STEP 1: SYSTEM & DEPENDENCY AUTO-UPDATER (APT) ---
-echo -e "${CYAN}[1/5] Checking system updates & installing dependencies...${NC}"
-echo -e "${YELLOW}[*] Running system package updates (this keeps Chromium & system libraries stable)...${NC}"
+# --- STEP 1: SYSTEM UPDATES & DEPENDENCIES ---
+echo -e "${CYAN}[1/5] Checking System Dependencies...${NC}"
 
-# Ensure sudo elevated privileges
-sudo apt update -y && sudo apt upgrade -y
+# Optional System Update Prompt
+read -p "Do you want whole system to be updated? (Recommended) [y/n]: " -n 1 -r REPLY
+echo # Move to a new line
 
-# Array of essential APT packages needed for graphics, emojis, backend & kiosk
-REQUIRED_PACKAGES=(
-    "python3"
-    "python3-venv"
-    "python3-pip"
-    "chromium"
-    "fonts-noto-color-emoji"
-    "fonts-font-awesome"
-    "fonts-symbola"
-    "unclutter"
-    "x11-xserver-utils"
-    "curl"
-    "lsof"
-)
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}[*] Updating system repositories and packages...${NC}"
+    sudo apt update && sudo apt upgrade -y
+else
+    echo -e "${GREEN}[✓] Skipping full system update.${NC}"
+fi
 
-echo -e "${CYAN}[*] Verifying required system packages...${NC}"
+# Ensure required packages are present without forcing a full distro upgrade
+REQUIRED_PACKAGES=(python3-pip chromium-browser fonts-noto-color-emoji unclutter x11-xserver-utils curl lsof)
+
+echo -e "${YELLOW}[*] Verifying required packages...${NC}"
 sudo apt install -y "${REQUIRED_PACKAGES[@]}"
-echo -e "${GREEN}[✓] All system packages are updated and verified.${NC}"
 
 # --- STEP 2: DISABLE SCREEN SAVER & POWER SAVING ---
 echo -e "${CYAN}[2/5] Configuring display settings...${NC}"
