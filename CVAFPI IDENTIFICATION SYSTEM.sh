@@ -113,46 +113,27 @@ else
     echo -e "\n${GREEN}[✓] Server is live and operational!${NC}"
 fi
 
-# --- STEP 5: LAUNCH CHROMIUM IN FULL KIOSK LOCKDOWN ---
+# --- STEP 5: START KIOSK BROWSER ---
 echo -e "${CYAN}[5/5] Starting Kiosk Browser Interface...${NC}"
 
-# Find browser executable
-BROWSER=""
-if command -v chromium &> /dev/null; then
-    BROWSER="chromium"
-elif command -v chromium-browser &> /dev/null; then
-    BROWSER="chromium-browser"
-elif command -v google-chrome &> /dev/null; then
+# Detect available browser binary
+if command -v google-chrome &> /dev/null; then
     BROWSER="google-chrome"
+elif command -v chromium-browser &> /dev/null && [ ! -f /usr/bin/chromium-browser.stub ]; then
+    BROWSER="chromium-browser"
+elif command -v chromium &> /dev/null; then
+    BROWSER="chromium"
 else
-    echo -e "${RED}[!] No supported browser (Chromium/Chrome) found!${NC}"
+    echo -e "${RED}[!] Error: No suitable browser (Chrome/Chromium) found!${NC}"
     exit 1
 fi
 
-# Kill any existing kiosk instances
-pkill -f "cva-kiosk-profile" 2>/dev/null
-sleep 0.5
+echo -e "${GREEN}[✓] Launching kiosk using: ${BROWSER}${NC}"
 
-# Hide mouse cursor if unclutter is installed
-if command -v unclutter &> /dev/null; then
-    unclutter -idle 0.5 -root &
-fi
-
-# Launch full-screen true Kiosk Mode with GPU Fallbacks
-$BROWSER \
-    --kiosk \
-    --user-data-dir="/tmp/cva-kiosk-profile" \
-    --disable-gpu \
-    --disable-gpu-compositing \
-    --disable-dev-shm-usage \
-    --noerrdialogs \
-    --disable-infobars \
-    --disable-session-crashed-bubble \
-    --disable-translate \
-    --disable-features=Translate \
-    --check-for-update-interval=31536000 \
-    --overscroll-history-navigation=0 \
-    --autoplay-policy=no-user-gesture-required \
-    "${SERVER_URL}/launchpad.html"
+# Launch kiosk with selected browser
+$BROWSER --kiosk --noerrdialogs --disable-infobars --no-first-run \
+         --check-for-update-interval=31536000 \
+         --disable-session-crashed-bubble \
+         http://localhost:5000 &
 
 wait
