@@ -1,187 +1,83 @@
 import os
 import sys
-import time
-import signal
-import subprocess
-from datetime import datetime
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 
-# --- Optional Biometric & Computer Vision Libraries ---
-try:
-    import cv2
-    import numpy as np
-    CV2_AVAILABLE = True
-except ImportError:
-    CV2_AVAILABLE = False
+app = Flask(__name__)
 
-# --- Universal TFLite / LiteRT Engine Loader ---
-tflite = None
-TFLITE_ENGINE = "Disabled"
+# ==============================================================================
+# CROSS-PLATFORM ML ENGINE DETECTION (ARM64 & x86_64 Compatible)
+# ==============================================================================
+ML_ENGINE = None
 
 try:
-    import ai_edge_litert.interpreter as tflite
-    TFLITE_ENGINE = "Google LiteRT (ai-edge-litert)"
+    import ai_edge_litert.interpreter as litert
+    ML_ENGINE = "Google LiteRT (ai-edge-litert)"
 except ImportError:
     try:
         import tflite_runtime.interpreter as tflite
-        TFLITE_ENGINE = "tflite-runtime"
+        ML_ENGINE = "TFLite Runtime"
     except ImportError:
         try:
             import tensorflow.lite as tflite
-            TFLITE_ENGINE = "TensorFlow Lite"
+            ML_ENGINE = "TensorFlow Full"
         except ImportError:
-            TFLITE_ENGINE = "None (OpenCV Only)"
-
-# Initialize Flask App
-app = Flask(__name__)
+            ML_ENGINE = "None (Disabled / Hardware Fallback)"
 
 print(f"[*] Starting CVAFPI Core Server...")
-print(f"[*] ML Engine detected: {TFLITE_ENGINE}")
+print(f"[*] ML Engine detected: {ML_ENGINE}")
 
 
 # ==============================================================================
-# Helper Functions & Model Loaders
-# ==============================================================================
-
-def load_tflite_model(model_path):
-    """Safely loads a TFLite model using whichever interpreter is installed."""
-    if not tflite or not os.path.exists(model_path):
-        return None
-    try:
-        interpreter = tflite.Interpreter(model_path=model_path)
-        interpreter.allocate_tensors()
-        return interpreter
-    except Exception as e:
-        print(f"[!] Error loading TFLite model: {e}")
-        return None
-
-
-def generate_camera_feed():
-    """Generates MJPEG stream for live webcam / biometric scanner UI."""
-    if not CV2_AVAILABLE:
-        return
-    
-    # Open default system camera (0)
-    cap = cv2.VideoCapture(0)
-    
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        
-        # Add basic visual overlay (e.g., target reticle for scanning)
-        height, width, _ = frame.shape
-        cv2.rectangle(frame, (int(width * 0.3), int(height * 0.2)),
-                             (int(width * 0.7), int(height * 0.8)), (0, 255, 0), 2)
-        
-        # Encode frame to JPEG
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame_bytes = buffer.tobytes()
-        
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-        
-    cap.release()
-
-
-# ==============================================================================
-# Web Routes (HTML UI)
+# PAGE ROUTE HANDLERS
 # ==============================================================================
 
 @app.route('/')
 def index():
-    """Renders the main system dashboard / kiosk menu."""
+    """Main Entry Point - Renders the Launchpad Dashboard."""
     return render_template('launchpad.html')
 
 
-@app.route('/video_feed')
-def video_feed():
-    """Live MJPEG video feed route for biometrics/scanning UI."""
-    return Response(generate_camera_feed(), 
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+@app.route('/scanner')
+def scanner():
+    """
+    Barcode / HID Scanner Interface.
+    Works natively with USB Barcode Scanners (HID Keyboard Emulation)
+    without requiring physical camera hardware.
+    """
+    return render_template('scanner.html')
+
+
+@app.route('/manager')
+def manager():
+    """System / Database Management Interface."""
+    return render_template('manager.html')
+
+
+@app.route('/logs-manager')
+def logs_manager():
+    """Attendance and Log Records Interface."""
+    return render_template('logs-manager.html')
 
 
 # ==============================================================================
-# API Endpoints (Kiosk Button Actions)
+# ERROR HANDLERS (Prevents generic blank 500 pages during debugging)
 # ==============================================================================
 
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    """Returns engine and backend status."""
-    return jsonify({
-        "status": "online",
-        "engine": TFLITE_ENGINE,
-        "opencv": CV2_AVAILABLE,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+@app.errorhandler(404)
+def page_not_found(e):
+    return f"<h2>404 - Page Not Found</h2><p>The requested route does not exist.</p>", 404
 
 
-@app.route('/api/scan', methods=['POST'])
-def trigger_scan():
-    """Handles 'LAUNCH REGISTRY SCANNER' action."""
-    print("[+] Triggering Registry Scanner...")
-    # Add face detection or database matching logic here
-    return jsonify({"status": "success", "message": "Scanner initialized"})
-
-
-@app.route('/api/database', methods=['GET', 'POST'])
-def handle_database():
-    """Handles 'OPEN DATABASE MANAGER' action."""
-    return jsonify({"status": "success", "message": "Database records loaded", "count": 0})
-
-
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    """Handles 'OPEN LOGS MANAGER' action."""
-    sample_logs = [
-        f"[{datetime.now().strftime('%H:%M:%S')}] System auto-launcher initialized.",
-        f"[{datetime.now().strftime('%H:%M:%S')}] Active ML Engine: {TFLITE_ENGINE}"
-    ]
-    return jsonify({"status": "success", "logs": sample_logs})
-
-
-@app.route('/api/reboot', methods=['POST'])
-def reboot_system():
-    """Handles 'REBOOT' button."""
-    print("[!] Reboot command received...")
-    try:
-        subprocess.Popen(["sudo", "reboot"])
-        return jsonify({"status": "rebooting", "message": "System is restarting..."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@app.route('/api/shutdown', methods=['POST'])
-def shutdown_system():
-    """Handles 'SHUTDOWN' button."""
-    print("[!] Shutdown command received...")
-    try:
-        subprocess.Popen(["sudo", "poweroff"])
-        return jsonify({"status": "shutting_down", "message": "System is shutting down..."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@app.route('/api/exit', methods=['POST'])
-def exit_system():
-    """Handles 'EXIT SYSTEM' button (kills Flask server cleanly)."""
-    print("[!] Exit command received. Terminating backend...")
-    
-    # Schedule process termination after responding to client
-    def kill_server():
-        time.sleep(1)
-        os.kill(os.getpid(), signal.SIGINT)
-        
-    import threading
-    threading.Thread(target=kill_server).start()
-    
-    return jsonify({"status": "exiting", "message": "Server process stopped."})
+@app.errorhandler(500)
+def internal_server_error(e):
+    return f"<h2>500 - Internal Server Error</h2><p>Details: {e}</p><p>Check terminal output for traceback.</p>", 500
 
 
 # ==============================================================================
-# Application Entrypoint
+# MAIN EXECUTION
 # ==============================================================================
 
 if __name__ == '__main__':
-    # Listens locally on port 5000
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Binds to 0.0.0.0 so both local browser and network clients can connect
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
