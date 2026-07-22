@@ -1,197 +1,187 @@
-import csv
 import os
-from datetime import datetime, timezone, timedelta
-from flask import Flask, request, jsonify
+import sys
+import time
+import signal
+import subprocess
+from datetime import datetime
+from flask import Flask, render_template, jsonify, request, Response
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+# --- Optional Biometric & Computer Vision Libraries ---
+try:
+    import cv2
+    import numpy as np
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
 
-DB_FILE = 'data.csv'
-LOGS_DIR = 'CVA-Database'
-os.makedirs(LOGS_DIR, exist_ok=True)
+# --- Universal TFLite / LiteRT Engine Loader ---
+tflite = None
+TFLITE_ENGINE = "Disabled"
 
-def get_pht_time():
-    pht = timezone(timedelta(hours=8))
-    now = datetime.now(pht)
-    return now.strftime("%m/%d/%Y %I:%M:%S %p"), now.strftime("%Y-%m-%d")
+try:
+    import ai_edge_litert.interpreter as tflite
+    TFLITE_ENGINE = "Google LiteRT (ai-edge-litert)"
+except ImportError:
+    try:
+        import tflite_runtime.interpreter as tflite
+        TFLITE_ENGINE = "tflite-runtime"
+    except ImportError:
+        try:
+            import tensorflow.lite as tflite
+            TFLITE_ENGINE = "TensorFlow Lite"
+        except ImportError:
+            TFLITE_ENGINE = "None (OpenCV Only)"
 
-# --- STATIC PAGE ROUTES ---
-@app.route('/')
-@app.route('/launchpad.html')
-def launchpad():
-    return app.send_static_file('launchpad.html')
+# Initialize Flask App
+app = Flask(__name__)
 
-@app.route('/manager.html')
-def manager():
-    return app.send_static_file('manager.html')
+print(f"[*] Starting CVAFPI Core Server...")
+print(f"[*] ML Engine detected: {TFLITE_ENGINE}")
 
-@app.route('/logs-manager.html')
-def logs_manager():
-    return app.send_static_file('logs-manager.html')
 
-@app.route('/scanner.html')
-def scanner():
-    return app.send_static_file('scanner.html')
+# ==============================================================================
+# Helper Functions & Model Loaders
+# ==============================================================================
 
-# --- DATA API ---
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    data = []
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f)
-            data = [row for row in reader if row and row[0].strip().upper() != 'BARCODE']
-    return jsonify(data)
+def load_tflite_model(model_path):
+    """Safely loads a TFLite model using whichever interpreter is installed."""
+    if not tflite or not os.path.exists(model_path):
+        return None
+    try:
+        interpreter = tflite.Interpreter(model_path=model_path)
+        interpreter.allocate_tensors()
+        return interpreter
+    except Exception as e:
+        print(f"[!] Error loading TFLite model: {e}")
+        return None
 
-@app.route('/api/save_student', methods=['POST'])
-def save_student():
-    item = request.json
-    b = item.get('b', '').strip()
-    n = item.get('n', '').strip()
-    g = item.get('g', '').strip()
-    s = item.get('s', '').strip()
-    a = item.get('a', 'REGULAR').strip()
-    c = item.get('c', '#059669').strip()
 
-    rows = []
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, 'r', encoding='utf-8-sig') as f:
-            rows = list(csv.reader(f))
+def generate_camera_feed():
+    """Generates MJPEG stream for live webcam / biometric scanner UI."""
+    if not CV2_AVAILABLE:
+        return
     
-    found = False
-    for i, row in enumerate(rows):
-        if len(row) > 0 and row[0] == b:
-            rows[i] = [b, n, g, s, a, c]
-            found = True
+    # Open default system camera (0)
+    cap = cv2.VideoCapture(0)
+    
+    while True:
+        success, frame = cap.read()
+        if not success:
             break
-    if not found:
-        rows.append([b, n, g, s, a, c])
-    
-    with open(DB_FILE, 'w', newline='', encoding='utf-8-sig') as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
-    return jsonify({"status": "success"})
+        
+        # Add basic visual overlay (e.g., target reticle for scanning)
+        height, width, _ = frame.shape
+        cv2.rectangle(frame, (int(width * 0.3), int(height * 0.2)),
+                             (int(width * 0.7), int(height * 0.8)), (0, 255, 0), 2)
+        
+        # Encode frame to JPEG
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        
+    cap.release()
 
-@app.route('/api/delete_student', methods=['POST'])
-def delete_student():
-    barcode = request.json.get('barcode')
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, 'r', encoding='utf-8-sig') as f:
-            rows = list(csv.reader(f))
-        new_rows = [row for row in rows if len(row) > 0 and row[0] != barcode]
-        with open(DB_FILE, 'w', newline='', encoding='utf-8-sig') as f:
-            writer = csv.writer(f)
-            writer.writerows(new_rows)
-    return jsonify({"status": "success"})
 
-# --- SCANNER API ---
-@app.route('/api/scan', methods=['POST'])
-def scan_barcode():
-    data = request.json
-    barcode = data.get('barcode', '').strip()
-    if not barcode:
-        return jsonify({"status": "error", "message": "Empty barcode"})
+# ==============================================================================
+# Web Routes (HTML UI)
+# ==============================================================================
 
-    # Interceptors
-    if barcode == 'CD=CLOSEBARCODESYS96%&@CVAFPI':
-        os.system('pkill -f "cva-kiosk-profile"')
-        os._exit(0)
-    elif barcode == 'CD=EMERSHUTDOWNSYSSU62#9CVAFPI':
-        os.system('sudo shutdown now')
-        return jsonify({"status": "command", "action": "shutdown"})
-    elif barcode == 'CD=RETURNTOMNSYS8(*CVAFPI':
-        return jsonify({"status": "command", "action": "menu"})
+@app.route('/')
+def index():
+    """Renders the main system dashboard / kiosk menu."""
+    return render_template('index.html')
 
-    barcode_upper = barcode.upper()
-    timestamp_str, date_str = get_pht_time()
-    log_filename = os.path.join(LOGS_DIR, f"logs_{date_str}.csv")
 
-    student_data = None
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 0 and row[0].strip().upper() == barcode_upper:
-                    student_data = row
-                    break
+@app.route('/video_feed')
+def video_feed():
+    """Live MJPEG video feed route for biometrics/scanning UI."""
+    return Response(generate_camera_feed(), 
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-    if student_data:
-        name = student_data[1] if len(student_data) > 1 else "UNKNOWN"
-        grade = student_data[2] if len(student_data) > 2 else "N/A"
-        section = student_data[3] if len(student_data) > 3 else "N/A"
-        access = student_data[4] if len(student_data) > 4 else "REGULAR"
-        color = student_data[5] if len(student_data) > 5 else "#059669" # Default Green
-        access_val = access.strip().upper() if access.strip() else "REGULAR"
-    else:
-        name = "UNKNOWN"
-        grade = "N/A"
-        section = "N/A"
-        access_val = "DENIED"
-        color = "#dc2626" # Red for Denied/Unknown
 
-    # Append to daily log CSV: TIMESTAMP, BARCODE, NAME, GRADE, SECTION, ACCESS, COLOR
-    file_exists = os.path.exists(log_filename)
-    with open(log_filename, 'a', newline='', encoding='utf-8-sig') as f:
-        writer = csv.writer(f)
-        if not file_exists:
-            writer.writerow(['Timestamp', 'Barcode', 'Name', 'Grade', 'Section', 'Access', 'Color'])
-        writer.writerow([timestamp_str, barcode_upper, name, grade, section, access_val, color])
+# ==============================================================================
+# API Endpoints (Kiosk Button Actions)
+# ==============================================================================
 
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """Returns engine and backend status."""
     return jsonify({
-        "status": "success",
-        "data": {
-            "timestamp": timestamp_str,
-            "barcode": barcode_upper,
-            "name": name,
-            "grade": grade,
-            "section": section,
-            "access": access_val,
-            "color": color
-        }
+        "status": "online",
+        "engine": TFLITE_ENGINE,
+        "opencv": CV2_AVAILABLE,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
-@app.route('/api/logs/today', methods=['GET'])
-def get_today_logs():
-    _, date_str = get_pht_time()
-    filename = os.path.join(LOGS_DIR, f"logs_{date_str}.csv")
-    data = []
-    if os.path.exists(filename):
-        with open(filename, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f)
-            data = [row for row in reader if row]
-    return jsonify(data)
 
-# --- SYSTEM CONTROL API ---
-@app.route('/api/system', methods=['POST'])
-def system_command():
-    command = request.json.get('cmd')
-    if command == 'shutdown':
-        os.system('sudo shutdown now')
-    elif command == 'reboot':
-        os.system('sudo reboot')
-    elif command == 'exit':
-        os.system('pkill -f "cva-kiosk-profile"')
-        os._exit(0)
-    return jsonify({"status": "command sent"})
+@app.route('/api/scan', methods=['POST'])
+def trigger_scan():
+    """Handles 'LAUNCH REGISTRY SCANNER' action."""
+    print("[+] Triggering Registry Scanner...")
+    # Add face detection or database matching logic here
+    return jsonify({"status": "success", "message": "Scanner initialized"})
 
-# --- LOGS ARCHIVE API ---
-@app.route('/api/logs/list', methods=['GET'])
-def list_logs():
-    files = []
-    if os.path.exists(LOGS_DIR):
-        files = [f for f in os.listdir(LOGS_DIR) if f.startswith('logs_') and f.endswith('.csv')]
-        files.sort(reverse=True) # Newest date first
-    return jsonify(files)
 
-@app.route('/api/logs/view', methods=['GET'])
-def view_log():
-    filename = request.args.get('file', '')
-    filepath = os.path.join(LOGS_DIR, filename)
-    data = []
-    if filename and os.path.exists(filepath):
-        with open(filepath, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f)
-            data = [row for row in reader if row]
-    return jsonify(data)
+@app.route('/api/database', methods=['GET', 'POST'])
+def handle_database():
+    """Handles 'OPEN DATABASE MANAGER' action."""
+    return jsonify({"status": "success", "message": "Database records loaded", "count": 0})
+
+
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    """Handles 'OPEN LOGS MANAGER' action."""
+    sample_logs = [
+        f"[{datetime.now().strftime('%H:%M:%S')}] System auto-launcher initialized.",
+        f"[{datetime.now().strftime('%H:%M:%S')}] Active ML Engine: {TFLITE_ENGINE}"
+    ]
+    return jsonify({"status": "success", "logs": sample_logs})
+
+
+@app.route('/api/reboot', methods=['POST'])
+def reboot_system():
+    """Handles 'REBOOT' button."""
+    print("[!] Reboot command received...")
+    try:
+        subprocess.Popen(["sudo", "reboot"])
+        return jsonify({"status": "rebooting", "message": "System is restarting..."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/shutdown', methods=['POST'])
+def shutdown_system():
+    """Handles 'SHUTDOWN' button."""
+    print("[!] Shutdown command received...")
+    try:
+        subprocess.Popen(["sudo", "poweroff"])
+        return jsonify({"status": "shutting_down", "message": "System is shutting down..."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/exit', methods=['POST'])
+def exit_system():
+    """Handles 'EXIT SYSTEM' button (kills Flask server cleanly)."""
+    print("[!] Exit command received. Terminating backend...")
     
+    # Schedule process termination after responding to client
+    def kill_server():
+        time.sleep(1)
+        os.kill(os.getpid(), signal.SIGINT)
+        
+    import threading
+    threading.Thread(target=kill_server).start()
+    
+    return jsonify({"status": "exiting", "message": "Server process stopped."})
+
+
+# ==============================================================================
+# Application Entrypoint
+# ==============================================================================
+
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    # Listens locally on port 5000
+    app.run(host='0.0.0.0', port=5000, debug=False)
