@@ -91,7 +91,7 @@ def generate_camera_feed():
 @app.route('/')
 def index():
     """Renders the main system dashboard / kiosk menu."""
-    return render_template('index.html')
+    return render_template('launchpad.html')
 
 
 @app.route('/video_feed')
