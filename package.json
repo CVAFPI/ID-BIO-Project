@@ -1,0 +1,24 @@
+{
+  "name": "id-bio-html-project",
+  "version": "1.0.0",
+  "description": "A dedicated Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and database management.",
+  "main": "jsbarcode.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CVAFPI/ID-BIO-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CVAFPI/ID-BIO-Project/issues"
+  },
+  "homepage": "https://github.com/CVAFPI/ID-BIO-Project#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

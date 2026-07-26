@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CVA - System Launchpad</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --border: #334155;
+            --red: #dc2626;
+            --amber: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        .launchpad-container { width: 100%; max-width: 900px; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+        .header-section { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+        .logo-img { height: 64px; width: 64px; object-fit: contain; margin-bottom: 4px; }
+        .header-section h1 { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+        .header-section p { color: var(--muted); font-size: 0.9rem; }
+
+        .grid-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+        .menu-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-decoration: none;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .menu-card:hover { border-color: var(--accent); transform: translateY(-2px); background: #253349; }
+        .menu-card h2 { font-size: 1.2rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .menu-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.4; }
+
+        .menu-card.warning:hover { border-color: var(--amber); }
+        .menu-card.danger:hover { border-color: var(--red); }
+    </style>
+</head>
+<body>
+
+    <div class="launchpad-container">
+        <div class="header-section">
+            <img src="CVAFPI-LOGO.png" alt="CVA Logo" class="logo-img" onerror="this.style.display='none'">
+            <h1>CVA SYSTEM LAUNCHPAD</h1>
+            <p>Select a module or system control to open</p>
+        </div>
+
+        <div class="grid-menu">
+            <a href="/scanner.html" class="menu-card">
+                <h2>📷 Attendance Scanner</h2>
+                <p>Open the live barcode scanning interface for student log in and out.</p>
+            </a>
+
+            <a href="/manager.html" class="menu-card">
+                <h2>👥 Student Manager</h2>
+                <p>Add, edit, or remove student records and notification topics.</p>
+            </a>
+
+            <a href="/logs-manager.html" class="menu-card">
+                <h2>📊 Logs Manager</h2>
+                <p>View, search, and manage historical attendance logs by date.</p>
+            </a>
+
+            <div class="menu-card warning" onclick="rebootSystem()">
+                <h2>🔄 System Reboot</h2>
+                <p>Safely restart the device operating system and services.</p>
+            </div>
+
+            <div class="menu-card danger" onclick="shutdownSystem()">
+                <h2>⏻ System Shutdown</h2>
+                <p>Completely power down the kiosk hardware unit.</p>
+            </div>
+
+            <div class="menu-card danger" onclick="exitKiosk()">
+                <h2>🚪 Exit Kiosk</h2>
+                <p>Safely close the browser view and return to desktop.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function rebootSystem() {
+            if (confirm("Are you sure you want to REBOOT the system?")) {
+                try {
+                    await fetch('/api/system/reboot', { method: 'POST' });
+                    alert("System is rebooting...");
+                } catch (err) {
+                    alert("Failed to trigger reboot.");
+                }
+            }
+        }
+
+        async function shutdownSystem() {
+            if (confirm("Are you sure you want to SHUT DOWN the system?")) {
+                try {
+                    await fetch('/api/system/shutdown', { method: 'POST' });
+                    alert("System is shutting down...");
+                } catch (err) {
+                    alert("Failed to trigger shutdown.");
+                }
+            }
+        }
+
+        async function exitKiosk() {
+            if (confirm("Are you sure you want to exit the CVA system?")) {
+                try {
+                    await fetch('/api/exit', { method: 'POST' });
+                } catch (err) {
+                    console.error("Exit request error:", err);
+                }
+                window.close();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title id="pageTitle">CVA - LOGS MANAGER</title>
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --panel-header: #162238;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --border: #334155;
+            --green: #059669;
+            --red: #dc2626;
+            --purple: #8b5cf6;
+            --amber: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* Top Header */
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--border); }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo-img { height: 32px; width: 32px; object-fit: contain; }
+        .header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .clock { color: #38bdf8; font-family: monospace; font-size: 0.95rem; font-weight: 600; }
+        .btn-launchpad { background: #334155; color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
+        .btn-launchpad:hover { background: #475569; }
+
+        .main-container { display: flex; flex-direction: column; flex: 1; padding: 16px; gap: 16px; overflow: hidden; }
+
+        /* KPI Analytics Row */
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .kpi-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+        .kpi-label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 1.6rem; font-weight: 800; color: #38bdf8; font-family: monospace; }
+
+        /* Logs Section */
+        .logs-panel { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+
+        .toolbar { padding: 12px 16px; background: var(--panel-header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .toolbar-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .select-box, .search-box, .time-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 0.85rem; outline: none; }
+        .select-box:focus, .search-box:focus, .time-box:focus { border-color: var(--accent); }
+        .search-box { width: 220px; }
+        .time-box { width: 110px; color-scheme: dark; }
+
+        .btn-action { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-action:hover { background: var(--accent-hover); }
+        .btn-action.secondary { background: #334155; }
+        .btn-action.secondary:hover { background: #475569; }
+
+        /* Table View */
+        .table-container { flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+        th { padding: 10px 14px; color: var(--muted); background: var(--panel-header); position: sticky; top: 0; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; }
+        td { padding: 10px 14px; border-bottom: 1px solid #162238; }
+        tr:hover { background: #253349; }
+
+        .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-left">
+            <img src="CVAFPI-LOGO.png" alt="CVA Logo" class="logo-img" onerror="this.style.display='none'">
+            <h1>CVA - LOGS MANAGER & AUDIT TRAIL</h1>
+        </div>
+        <div class="header-right">
+            <div class="clock" id="clockDisplay">PHT: Loading...</div>
+            <a href="/launchpad.html" class="btn-launchpad">⬅ Launchpad</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- KPI Cards -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <span class="kpi-label">Filtered Scans</span>
+                <span class="kpi-value" id="kpiTotalScans">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Unique Students</span>
+                <span class="kpi-value" id="kpiUniqueStudents">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Special Access Scans</span>
+                <span class="kpi-value" id="kpiSpecialAccess" style="color: #a855f7;">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Active Log File</span>
+                <span class="kpi-value" id="kpiActiveFile" style="font-size: 1.1rem; color: #4ade80;">Today</span>
+            </div>
+        </div>
+
+        <!-- Logs Table Panel -->
+        <div class="logs-panel">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <!-- File Selector -->
+                    <label style="font-size: 0.75rem; color: var(--muted); font-weight: 700;">FILE:</label>
+                    <select id="logFileSelect" class="select-box" onchange="loadSelectedLogFile()">
+                        <option value="today">Today's Active Log</option>
+                    </select>
+
+                    <!-- Text Search -->
+                    <input type="text" id="logSearch" class="search-box" placeholder="🔍 Search logs..." oninput="filterLogs()">
+
+                    <!-- Time Filter Dropdown & Controls -->
+                    <label style="font-size: 0.75rem; color: var(--muted); font-weight: 700; margin-left: 8px;">TIME WINDOW:</label>
+                    <select id="timePresetSelect" class="select-box" onchange="applyTimePreset()">
+                        <option value="all">All Day</option>
+                        <option value="morning">🌅 Morning (4:00 AM - 7:30 AM)</option>
+                        <option value="late">⏰ Late Window (7:30 AM - 11:00 AM)</option>
+                        <option value="noon">☀️ Noon (11:00 AM - 1:00 PM)</option>
+                        <option value="afternoon">🌆 Afternoon (1:00 PM - 7:00 PM)</option>
+                        <option value="custom">⚙️ Custom Range...</option>
+                    </select>
+
+                    <!-- Custom Time Range Inputs -->
+                    <div id="customTimeRange" style="display: none; align-items: center; gap: 6px;">
+                        <input type="time" id="startTime" class="time-box" onchange="filterLogs()">
+                        <span style="color: var(--muted); font-size: 0.8rem;">to</span>
+                        <input type="time" id="endTime" class="time-box" onchange="filterLogs()">
+                    </div>
+
+                    <button class="btn-action secondary" onclick="resetTimeFilter()" title="Clear time filter">✕ Reset Time</button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="btn-action secondary" onclick="loadSelectedLogFile()">🔄 Refresh</button>
+                    <button class="btn-action" onclick="exportCSV()">📥 Export CSV</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Timestamp</th>
+                            <th>Barcode</th>
+                            <th>Student Name</th>
+                            <th>Grade</th>
+                            <th>Section</th>
+                            <th>Access Badge</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">Loading logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLogsData = [];
+
+        // Clock Update
+        function updateClock() {
+            const now = new Date();
+            const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
+            document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
+            document.getElementById('pageTitle').innerText = `CVA - LOGS MANAGER | ${phtString}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Load list of log files from backend
+        async function fetchLogFileList() {
+            try {
+                const res = await fetch('/api/logs/list');
+                const files = await res.json();
+                const select = document.getElementById('logFileSelect');
+
+                select.innerHTML = `<option value="today">Today's Active Log</option>`;
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.innerText = file.replace('logs_', '').replace('.csv', '');
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error("Failed to list log files:", err);
+            }
+        }
+
+        // Load data based on selected dropdown file
+        async function loadSelectedLogFile() {
+            const selected = document.getElementById('logFileSelect').value;
+            let url = '/api/logs/today';
+            let label = 'Today';
+
+            if (selected !== 'today') {
+                url = `/api/logs/view?file=${encodeURIComponent(selected)}`;
+                label = selected.replace('logs_', '').replace('.csv', '');
+            }
+
+            document.getElementById('kpiActiveFile').innerText = label;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                currentLogsData = data.filter(row => row && row[0] && row[0].toLowerCase() !== 'timestamp');
+                filterLogs();
+            } catch (err) {
+                console.error("Error loading log file:", err);
+            }
+        }
+
+        // Convert timestamp to total minutes from midnight
+        function getTimeInMinutes(timestampStr) {
+            if (!timestampStr) return null;
+            const parts = timestampStr.trim().split(' ');
+            if (parts.length < 2) return null;
+
+            const timePart = parts[1];
+            const ampm = parts[2] ? parts[2].toUpperCase() : '';
+            const [hStr, mStr] = timePart.split(':');
+
+            let hours = parseInt(hStr, 10);
+            const minutes = parseInt(mStr, 10);
+
+            if (ampm === 'PM' && hours < 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+
+            return (hours * 60) + minutes;
+        }
+
+        function applyTimePreset() {
+            const preset = document.getElementById('timePresetSelect').value;
+            const customDiv = document.getElementById('customTimeRange');
+            const startInput = document.getElementById('startTime');
+            const endInput = document.getElementById('endTime');
+
+            if (preset === 'morning') {
+                customDiv.style.display = 'none';
+                startInput.value = '04:00';
+                endInput.value = '07:30';
+            } else if (preset === 'late') {
+                customDiv.style.display = 'none';
+                startInput.value = '07:30';
+                endInput.value = '11:00';
+            } else if (preset === 'noon') {
+                customDiv.style.display = 'none';
+                startInput.value = '11:00';
+                endInput.value = '13:00';
+            } else if (preset === 'afternoon') {
+                customDiv.style.display = 'none';
+                startInput.value = '13:00';
+                endInput.value = '19:00';
+            } else if (preset === 'custom') {
+                customDiv.style.display = 'flex';
+            } else {
+                customDiv.style.display = 'none';
+                startInput.value = '';
+                endInput.value = '';
+            }
+
+            filterLogs();
+        }
+
+        function resetTimeFilter() {
+            document.getElementById('timePresetSelect').value = 'all';
+            document.getElementById('customTimeRange').style.display = 'none';
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            filterLogs();
+        }
+
+        function filterLogs() {
+            const query = document.getElementById('logSearch').value.toLowerCase();
+            const startVal = document.getElementById('startTime').value;
+            const endVal = document.getElementById('endTime').value;
+
+            let startMinutes = null;
+            let endMinutes = null;
+
+            if (startVal) {
+                const [sh, sm] = startVal.split(':').map(Number);
+                startMinutes = (sh * 60) + sm;
+            }
+            if (endVal) {
+                const [eh, em] = endVal.split(':').map(Number);
+                endMinutes = (eh * 60) + em;
+            }
+
+            const filtered = currentLogsData.filter(row => {
+                const matchesText = row.some(cell => cell.toLowerCase().includes(query));
+                if (!matchesText) return false;
+
+                if (startMinutes !== null || endMinutes !== null) {
+                    const scanMinutes = getTimeInMinutes(row[0]);
+                    if (scanMinutes !== null) {
+                        if (startMinutes !== null && scanMinutes < startMinutes) return false;
+                        if (endMinutes !== null && scanMinutes > endMinutes) return false;
+                    }
+                }
+
+                return true;
+            });
+
+            updateKPIs(filtered);
+            renderTable(filtered.slice().reverse());
+        }
+
+        function updateKPIs(filteredData) {
+            const total = filteredData.length;
+            const uniqueBarcodes = new Set(filteredData.map(r => r[1])).size;
+            const specialAccessCount = filteredData.filter(r => {
+                const access = (r[5] || '').toUpperCase();
+                return access && access !== 'REGULAR' && access !== 'DENIED';
+            }).length;
+
+            document.getElementById('kpiTotalScans').innerText = total;
+            document.getElementById('kpiUniqueStudents').innerText = uniqueBarcodes;
+            document.getElementById('kpiSpecialAccess').innerText = specialAccessCount;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">No matching scan records found.</td></tr>`;
+                return;
+            }
+
+            data.forEach((row, index) => {
+                const time = row[0] || '';
+                const barcode = row[1] || '';
+                const name = row[2] || 'UNKNOWN';
+                const grade = row[3] || 'N/A';
+                const section = row[4] || 'N/A';
+                const access = row[5] || 'REGULAR';
+                const color = row[6] || '#059669';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color: var(--muted); font-size: 0.75rem;">${data.length - index}</td>
+                        <td style="font-family: monospace; color: var(--muted);">${time}</td>
+                        <td style="font-family: monospace; color: #38bdf8; font-weight: 600;">${barcode}</td>
+                        <td style="font-weight: 700; color: #fff;">${name}</td>
+                        <td>${grade}</td>
+                        <td>${section}</td>
+                        <td><span class="table-badge" style="background-color: ${color};">${access}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function exportCSV() {
+            if (currentLogsData.length === 0) {
+                alert("No logs to export!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Barcode,Name,Grade,Section,Access,Color\n";
+            currentLogsData.forEach(row => {
+                csvContent += row.map(field => `"${field}"`).join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            const activeFile = document.getElementById('kpiActiveFile').innerText;
+
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `CVA_Logs_${activeFile}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Init
+        fetchLogFileList();
+        loadSelectedLogFile();
+    </script>
+</body>
+</html>

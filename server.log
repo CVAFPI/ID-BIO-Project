@@ -1,16 +1,15 @@
-[*] Starting CVAFPI Core Server...
-[*] ML Engine detected: Google LiteRT (ai-edge-litert)
  * Serving Flask app 'app'
  * Debug mode: on
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
- * Running on http://192.168.100.144:5000
+ * Running on http://192.168.100.126:5000
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 558-368-366
-127.0.0.1 - - [22/Jul/2026 15:36:28] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [22/Jul/2026 15:36:29] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [22/Jul/2026 15:36:54] "[33mGET /logs-manager.html HTTP/1.1[0m" 404 -
-127.0.0.1 - - [22/Jul/2026 15:37:31] "[33mGET /logs-manager.html HTTP/1.1[0m" 404 -
+ * Debugger PIN: 136-340-429
+127.0.0.1 - - [26/Jul/2026 09:57:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 09:57:32] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 09:57:32] "[33mGET /CVAFPI-LOGO.png HTTP/1.1[0m" 404 -
+127.0.0.1 - - [26/Jul/2026 09:57:32] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [26/Jul/2026 09:57:38] "POST /api/exit HTTP/1.1" 200 -
