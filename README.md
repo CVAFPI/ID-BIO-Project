@@ -24,7 +24,7 @@ ID Bio HTML Project/
 ├── CVAFPI IDENTIFICATION SYSTEM.sh  # Master Kiosk auto-launcher script
 ├── id_bio.desktop                   # KDE Desktop shortcut entry
 ├── Startup                          # Autostart boot script trigger
-├── data.csv                         # Primary user database file (Barcode, Name, Grade, Section, Access, Color)
+├── data.csv                         # Primary user database file (Barcode, Name, Grade, Section, Access, Color, NTFY_TOPIC)
 ├── jsbarcode.js                     # Offline JavaScript barcode SVG rendering engine
 ├── launchpad.html                   # Main dashboard launcher interface
 ├── scanner.html                     # Live Attendance Registry Scanner interface
