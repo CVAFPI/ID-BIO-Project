@@ -1,4 +1,3 @@
-Here is the complete, updated README.md with an expanded, warm, and highly detailed Open Source & Community section designed to welcome any school with open arms:
 # 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.2 BETA
 A dedicated, production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and seamless database management. Built specifically for educational institutions under Department of Education (DepEd) standards.
 Repository: https://github.com/CVAFPI/ID-BIO-Project
