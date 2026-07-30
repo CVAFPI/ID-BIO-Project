@@ -1,6 +1,22 @@
 # 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.2 BETA
 A dedicated, production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and seamless database management. Built specifically for educational institutions under Department of Education (DepEd) standards.
 Repository: https://github.com/CVAFPI/ID-BIO-Project
+## 💻 System Requirements & Hardware Specifications
+To ensure high-speed barcode processing, stable UI rendering, and continuous 24/7 reliability, your server hardware must meet or exceed the following specifications:
+| Hardware Component | Minimum Requirement | Recommended for 24/7 Operational Deployment |
+|---|---|---|
+| **System Architecture** | **64-bit ONLY (x86_64 / amd64 or aarch64)** | **64-bit Architecture (amd64 or aarch64)** |
+| **Processor (CPU)** | Intel Core / AMD 64-bit CPU *(Post-2010)* or aarch64 ARM | Modern Intel Core i3/i5/AMD Ryzen or Raspberry Pi 4/5 (64-bit OS) |
+| **System Memory (RAM)** | **4 GB RAM** | **8 GB RAM** *(Ensures smooth KDE Plasma & browser rendering)* |
+| **Storage Capacity** | **64 GB SSD / Storage** | **2 TB SSD / Hard Drive** *(Recommended for multi-year logs & updates)* |
+| **Network Interface** | 100 Mbps Hardwired Ethernet Port | Gigabit Ethernet (RJ45 Cable Connected) |
+| **Operating System** | **Debian 13 (Trixie) 64-bit** | **Debian 13 (Trixie) 64-bit + KDE Plasma Desktop** |
+| **Barcode Scanner** | USB / Serial HID Barcode Scanner | USB Handheld or Hands-free Omnidirectional Barcode Scanner |
+### ⚠️ Strict Hardware Compatibility Guidelines:
+ * **NO 32-bit Systems Supported:** Legacy 32-bit (i386 / x86_32) processors and operating systems are strictly unsupported. Python 3 modern virtual environments and modern Chromium browser engines require full 64-bit architecture.
+ * **Obsolete x86 CPU Restriction:** Do **NOT** deploy this software on outdated x86 processors manufactured prior to 2009 (e.g., legacy Intel Pentium 4, Intel Atom N-series, or early AMD Sempron/Athlon 64 chips). These older architectures lack modern instructions required for fluid web rendering and database processing.
+ * **Standard Chipset Suppliers:** Ensure your system uses legitimate, standard **Intel** or **AMD** 64-bit x86 processors, or standard **ARM64 (aarch64)** Single Board Computers (such as Raspberry Pi 4/5 running a 64-bit OS). Avoid obscure, off-brand, or unbranded white-label x86 clones that lack stable Linux kernel driver support.
+ * **Storage Allocation for 24/7 Logging:** While a basic installation can run on 64 GB of storage, deploying a **2 TB drive** is highly recommended for schools running the kiosk continuously (24/7/365). A larger drive ensures years of continuous attendance log archives (logs_YYYY-MM-DD.csv), automatic local database backups, system updates, and assets without running out of disk space.
 ## ⚠️ Crucial System Warnings: What NOT To Do
 Before deploying this system, keep these strict operational guidelines in mind to prevent data corruption, hardware locks, or security flaws:
  * **DO NOT manually edit data.csv while the server is actively running:** Doing so risks file-locking conflicts or data corruption if a student scans a barcode at the exact same millisecond. Always use the built-in Database Manager web interface.
