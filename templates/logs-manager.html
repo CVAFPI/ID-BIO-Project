@@ -71,12 +71,15 @@
 
     <div class="header">
         <div class="header-left">
-            <img src="CVAFPI-LOGO.png" alt="CVA Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="{{ url_for('static', filename='CVAFPI-LOGO.png') }}"
+                 alt="CVAFPI Logo"
+                 class="logo-img"
+                 onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
             <h1>CVA - LOGS MANAGER & AUDIT TRAIL</h1>
         </div>
         <div class="header-right">
             <div class="clock" id="clockDisplay">PHT: Loading...</div>
-            <a href="/launchpad.html" class="btn-launchpad">⬅ Launchpad</a>
+            <a href="launchpad.html" class="btn-launchpad">⬅ Launchpad</a>
         </div>
     </div>
 

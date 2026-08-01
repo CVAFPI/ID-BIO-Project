@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">CVA - DATABASE</title>
     <style>
         :root {
@@ -12,23 +13,25 @@
             --muted: #94a3b8;
             --border: #334155;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
         .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #1e293b; border-bottom: 1px solid var(--border); }
-        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
         .logo-img { height: 36px; width: 36px; object-fit: contain; }
-        .header h1 { font-size: 1.1rem; font-weight: 600; color: #fff; }
+        .header h1 { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
         .header-right { display: flex; align-items: center; gap: 20px; }
         .clock { color: #38bdf8; font-family: monospace; font-size: 0.95rem; font-weight: 600; }
         .nav-btn { background: #334155; color: white; padding: 6px 14px; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+        .nav-btn:hover { background: #475569; }
 
         .main-container { display: flex; flex: 1; padding: 16px; gap: 16px; overflow: hidden; }
 
-        /* Left: Table & Search */
+        /* Left Column: Table & Search */
         .left-column { flex: 1; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
         .toolbar { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; background: #162238; }
         .search-box { flex: 1; background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none; }
+        .search-box:focus { border-color: #f59e0b; }
 
         .table-container { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
@@ -38,7 +41,7 @@
 
         .action-icon { cursor: pointer; margin-right: 8px; font-size: 1rem; }
 
-        /* Right: Student Tools Form */
+        /* Right Column: Student Tools Form */
         .right-column { width: 360px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         .right-column h3 { font-size: 0.9rem; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
 
@@ -75,11 +78,14 @@
 
     <div class="header">
         <div class="header-left">
-            <img src="CVAFPI-LOGO.png" alt="CVA Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="{{ url_for('static', filename='CVAFPI-LOGO.png') }}"
+                 alt="CVAFPI Logo"
+                 class="logo-img"
+                 onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
             <h1>CVA - DATABASE</h1>
         </div>
         <div class="header-right">
-            <div class="clock" id="clockDisplay">Loading PHT...</div>
+            <div class="clock" id="clockDisplay">PHT: Loading...</div>
             <a href="launchpad.html" class="nav-btn">← MENU</a>
         </div>
     </div>
@@ -124,27 +130,27 @@
             </div>
 
             <div class="form-group">
-                <label>Barcode</label>
+                <label for="inputBarcode">Barcode</label>
                 <input type="text" id="inputBarcode" class="form-input" placeholder="Scan or type barcode...">
             </div>
 
             <div class="form-group">
-                <label>Full Name</label>
+                <label for="inputName">Full Name</label>
                 <input type="text" id="inputName" class="form-input" placeholder="Last Name, First Name M.I.">
             </div>
 
             <div class="form-group">
-                <label>Grade</label>
+                <label for="inputGrade">Grade</label>
                 <input type="text" id="inputGrade" class="form-input" value="GRADE ">
             </div>
 
             <div class="form-group">
-                <label>Section</label>
+                <label for="inputSection">Section</label>
                 <input type="text" id="inputSection" class="form-input" placeholder="e.g. ICT-SIMEON">
             </div>
 
             <div class="form-group">
-                <label>Notification Topic</label>
+                <label for="inputTopic">Notification Topic</label>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="inputTopic" class="form-input" style="flex: 1;" placeholder="e.g. CVA-8F3K2P9Q or empty">
                     <button type="button" class="preset-btn" style="background: var(--accent); color: white; padding: 0 10px; font-size: 0.75rem; white-space: nowrap; height: 38px; border-radius: 6px;" onclick="autoGenerateTopic()">⚡ Auto Gen</button>

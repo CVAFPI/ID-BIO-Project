@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">CVA - LOG IN/OUT SYSTEM</title>
     <!-- JsBarcode Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -14,13 +15,14 @@
             --muted: #94a3b8;
             --border: #334155;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* Clean Header Bar */
         .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #1e293b; border-bottom: 1px solid var(--border); }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .logo-img { height: 32px; width: 32px; object-fit: contain; }
-        .header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .logo-img { height: 36px; width: 36px; object-fit: contain; }
+        .header h1 { font-size: 1.15rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
         .clock { color: #38bdf8; font-family: monospace; font-size: 0.95rem; font-weight: 600; }
 
         .main-container { display: flex; flex: 1; padding: 16px; gap: 16px; overflow: hidden; }
@@ -72,9 +74,13 @@
 </head>
 <body>
 
+    <!-- Header containing ONLY CVAFPI Logo & System Title -->
     <div class="header">
         <div class="header-left">
-            <img src="CVAFPI-LOGO.png" alt="CVA Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="{{ url_for('static', filename='CVAFPI-LOGO.png') }}"
+                 alt="CVAFPI Logo"
+                 class="logo-img"
+                 onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
             <h1>CVA - LOG IN/OUT SYSTEM</h1>
         </div>
         <div class="clock" id="clockDisplay">PHT: Loading...</div>
