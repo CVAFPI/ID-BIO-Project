@@ -39,15 +39,15 @@ All you have to do is clone the repository and run the script!
 Because this system runs as an automated kiosk where physical scanner barcodes can trigger hardware actions (such as system shutdowns via CD=EMERSHUTDOWNSYSSU62#9CVAFPI) and background scripts require root privileges to update packages without human intervention, you must configure **passwordless sudo** for your kiosk user. Without this, the system will freeze or fail when attempting administrative tasks behind the scenes.
 ### How to Configure Passwordless Sudo:
  1. Open your terminal and edit the sudoers configuration file safely using visudo:
-   ```bash
-   sudo visudo
-   
-   ```
+```bash
+sudo visudo
+
+```
  2. Scroll to the bottom of the file and add the following line (replace your-username with your actual Debian login username):
-   ```text
-   your-username ALL=(ALL) NOPASSWD: ALL
-   
-   ```
+```text
+your-username ALL=(ALL) NOPASSWD: ALL
+
+```
  3. Press Ctrl + O then Enter to save, and Ctrl + X to exit the editor.
 ## 📥 Step-by-Step Deployment Guide
 Follow these simple steps to get your CVAFPI Kiosk up and running from scratch:
@@ -139,6 +139,29 @@ Many educational institutions struggle with expensive software licensing fees, m
  * **Zero Licensing Fees (Forever Free):** Whether you are a public school, private academy, university campus, or local community center, you can download, deploy, and run this system on as many computers as you want without paying a single cent.
  * **100% Local Data Privacy:** All attendance logs and student data stay strictly on your school's hardware inside local .csv files. No external cloud servers are harvesting or selling your students' information.
  * **Runs on Recycled/Existing Hardware:** Designed to run lean on Linux (Debian 13), allowing you to convert older, repurposed school desktop PCs into powerful attendance kiosks instead of buying expensive new equipment.
+## 🛠️ Recommended PC Parts for New Builds (Budget-Friendly & Compatible)
+If your school is purchasing or building a **brand-new computer from scratch** for this kiosk system, you do **NOT** need to spend a fortune on high-end gaming or enterprise hardware.
+Because Debian 13 is lightweight and non-bloated, even a standard 2.5" SATA SSD and entry-level components will run this system at lightning speed. You don't have to worry about confusing socket names or researching thousands of motherboard chipsets—below are **exact, fully compatible hardware parts** you can easily buy online (Shopee/Lazada) or at local computer stores (Gilmore, PC Express, Octagon, Silicon Valley).
+### 📦 Variant 1: Modern Value Kings (DDR4 Platform) — *Best Choice for New Hardware*
+This is the most recommended build variant for new installations. It utilizes modern DDR4 components with built-in integrated graphics (iGPU) and native Gigabit Ethernet.
+#### Recommended parts for new builds (Variant 1)
+| AMD Platform (AM4) | Why Picked (AMD) | Intel Platform (LGA 1200) | Why Picked (Intel) |
+|---|---|---|---|
+| **CPU:** AMD Ryzen 5 4600G or Ryzen 3 3200G *(with Radeon Vega iGPU)* | Powerful integrated Radeon graphics, handles UI rendering effortlessly, easy to find in PH stores. | **CPU:** Intel Core i3-10100 or i3-10105 *(with Intel UHD Graphics 630)* | Rock-solid native Intel Linux kernel driver support; zero display or graphics configuration needed. |
+| **Motherboard:** MSI A520M-A Pro or Gigabyte A520M S2H | Cheap, reliable AM4 board with onboard Realtek RTL8111H Gigabit Ethernet (RJ-45). | **Motherboard:** MSI H510M-A Pro or Gigabyte H510M H | Very affordable LGA 1200 motherboard featuring onboard Intel/Realtek Gigabit LAN. |
+| **RAM:** 8GB (1x8GB) DDR4 3200MHz *(Kingston Fury Beast / Lexar)* | 8GB DDR4 provides more than enough headroom for KDE Plasma desktop and Flask API server. | **RAM:** 8GB (1x8GB) DDR4 2666MHz/3200MHz *(Kingston / Ramsta)* | Fast memory bandwidth for snappy page loading and local database processing. |
+| **Storage:** 256GB / 512GB 2.5" SATA SSD *(Crucial BX500 / WD Green)* + Optional 2TB HDD | Debian isn't bloated like Windows. A simple 2.5" SATA SSD is extremely fast and reliable. Add a 2TB HDD for multi-year logs. | **Storage:** 256GB / 512GB 2.5" SATA SSD *(Crucial BX500 / Kingston A400)* + Optional 2TB HDD | Fast boot times under 10 seconds. SATA SSDs are cheap, durable, and don't overheat under continuous use. |
+| **Case & Power Supply:** Inplay GS450 / YGT / Trendsonic Micro-ATX Case with included 450W/700W Office PSU | Complete budget Micro-ATX tower case bundled with a standard office PSU—keeps overall costs super low. | **Case & Power Supply:** Inplay GS450 / YGT / Trendsonic Micro-ATX Case with included 450W/700W Office PSU | Inexpensive, compact, provides good ventilation, and easily fits under or inside school gate kiosks. |
+### 📦 Variant 2: Ultra-Budget / Legacy Backup Builds (DDR3 / Early DDR4) — *If Variant 1 is Unavailable*
+If Variant 1 parts are out of stock or your school wants the absolute lowest price possible using dirt-cheap second-hand or older stock parts, Variant 2 is your best backup option.
+#### Recommended parts for new builds (Variant 2)
+| AMD Platform (AM4 / Dirt-Cheap) | Why Picked (AMD) | Intel Platform (LGA 1150 / Legacy DDR3) | Why Picked (Intel) |
+|---|---|---|---|
+| **CPU:** AMD Athlon 3000G or Athlon 200GE *(Vega 3 Graphics)* | The cheapest modern 64-bit AMD CPU with integrated graphics; easily handles 24/7 barcode logging. | **CPU:** Intel Core i5-4570 or i5-4460 *(LGA 1150, Intel HD Graphics 4600)* | Extremely cheap on PH second-hand markets; 4 physical cores give great performance on Debian 13. |
+| **Motherboard:** Biostar A320MH or ASUS Prime A320M-K | Lowest-cost AM4 motherboard available, built-in Realtek Gigabit Ethernet port included. | **Motherboard:** H81M Motherboard *(ASUS H81M-K / Gigabyte H81M / Biostar H81)* | Highly available legacy LGA 1150 board with onboard Ethernet controller. |
+| **RAM:** 8GB (1x8GB) DDR4 2400MHz / 2666MHz | Low-cost DDR4 stick, plenty of RAM for full Linux kiosk operations. | **RAM:** 8GB (2x4GB or 1x8GB) DDR3 1600MHz | DDR3 RAM is practically dirt cheap. Debian 13 runs smoothly on DDR3 without lagging! |
+| **Storage:** 240GB 2.5" SATA SSD *(TeamGroup / Hikvision / Ramsta)* | Cheap 2.5" SATA SSD ensures quick boot times and zero mechanical moving parts for OS drive. | **Storage:** 240GB 2.5" SATA SSD *(TeamGroup / Hikvision / Ramsta)* | Replaces slow old spinning HDDs with reliable, low-power solid state storage. |
+| **Case & Power Supply:** Basic Micro-ATX Office Case with generic 450W PSU | Simple, functional enclosure that houses all components cleanly and keeps costs under budget. | **Case & Power Supply:** Basic Micro-ATX Office Case with generic 450W PSU | Simple standard case with built-in power supply; perfect for tight school budgets. |
 ## 🎨 Want Your School's Logo & Custom Branding? (We'll Do It For You Free!)
 Please **do not feel hesitant or shy** to reach out if you aren't familiar with editing HTML or CSS code! We want your kiosk interface to look official and feel like a proud part of your institution.
 If you decide to adopt this system for your school, **we will gladly customize the interface for you completely free of charge!**
@@ -150,9 +173,9 @@ If you decide to adopt this system for your school, **we will gladly customize t
 ### 📩 How to Request Free Customization & Assistance:
 Don't hesitate—reach out through whichever channel is most comfortable for you:
  1. **Email Us Directly:** Send an email to **allthingslinux2026@gmail.com**
-   * *What to attach:* Your school's logo (PNG or JPEG format), your school name, and any specific color or design requests.
+ * *What to attach:* Your school's logo (PNG or JPEG format), your school name, and any specific color or design requests.
  2. **Open a GitHub Issue:** Visit our GitHub Issues Page and click **New Issue**.
-   * Title it something simple like: *"Custom Logo Request for [Your School Name]"*.
+ * Title it something simple like: *"Custom Logo Request for [Your School Name]"*.
 Whether you need help fixing a setup bug, customizing your design, or figuring out Linux commands, we are here to support your school community every step of the way!
 > 💡 **A Note from the Developers:**
 > *"This is Lance, together with Google AI assistant Gemini—we will help go one step closer to a brighter IT for you!"*
