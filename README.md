@@ -89,6 +89,7 @@ ID-BIO-Project/
 ├── ID-CODES FOR SYSTEM/               # Reference command barcodes for admin control
 ├── logs/                              # Real-time daily scan CSV logs (logs_YYYY-MM-DD.csv)
 ├── venv/                              # Python Virtual Environment (Architecture-specific)
+├── static/                            # Stores all image assets (School Logo + Debian 13 Logo)
 ├── app.py                             # Core Flask REST API backend server
 ├── logger.py                          # Internal log processing and helper utility
 ├── CVAFPI IDENTIFICATION SYSTEM.sh    # Master Kiosk auto-launcher script
@@ -101,7 +102,6 @@ ID-BIO-Project/
 ├── manager.html                       # Database Manager interface
 ├── logs-manager.html                  # Log Manager & Attendance viewer interface
 ├── CVAFPI-LOGO.png                    # Primary CVA institution logo asset
-├── Deped - Logo.png                   # DepEd official logo asset
 ├── README.txt                         # Legacy text notes
 └── server.log                         # Auto-generated Flask server log
 
@@ -166,7 +166,7 @@ If Variant 1 parts are out of stock or your school wants the absolute lowest pri
 Please **do not feel hesitant or shy** to reach out if you aren't familiar with editing HTML or CSS code! We want your kiosk interface to look official and feel like a proud part of your institution.
 If you decide to adopt this system for your school, **we will gladly customize the interface for you completely free of charge!**
 ### What We Can Customize For Your School:
- * Replacing default logos with your **Official School Logo / Seal** and regional DepEd division banners.
+ * Replacing default logos with your **Official School Logo / Seal**.
  * Updating the header text, school name, and institution mission statement on the kiosk interface.
  * Matching the dashboard accent colors to your official school colors.
  * Adjusting grade level formats, section names, or badge layout fields to fit your campus records.
