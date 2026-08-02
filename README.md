@@ -102,7 +102,7 @@ ID-BIO-Project/
 ├── manager.html                       # Database Manager interface
 ├── logs-manager.html                  # Log Manager & Attendance viewer interface
 ├── CVAFPI-LOGO.png                    # Primary CVA institution logo asset
-├── README.txt                         # Legacy text notes
+├── README.md                          # Instructions and specifications
 └── server.log                         # Auto-generated Flask server log
 
 ```
