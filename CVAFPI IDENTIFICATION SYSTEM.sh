@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                  CVA FPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
+#                   CVA FPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -23,6 +23,15 @@ echo "                      Kiosk Engine Auto-Launcher                      "
 echo "======================================================================"
 echo -e "${NC}"
 
+# --- DISPLAY SYSTEM INFO (FASTFETCH / NEOFETCH) ---
+if command -v fastfetch &> /dev/null; then
+    fastfetch
+elif command -v neofetch &> /dev/null; then
+    neofetch
+fi
+
+echo -e "${GREEN}Welcome to CVAFPI ID SYSTEM${NC}\n"
+
 cd "$APP_DIR" || { echo -e "${RED}[!] Failed to access directory: $APP_DIR${NC}"; exit 1; }
 
 # --- SYSTEM UPDATE & DEPENDENCY PROMPT ---
@@ -31,12 +40,13 @@ read -p "Do you want to update the system and install required packages? (y/n): 
 if [[ "$update_choice" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}[*] Updating system packages...${NC}"
     sudo apt update -y && sudo apt upgrade -y
-    echo -e "${YELLOW}[*] Installing required dependencies...${NC}"
-    sudo apt install -y curl lsof unclutter x11-utils python3-pip python3-venv
+    echo -e "${YELLOW}[*] Installing required dependencies & system fetch tools...${NC}"
+    # Attempts fastfetch first; falls back to neofetch if fastfetch isn't in older repos
+    sudo apt install -y curl lsof unclutter x11-utils python3-pip python3-venv fastfetch 2>/dev/null || sudo apt install -y neofetch
     echo -e "${GREEN}[✓] System update and package installation complete.${NC}"
 else
     echo -e "${YELLOW}[!] Skipping system update. Ensuring minimal tools are present...${NC}"
-    sudo apt install -y curl lsof unclutter x11-utils 2>/dev/null || true
+    sudo apt install -y curl lsof unclutter x11-utils fastfetch 2>/dev/null || sudo apt install -y neofetch 2>/dev/null || true
 fi
 
 cleanup() {
