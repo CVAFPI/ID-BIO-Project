@@ -177,6 +177,3 @@ Don't hesitate—reach out through whichever channel is most comfortable for you
  2. **Open a GitHub Issue:** Visit our GitHub Issues Page and click **New Issue**.
  * Title it something simple like: *"Custom Logo Request for [Your School Name]"*.
 Whether you need help fixing a setup bug, customizing your design, or figuring out Linux commands, we are here to support your school community every step of the way!
-> 💡 **A Note from the Developers:**
-> *"This is Lance, together with Google AI assistant Gemini—we will help go one step closer to a brighter IT for you!"*
-> 
