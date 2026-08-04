@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.3 BETA
+=======
+# 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.4 BETA
+>>>>>>> d54e8d6 (feat(kiosk): bump to v1.4 beta - add 20s CSV schema validation timer and auto-heal logic)
 A dedicated, production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and seamless database management. Built specifically for educational institutions under Department of Education (DepEd) standards.
 Repository: https://github.com/CVAFPI/ID-BIO-Project
 ## 💻 System Requirements & Hardware Specifications

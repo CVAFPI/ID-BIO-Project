@@ -3,20 +3,20 @@
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
- * Running on http://192.168.100.126:5000
+ * Running on http://192.168.100.72:5000
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 732-755-181
-127.0.0.1 - - [02/Aug/2026 05:25:42] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [02/Aug/2026 05:25:47] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [02/Aug/2026 05:25:47] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [02/Aug/2026 05:25:47] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [02/Aug/2026 05:25:47] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-127.0.0.1 - - [02/Aug/2026 05:30:45] "GET /manager.html HTTP/1.1" 200 -
-127.0.0.1 - - [02/Aug/2026 05:30:46] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [02/Aug/2026 05:30:46] "GET /api/data HTTP/1.1" 200 -
-127.0.0.1 - - [02/Aug/2026 05:31:06] "GET /launchpad.html HTTP/1.1" 200 -
-127.0.0.1 - - [02/Aug/2026 05:31:06] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [02/Aug/2026 05:31:06] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [02/Aug/2026 05:31:22] "POST /api/exit HTTP/1.1" 200 -
+ * Debugger PIN: 929-089-098
+127.0.0.1 - - [04/Aug/2026 11:56:19] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 11:56:24] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 11:56:24] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Aug/2026 11:56:24] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Aug/2026 11:56:25] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [04/Aug/2026 11:56:31] "GET /manager.html HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 11:56:31] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Aug/2026 11:56:31] "GET /api/data HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 11:56:41] "GET /launchpad.html HTTP/1.1" 200 -
+127.0.0.1 - - [04/Aug/2026 11:56:41] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Aug/2026 11:56:41] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Aug/2026 11:56:54] "POST /api/exit HTTP/1.1" 200 -

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                   CVA FPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
+#                  CVA FPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -18,8 +18,8 @@ VENV_DIR="${APP_DIR}/venv"
 clear
 echo -e "${CYAN}"
 echo "======================================================================"
-echo "                     CVAFPI IDENTIFICATION SYSTEM                     "
-echo "                      Kiosk Engine Auto-Launcher                      "
+echo "                       CVAFPI IDENTIFICATION SYSTEM                   "
+echo "                        Kiosk Engine Auto-Launcher                    "
 echo "======================================================================"
 echo -e "${NC}"
 
@@ -41,7 +41,6 @@ if [[ "$update_choice" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}[*] Updating system packages...${NC}"
     sudo apt update -y && sudo apt upgrade -y
     echo -e "${YELLOW}[*] Installing required dependencies & system fetch tools...${NC}"
-    # Attempts fastfetch first; falls back to neofetch if fastfetch isn't in older repos
     sudo apt install -y curl lsof unclutter x11-utils python3-pip python3-venv fastfetch 2>/dev/null || sudo apt install -y neofetch
     echo -e "${GREEN}[✓] System update and package installation complete.${NC}"
 else
@@ -69,8 +68,8 @@ if command -v xset &> /dev/null; then
     echo -e "${GREEN}[✓] Screen sleep and DPMS disabled.${NC}"
 fi
 
-# --- STEP 2: PYTHON VENV ---
-echo -e "${CYAN}[2/4] Initializing Python Backend Environment...${NC}"
+# --- STEP 2: PYTHON VENV & DATABASE SCHEMA CHECK ---
+echo -e "${CYAN}[2/4] Initializing Python Backend Environment & Database Check...${NC}"
 if [ -d "$VENV_DIR" ]; then
     source "${VENV_DIR}/bin/activate"
 else
@@ -79,6 +78,97 @@ else
     pip install flask
 fi
 echo -e "${GREEN}[✓] Virtual environment ready.${NC}"
+
+# --- DATABASE SCHEMA VALIDATION & AUTO-HEAL ---
+NEEDS_FIX=0
+CSV_PATH="${APP_DIR}/data.csv"
+
+if [ ! -f "$CSV_PATH" ]; then
+    echo -e "${YELLOW}[!] data.csv is missing. A new one will be generated.${NC}"
+    NEEDS_FIX=1
+else
+    # Check if headers match the expected schema via Python
+    HEADER_CHECK=$(python3 -c "
+import csv
+try:
+    with open('$CSV_PATH', mode='r', encoding='utf-8', errors='ignore') as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        expected = ['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC']
+        actual = [h.strip().upper() for h in header[:7]]
+        if actual != expected:
+            print('DIFFERENT')
+        else:
+            print('OK')
+except Exception:
+    print('DIFFERENT')
+")
+    if [ "$HEADER_CHECK" = "DIFFERENT" ]; then
+        NEEDS_FIX=1
+    fi
+fi
+
+if [ "$NEEDS_FIX" -eq 1 ]; then
+    echo -e "${YELLOW}[!] data.csv seems to be different or missing required headers.${NC}"
+    echo -e "${YELLOW}[!] Do you like to fix it? (20 seconds before proceeding) y/n:${NC}"
+
+    FIX_CHOICE="y" # Default to auto-fix on timeout
+    for i in {20..1}; do
+        echo -ne "\r[?] Proceeding in ${i}s [y/N]: "
+        read -t 1 -r response
+        if [ $? -eq 0 ]; then
+            if [[ "$response" =~ ^[Yy]$ ]]; then
+                FIX_CHOICE="y"
+            elif [[ "$response" =~ ^[Nn]$ ]]; then
+                FIX_CHOICE="n"
+            fi
+            break
+        fi
+    done
+    echo ""
+
+    if [[ "$FIX_CHOICE" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}[*] Automatically fixing and normalizing data.csv...${NC}"
+        python3 -c "
+import csv, os
+file_path = '$CSV_PATH'
+rows = []
+if os.path.exists(file_path):
+    try:
+        with open(file_path, mode='r', encoding='utf-8', errors='ignore') as f:
+            reader = list(csv.reader(f))
+            if len(reader) > 1:
+                header = [h.strip().upper() for h in reader[0]]
+                for r in reader[1:]:
+                    row_dict = {header[i]: r[i] for i in range(min(len(header), len(r)))}
+                    barcode = row_dict.get('BARCODE', row_dict.get('ID', ''))
+                    name = row_dict.get('NAME', row_dict.get('STUDENT NAME', ''))
+                    if not barcode:
+                        continue
+                    grade = row_dict.get('GRADE', 'GRADE 12')
+                    section = row_dict.get('SECTION', 'ICT-SIMEON')
+                    access = row_dict.get('ACCESS', row_dict.get('ACCESS & STYLE', 'REGULAR'))
+                    if not access or access.strip().lower() in ['', 'none']:
+                        access = 'REGULAR'
+                    color = row_dict.get('COLOR', '#059669')
+                    ntfy = row_dict.get('NTFY_TOPIC', row_dict.get('NOTIFICATION TOPIC', 'None'))
+                    rows.append([barcode, name, grade, section, access, color, ntfy])
+    except Exception as e:
+        print(f'[!] Error parsing legacy file: {e}')
+
+with open(file_path, mode='w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC'])
+    if rows:
+        writer.writerows(rows)
+print('${GREEN}[✓] data.csv successfully fixed and normalized!${NC}')
+"
+    else
+        echo -e "${RED}[!] Skipping fix. Proceeding with existing data.csv...${NC}"
+    fi
+else
+    echo -e "${GREEN}[✓] data.csv schema is valid and up to date.${NC}"
+fi
 
 # --- STEP 3: START FLASK ---
 echo -e "${CYAN}[3/4] Launching CVAFPI Core Server (app.py)...${NC}"
