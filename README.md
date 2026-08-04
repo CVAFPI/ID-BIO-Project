@@ -1,45 +1,47 @@
-🛡️ CVAFPI IDENTIFICATION SYSTEM v1.4 BETA
+# 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.4 BETA
 A dedicated, production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and seamless database management. Built specifically for educational institutions under Department of Education (DepEd) standards.
 Repository: https://github.com/CVAFPI/ID-BIO-Project
-💻 System Requirements & Hardware Specifications
+## 💻 System Requirements & Hardware Specifications
 To ensure high-speed barcode processing, stable UI rendering, and continuous 24/7 reliability, your server hardware must meet or exceed the following specifications:
 | Hardware Component | Minimum Requirement | Recommended for 24/7 Operational Deployment |
 |---|---|---|
-| System Architecture | 64-bit ONLY (x86_64 / amd64 or aarch64) | 64-bit Architecture (amd64 or aarch64) |
-| Processor (CPU) | Intel Core / AMD 64-bit CPU (Post-2010) or aarch64 ARM | Modern Intel Core i3/i5/AMD Ryzen or Raspberry Pi 4/5 (64-bit OS) |
-| System Memory (RAM) | 4 GB RAM | 8 GB RAM (Ensures smooth KDE Plasma & browser rendering) |
-| Storage Capacity | 64 GB SSD / Storage | 2 TB SSD / Hard Drive (Recommended for multi-year logs & updates) |
-| Network Interface | 100 Mbps Hardwired Ethernet Port | Gigabit Ethernet (RJ45 Cable Connected) |
-| Operating System | Debian 13 (Trixie) 64-bit | Debian 13 (Trixie) 64-bit + KDE Plasma Desktop |
-| Barcode Scanner | USB / Serial HID Barcode Scanner | USB Handheld or Hands-free Omnidirectional Barcode Scanner |
-⚠️ Strict Hardware Compatibility Guidelines:
- * NO 32-bit Systems Supported: Legacy 32-bit (i386 / x86_32) processors and operating systems are strictly unsupported. Python 3 modern virtual environments and modern Chromium browser engines require full 64-bit architecture.
- * Obsolete x86 CPU Restriction: Do NOT deploy this software on outdated x86 processors manufactured prior to 2009 (e.g., legacy Intel Pentium 4, Intel Atom N-series, or early AMD Sempron/Athlon 64 chips). These older architectures lack modern instructions required for fluid web rendering and database processing.
- * Standard Chipset Suppliers: Ensure your system uses legitimate, standard Intel or AMD 64-bit x86 processors, or standard ARM64 (aarch64) Single Board Computers (such as Raspberry Pi 4/5 running a 64-bit OS). Avoid obscure, off-brand, or unbranded white-label x86 clones that lack stable Linux kernel driver support.
- * Storage Allocation for 24/7 Logging: While a basic installation can run on 64 GB of storage, deploying a 2 TB drive is highly recommended for schools running the kiosk continuously (24/7/365). A larger drive ensures years of continuous attendance log archives (logs_YYYY-MM-DD.csv), automatic local database backups, system updates, and assets without running out of disk space.
-⚠️ Crucial System Warnings: What NOT To Do
+| **System Architecture** | **64-bit ONLY (x86_64 / amd64 or aarch64)** | **64-bit Architecture (amd64 or aarch64)** |
+| **Processor (CPU)** | Intel Core / AMD 64-bit CPU *(Post-2010)* or aarch64 ARM | Modern Intel Core i3/i5/AMD Ryzen or Raspberry Pi 4/5 (64-bit OS) |
+| **System Memory (RAM)** | **4 GB RAM** | **8 GB RAM** *(Ensures smooth KDE Plasma & browser rendering)* |
+| **Storage Capacity** | **64 GB SSD / Storage** | **2 TB SSD / Hard Drive** *(Recommended for multi-year logs & updates)* |
+| **Network Interface** | 100 Mbps Hardwired Ethernet Port | Gigabit Ethernet (RJ45 Cable Connected) |
+| **Operating System** | **Debian 13 (Trixie) 64-bit** | **Debian 13 (Trixie) 64-bit + KDE Plasma Desktop** |
+| **Barcode Scanner** | USB / Serial HID Barcode Scanner | USB Handheld or Hands-free Omnidirectional Barcode Scanner |
+### ⚠️ Strict Hardware Compatibility Guidelines:
+ * **NO 32-bit Systems Supported:** Legacy 32-bit (i386 / x86_32) processors and operating systems are strictly unsupported. Python 3 modern virtual environments and modern Chromium browser engines require full 64-bit architecture.
+ * **Obsolete x86 CPU Restriction:** Do **NOT** deploy this software on outdated x86 processors manufactured prior to 2009 (e.g., legacy Intel Pentium 4, Intel Atom N-series, or early AMD Sempron/Athlon 64 chips). These older architectures lack modern instructions required for fluid web rendering and database processing.
+ * **Standard Chipset Suppliers:** Ensure your system uses legitimate, standard **Intel** or **AMD** 64-bit x86 processors, or standard **ARM64 (aarch64)** Single Board Computers (such as Raspberry Pi 4/5 running a 64-bit OS). Avoid obscure, off-brand, or unbranded white-label x86 clones that lack stable Linux kernel driver support.
+ * **Storage Allocation for 24/7 Logging:** While a basic installation can run on 64 GB of storage, deploying a **2 TB drive** is highly recommended for schools running the kiosk continuously (24/7/365). A larger drive ensures years of continuous attendance log archives (logs_YYYY-MM-DD.csv), automatic local database backups, system updates, and assets without running out of disk space.
+## ⚠️ Crucial System Warnings: What NOT To Do
 Before deploying this system, keep these strict operational guidelines in mind to prevent data corruption, hardware locks, or security flaws:
- * DO NOT manually edit data.csv while the server is actively running: Doing so risks file-locking conflicts or data corruption if a student scans a barcode at the exact same millisecond. Always use the built-in Database Manager web interface.
- * DO NOT copy the venv/ folder across different computers: Python virtual environments are architecture- and path-specific. The master installer script automatically handles building a fresh, clean environment for you.
- * DO NOT expose your NTFY notification tokens: The secret string generated for real-time parent mobile alerts must remain completely private to protect student privacy and ensure safe communication channels.
- * DO NOT rely on wireless connections for server hardware: As a fundamental networking rule, always use a hardwired Ethernet cable rather than Wi-Fi for server kiosks to guarantee rock-solid stability and zero dropped attendance packets.
-🐧 Note on Debian & KDE Plasma Environment
-Standard clean installations of Debian (especially Netinst or minimal server ISO images) do not come with a graphical desktop environment or KDE Plasma pre-installed.
- * If you are setting this up on a fresh machine, ensure you select KDE Plasma during the Debian installation task selector, or install it post-install using sudo apt install task-kde-desktop.
+ * **DO NOT manually edit data.csv while the server is actively running:** Doing so risks file-locking conflicts or data corruption if a student scans a barcode at the exact same millisecond. Always use the built-in Database Manager web interface.
+ * **DO NOT copy the venv/ folder across different computers:** Python virtual environments are architecture- and path-specific. The master installer script automatically handles building a fresh, clean environment for you.
+ * **DO NOT expose your NTFY notification tokens:** The secret string generated for real-time parent mobile alerts must remain completely private to protect student privacy and ensure safe communication channels.
+ * **DO NOT rely on wireless connections for server hardware:** As a fundamental networking rule, always use a hardwired **Ethernet cable** rather than Wi-Fi for server kiosks to guarantee rock-solid stability and zero dropped attendance packets.
+## 🐧 Note on Debian & KDE Plasma Environment
+Standard clean installations of Debian (especially Netinst or minimal server ISO images) **do not come with a graphical desktop environment or KDE Plasma pre-installed**.
+ * If you are setting this up on a fresh machine, ensure you select **KDE Plasma** during the Debian installation task selector, or install it post-install using sudo apt install task-kde-desktop.
  * KDE Plasma is strongly recommended because it offers superior display scaling, reliable power-state handling, and smooth kiosk window management out of the box.
-⚡ The Master Script Advantage (Zero-Fuss Installation)
+## ⚡ The Master Script Advantage (Zero-Fuss Installation)
 We designed the installation process so that school administrators and technicians—even those completely new to Linux—don't have to manually execute a dozen complex commands.
 The core master script (CVAFPI IDENTIFICATION SYSTEM.sh) handles the heavy lifting automatically:
- * It checks and performs system package updates (sudo apt update and upgrades).
- * It provisions and configures the Python virtual environment (venv).
- * It installs all required Flask and system dependencies (chromium, unclutter, etc.).
- * It interactively prompts you if you want to update the repository or components and handles the rest seamlessly.
+ 1. It checks and performs system package updates (sudo apt update and upgrades).
+ 2. It provisions and configures the Python virtual environment (venv).
+ 3. It installs all required Flask and system dependencies (chromium, unclutter, etc.).
+ 4. It interactively prompts you if you want to update the repository or components and handles the rest seamlessly.
 All you have to do is clone the repository and run the script!
-🔑 Setting Up Passwordless Sudo (Required for Kiosk Automation)
-Because this system runs as an automated kiosk where physical scanner barcodes can trigger hardware actions (such as system shutdowns via CD=EMERSHUTDOWNSYSSU62#9CVAFPI) and background scripts require root privileges to update packages without human intervention, you must configure passwordless sudo for your kiosk user. Without this, the system will freeze or fail when attempting administrative tasks behind the scenes.
-How to Configure Passwordless Sudo:
- * Open your terminal and edit the sudoers configuration file safely using visudo:
+## 🔑 Setting Up Passwordless Sudo (Required for Kiosk Automation)
+Because this system runs as an automated kiosk where physical scanner barcodes can trigger hardware actions (such as system shutdowns via CD=EMERSHUTDOWNSYSSU62#9CVAFPI) and background scripts require root privileges to update packages without human intervention, you must configure **passwordless sudo** for your kiosk user. Without this, the system will freeze or fail when attempting administrative tasks behind the scenes.
+### How to Configure Passwordless Sudo:
+ 1. Open your terminal and edit the sudoers configuration file safely using visudo:
+```bash
 sudo visudo
+
 
  * Scroll to the bottom of the file and add the following line (replace your-username with your actual Debian login username):
 your-username ALL=(ALL) NOPASSWD: ALL
