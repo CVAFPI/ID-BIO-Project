@@ -39,7 +39,6 @@ All you have to do is clone the repository and run the script!
 Because this system runs as an automated kiosk where physical scanner barcodes can trigger hardware actions (such as system shutdowns via CD=EMERSHUTDOWNSYSSU62#9CVAFPI) and background scripts require root privileges to update packages without human intervention, you must configure **passwordless sudo** for your kiosk user. Without this, the system will freeze or fail when attempting administrative tasks behind the scenes.
 ### How to Configure Passwordless Sudo:
  1. Open your terminal and edit the sudoers configuration file safely using visudo:
-```bash
 sudo visudo
 
 
