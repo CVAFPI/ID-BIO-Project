@@ -7,16 +7,10 @@
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 929-089-098
-127.0.0.1 - - [04/Aug/2026 11:56:19] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 11:56:24] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 11:56:24] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Aug/2026 11:56:24] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Aug/2026 11:56:25] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-127.0.0.1 - - [04/Aug/2026 11:56:31] "GET /manager.html HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 11:56:31] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Aug/2026 11:56:31] "GET /api/data HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 11:56:41] "GET /launchpad.html HTTP/1.1" 200 -
-127.0.0.1 - - [04/Aug/2026 11:56:41] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Aug/2026 11:56:41] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Aug/2026 11:56:54] "POST /api/exit HTTP/1.1" 200 -
+ * Debugger PIN: 101-618-693
+127.0.0.1 - - [05/Aug/2026 14:40:48] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 14:40:53] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [05/Aug/2026 14:40:53] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [05/Aug/2026 14:40:53] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [05/Aug/2026 14:40:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [05/Aug/2026 14:40:59] "POST /api/exit HTTP/1.1" 200 -

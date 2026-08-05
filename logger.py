@@ -9,6 +9,7 @@ DB_FOLDER = os.path.join(BASE_DIR, "CVA_Database")
 os.makedirs(DB_FOLDER, exist_ok=True)
 
 DATA_CSV = os.path.join(BASE_DIR, "data.csv")
+BACKUP_PATH = os.path.join(BASE_DIR, "backup-data.csv")
 REQUIRED_HEADER = ['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC']
 
 def notify_parent(topic, student_name, grade, section, timestamp):
@@ -211,7 +212,14 @@ def save_student(b, n, g, s, a, c, t="None"):
     if not updated:
         rows.append([b, n, g, s, a, c, t])
 
+    # Save to main data.csv
     with open(DATA_CSV, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(REQUIRED_HEADER)
+        writer.writerows(rows)
+
+    # Automatically synchronize and write to backup-data.csv
+    with open(BACKUP_PATH, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(REQUIRED_HEADER)
         writer.writerows(rows)
@@ -231,7 +239,14 @@ def delete_student(barcode):
                         row.append('None')
                     rows.append(row[:7])
 
+    # Save to main data.csv
     with open(DATA_CSV, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(REQUIRED_HEADER)
+        writer.writerows(rows)
+
+    # Automatically synchronize and write to backup-data.csv
+    with open(BACKUP_PATH, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(REQUIRED_HEADER)
         writer.writerows(rows)
