@@ -1,4 +1,4 @@
-# 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.4 BETA
+# 🛡️ CVAFPI IDENTIFICATION SYSTEM v1.5 BETA
 
 A dedicated, production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and seamless database management. Built specifically for educational institutions under Department of Education (DepEd) standards.
 
