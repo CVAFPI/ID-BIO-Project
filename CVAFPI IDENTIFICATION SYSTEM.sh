@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                  CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v1.5
+#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v1.5
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -21,7 +21,7 @@ REPO_URL="https://github.com/CVAFPI/ID-BIO-Project.git"
 clear
 echo -e "${CYAN}"
 echo "======================================================================"
-echo "                     CVAFPI IDENTIFICATION SYSTEM                     "
+echo "                       CVAFPI IDENTIFICATION SYSTEM                   "
 echo "                 Kiosk Engine Auto-Launcher (v1.5 Beta)               "
 echo "======================================================================"
 echo -e "${NC}"
@@ -111,7 +111,7 @@ if command -v xset &> /dev/null; then
     echo -e "${GREEN}[✓] Screen sleep and DPMS disabled.${NC}"
 fi
 
-# --- STEP 2: PYTHON VENV & DATABASE SCHEMA CHECK WITH DUAL BACKUP ---
+# --- STEP 2: PYTHON VENV & DATABASE INTEGRITY (FIRST CHECK & FIX, SECOND SYNC) ---
 echo -e "${CYAN}[2/4] Initializing Python Backend Environment & Database Integrity Check...${NC}"
 if [ -d "$VENV_DIR" ]; then
     source "${VENV_DIR}/bin/activate"
@@ -122,118 +122,94 @@ else
 fi
 echo -e "${GREEN}[✓] Virtual environment ready.${NC}"
 
-# --- DUAL .CSV BACKUP SHADOW & SCHEMA VALIDATION ---
-NEEDS_FIX=0
-
-if [ ! -f "$CSV_PATH" ]; then
-    if [ -f "$BACKUP_PATH" ]; then
-        echo -e "${YELLOW}[!] data.csv is missing. Restoring instantly from shadow backup (backup-data.csv)...${NC}"
-        cp "$BACKUP_PATH" "$CSV_PATH"
-    else
-        echo -e "${YELLOW}[!] Both data.csv and backup-data.csv are missing. A fresh baseline will be generated.${NC}"
-        NEEDS_FIX=1
-    fi
-else
-    # Check if backup-data.csv is in the same folder; if not, create it with exact prompt requested
-    if [ ! -f "$BACKUP_PATH" ]; then
-        echo -e "${YELLOW}[!] data.csv has no backup, making backup now!${NC}"
-        cp "$CSV_PATH" "$BACKUP_PATH"
-    fi
-
-    # Check if headers match the expected schema via Python and verify file health
-    HEADER_CHECK=$(python3 -c "
-import csv, os
-try:
-    if os.path.getsize('$CSV_PATH') == 0:
-        print('DIFFERENT')
-        exit()
-    with open('$CSV_PATH', mode='r', encoding='utf-8', errors='ignore') as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        expected = ['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC']
-        actual = [h.strip().upper() for h in header[:7]]
-        if actual != expected:
-            print('DIFFERENT')
-        else:
-            print('OK')
-except Exception:
-    print('DIFFERENT')
-")
-    if [ "$HEADER_CHECK" = "DIFFERENT" ]; then
-        NEEDS_FIX=1
-    fi
-fi
-
-if [ "$NEEDS_FIX" -eq 1 ]; then
-    echo -e "${YELLOW}[!] data.csv seems to be different or missing required headers.${NC}"
-    echo -e "${YELLOW}[!] Do you like to fix it? (20 seconds before proceeding) y/n:${NC}"
-
-    FIX_CHOICE="y" # Default to auto-fix on timeout
-    for i in {20..1}; do
-        echo -ne "\r[?] Proceeding in ${i}s [y/N]: "
-        read -t 1 -r response
-        if [ $? -eq 0 ]; then
-            if [[ "$response" =~ ^[Yy]$ ]]; then
-                FIX_CHOICE="y"
-            elif [[ "$response" =~ ^[Nn]$ ]]; then
-                FIX_CHOICE="n"
-            fi
-            break
-        fi
-    done
-    echo ""
-
-    if [[ "$FIX_CHOICE" =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}[*] Executing Database Recovery & Synchronization...${NC}"
-        python3 -c "
+# --- FIRST: CHECK AND FIX data.csv ---
+echo -e "${CYAN}[*] First: Checking and repairing data.csv and student records...${NC}"
+python3 -c "
 import csv, os
 
 file_path = '$CSV_PATH'
 backup_path = '$BACKUP_PATH'
-rows = []
 
-source_to_read = file_path
-if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-    source_to_read = file_path
-elif os.path.exists(backup_path) and os.path.getsize(backup_path) > 0:
-    source_to_read = backup_path
-
-if os.path.exists(source_to_read):
+def is_file_healthy(path):
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return False
     try:
-        with open(source_to_read, mode='r', encoding='utf-8', errors='ignore') as f:
+        with open(path, mode='r', encoding='utf-8', errors='ignore') as f:
+            reader = list(csv.reader(f))
+            if not reader or len(reader) == 0:
+                return False
+            header = [h.strip().upper() for h in reader[0]]
+            expected = ['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC']
+            if header[:7] != expected:
+                return False
+            # Validate rows for broken student records (missing barcode/ID)
+            for r in reader[1:]:
+                if not r or not any(r):
+                    continue
+                if len(r) < 1 or not r[0].strip():
+                    return False
+        return True
+    except Exception:
+        return False
+
+rows = []
+source_to_use = None
+
+if is_file_healthy(file_path):
+    source_to_use = file_path
+    print('[✓] data.csv is healthy.')
+elif is_file_healthy(backup_path):
+    source_to_use = backup_path
+    print('[!] data.csv is corrupted or missing. Recovering from healthy backup-data.csv...')
+else:
+    print('[!] Both data.csv and backup-data.csv require baseline generation.')
+    source_to_use = None
+
+if source_to_use:
+    try:
+        with open(source_to_use, mode='r', encoding='utf-8', errors='ignore') as f:
             reader = list(csv.reader(f))
             if len(reader) > 1:
                 header = [h.strip().upper() for h in reader[0]]
                 for r in reader[1:]:
-                    if not r or not any(r): continue
+                    if not r or not any(r):
+                        continue
                     row_dict = {header[i]: r[i] for i in range(min(len(header), len(r)))}
                     barcode = row_dict.get('BARCODE', row_dict.get('ID', ''))
                     name = row_dict.get('NAME', row_dict.get('STUDENT NAME', 'UNKNOWN STUDENT'))
-                    if not barcode:
+
+                    # Filter out broken student records missing a valid barcode
+                    if not barcode or not barcode.strip():
+                        print(f'[!] Filtering out broken student record: {r}')
                         continue
+
                     grade = row_dict.get('GRADE', 'GRADE 12')
                     section = row_dict.get('SECTION', 'ICT-SIMEON')
                     access = row_dict.get('ACCESS', 'REGULAR')
                     color = row_dict.get('COLOR', '#059669')
                     ntfy = row_dict.get('NTFY_TOPIC', 'None')
-                    rows.append([barcode, name, grade, section, access, color, ntfy])
+                    rows.append([barcode.strip(), name.strip(), grade.strip(), section.strip(), access.strip(), color.strip(), ntfy.strip()])
     except Exception as e:
         print(f'[!] Error parsing data source: {e}')
 
-for target in [file_path, backup_path]:
-    with open(target, mode='w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC'])
-        if rows:
-            writer.writerows(rows)
+# Write verified and cleaned data to data.csv first
+with open(file_path, mode='w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['BARCODE', 'NAME', 'GRADE', 'SECTION', 'ACCESS', 'COLOR', 'NTFY_TOPIC'])
+    if rows:
+        writer.writerows(rows)
 
-print('${GREEN}[✓] data.csv fixed and dual backup synchronized successfully!${NC}')
+print('[✓] First: data.csv check and fix completed successfully.')
 "
-    else
-        echo -e "${RED}[!] Skipping fix. Proceeding with existing data.csv...${NC}"
-    fi
+
+# --- SECOND: SYNC BACKUP ---
+echo -e "${CYAN}[*] Second: Synchronizing verified data.csv to backup-data.csv...${NC}"
+if [ -f "$CSV_PATH" ]; then
+    cp "$CSV_PATH" "$BACKUP_PATH"
+    echo -e "${GREEN}[✓] Second: backup-data.csv successfully synchronized with clean data.csv!${NC}"
 else
-    echo -e "${GREEN}[✓] data.csv schema is valid and synchronized with backup.${NC}"
+    echo -e "${RED}[!] Error: data.csv not found for synchronization.${NC}"
+    exit 1
 fi
 
 # --- STEP 3: START FLASK ---

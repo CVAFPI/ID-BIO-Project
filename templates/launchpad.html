@@ -49,7 +49,7 @@
             max-width: 960px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
             position: relative;
             z-index: 1;
         }
@@ -61,7 +61,7 @@
             border: 1px solid var(--border);
             border-top: 2px solid var(--accent);
             border-radius: 20px;
-            padding: 24px 32px;
+            padding: 20px 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -98,11 +98,11 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .header-title-group h1 {
-            font-size: 1.85rem;
+            font-size: 1.7rem;
             font-weight: 800;
             letter-spacing: 0.8px;
             color: #ffffff;
@@ -111,7 +111,7 @@
 
         .header-title-group p {
             color: var(--muted);
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             font-weight: 500;
         }
 
@@ -124,7 +124,7 @@
             color: var(--green);
             font-size: 0.75rem;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 3px 10px;
             border-radius: 20px;
             margin-top: 4px;
             align-self: center;
@@ -149,19 +149,19 @@
         .grid-menu {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            gap: 14px;
         }
 
         .menu-card {
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 20px 24px;
+            padding: 16px 20px;
             text-decoration: none;
             color: var(--text);
             display: flex;
             align-items: flex-start;
-            gap: 16px;
+            gap: 14px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             position: relative;
@@ -170,14 +170,14 @@
 
         .menu-card:hover {
             border-color: var(--accent);
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             background: var(--panel-hover);
             box-shadow: 0 8px 25px -5px var(--accent-glow);
         }
 
         .icon-wrapper {
-            width: 46px;
-            height: 46px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
             background: rgba(37, 99, 235, 0.12);
             border: 1px solid rgba(37, 99, 235, 0.25);
@@ -198,19 +198,19 @@
         .card-content {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
 
         .card-content h2 {
-            font-size: 1.15rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: #fff;
         }
 
         .card-content p {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--muted);
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         /* Warning & Danger Variations */
@@ -241,6 +241,213 @@
             background: var(--red);
             color: #fff;
         }
+
+        /* Settings Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal-container {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        @keyframes modalPop {
+            0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #162238;
+        }
+
+        .modal-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close-modal {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-close-modal:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .setting-item {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .setting-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .setting-desc {
+            font-size: 0.8rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        /* Switch Toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: var(--border);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .setting-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .setting-input-group.active {
+            display: flex;
+        }
+
+        .setting-input-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .setting-textbox {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .setting-textbox:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            background: #162238;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-modal-action {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-modal-action:hover { background: #1d4ed8; }
+        .btn-modal-secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .btn-modal-secondary:hover { background: rgba(255,255,255,0.05); color: #fff; }
 
         /* System Footer Bar */
         .footer-bar {
@@ -333,6 +540,17 @@
                 </div>
             </a>
 
+            <!-- Settings Menu Trigger -->
+            <div class="menu-card" onclick="openSettingsModal()">
+                <div class="icon-wrapper">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <div class="card-content">
+                    <h2>System Settings</h2>
+                    <p>Configure scanner camera feeds, parent notifications, office security alerts, and blocked camera detectors.</p>
+                </div>
+            </div>
+
             <!-- System Reboot Control -->
             <div class="menu-card warning" onclick="rebootSystem()">
                 <div class="icon-wrapper">
@@ -356,7 +574,7 @@
             </div>
 
             <!-- Exit Kiosk Control -->
-            <div class="menu-card danger" onclick="exitKiosk()">
+            <div class="menu-card danger" onclick="exitKiosk()" style="grid-column: span 2;">
                 <div class="icon-wrapper">
                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 </div>
@@ -376,6 +594,100 @@
 
     </div>
 
+    <!-- SETTINGS MODAL DIALOG -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    System Configuration & Settings
+                </h2>
+                <button class="btn-close-modal" onclick="closeSettingsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- 1. Photo on Scan -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Photo on Scan</span>
+                            <span class="setting-desc">Enable live camera preview feed in the attendance scanner interface during student scan events.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="settingCamera">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. Notification Topic for Parents -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Notification Topic for Parents</span>
+                            <span class="setting-desc">Toggling this switch controls parental push alerts when students scan in or out.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="settingParents" onchange="handleParentToggle(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Send Alerts to Office -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Send Alerts to Office?</span>
+                            <span class="setting-desc">Forward operational security warnings and emergency codes to the main office webhook.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="settingOfficeAlerts" onchange="toggleOfficeTextbox(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-input-group" id="officeTopicGroup">
+                        <label for="settingOfficeTopic">Notification Topic for Office</label>
+                        <input type="text" id="settingOfficeTopic" class="setting-textbox" placeholder="e.g. cva_office_security_alerts">
+                    </div>
+                </div>
+
+                <!-- 4. Blocked Camera Alerts -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Blocked Camera Alerts</span>
+                            <span class="setting-desc">Automatically detect if the scanner camera is covered or blacked out and alert the office.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="settingBlockedCamera">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 5. Warns Student when blocking Camera -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-title">Warns Student when blocking Camera</span>
+                            <span class="setting-desc">Display warning overlay text on the camera view: "PLEASE UNBLOCK CAMERA, THIS WILL ALERT OFFICE".</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="settingStudentWarn" checked disabled>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-modal-action btn-modal-secondary" onclick="closeSettingsModal()">Cancel</button>
+                <button class="btn-modal-action" onclick="saveSettings()">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Real-Time PST Date & Clock Display
         function updateClock() {
@@ -391,6 +703,79 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        // Settings Modal Handlers
+        async function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('settingCamera').checked = !!data.camera_enabled;
+                    document.getElementById('settingParents').checked = !!data.parent_notifications_enabled;
+                    document.getElementById('settingOfficeAlerts').checked = !!data.office_alerts_enabled;
+                    document.getElementById('settingOfficeTopic').value = data.office_ntfy_topic || '';
+                    document.getElementById('settingBlockedCamera').checked = !!data.blocked_camera_alerts_enabled;
+
+                    if (data.office_alerts_enabled) {
+                        document.getElementById('officeTopicGroup').classList.add('active');
+                    } else {
+                        document.getElementById('officeTopicGroup').classList.remove('active');
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function handleParentToggle(checkbox) {
+            if (!checkbox.checked) {
+                const confirmed = confirm("THIS WILL TURN OFF ALL NOTIFICATION TO THE PARENTS WHEN THEYRE CHILD SCANS, Are you sure?");
+                if (!confirmed) {
+                    checkbox.checked = true;
+                }
+            }
+        }
+
+        function toggleOfficeTextbox(checkbox) {
+            const group = document.getElementById('officeTopicGroup');
+            if (checkbox.checked) {
+                group.classList.add('active');
+            } else {
+                group.classList.remove('active');
+            }
+        }
+
+        async function saveSettings() {
+            const payload = {
+                camera_enabled: document.getElementById('settingCamera').checked,
+                parent_notifications_enabled: document.getElementById('settingParents').checked,
+                office_alerts_enabled: document.getElementById('settingOfficeAlerts').checked,
+                office_ntfy_topic: document.getElementById('settingOfficeTopic').value.trim(),
+                blocked_camera_alerts_enabled: document.getElementById('settingBlockedCamera').checked
+            };
+
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert("System settings saved successfully.");
+                    closeSettingsModal();
+                } else {
+                    alert("Failed to save settings.");
+                }
+            } catch (err) {
+                console.error("Save settings error:", err);
+                alert("An error occurred while saving settings.");
+            }
+        }
 
         // System Control API Handlers
         async function rebootSystem() {

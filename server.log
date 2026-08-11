@@ -3,14 +3,15 @@
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
- * Running on http://192.168.100.72:5000
+ * Running on http://192.168.100.126:5000
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 101-618-693
-127.0.0.1 - - [05/Aug/2026 14:40:48] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [05/Aug/2026 14:40:53] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [05/Aug/2026 14:40:53] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [05/Aug/2026 14:40:53] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [05/Aug/2026 14:40:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-127.0.0.1 - - [05/Aug/2026 14:40:59] "POST /api/exit HTTP/1.1" 200 -
+ * Debugger PIN: 233-105-214
+127.0.0.1 - - [11/Aug/2026 21:49:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 21:49:05] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 21:49:05] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 21:49:05] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 21:49:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [11/Aug/2026 21:49:08] "GET /api/settings HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 21:50:28] "POST /api/system/shutdown HTTP/1.1" 200 -

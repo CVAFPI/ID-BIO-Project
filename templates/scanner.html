@@ -27,14 +27,14 @@
 
         .main-container { display: flex; flex: 1; padding: 16px; gap: 16px; overflow: hidden; }
 
-        /* Left Column: Scanner & Current Card */
-        .left-column { width: 380px; display: flex; flex-direction: column; gap: 16px; }
+        /* Left Column: Scanner, Current Card & Camera Feed */
+        .left-column { width: 380px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 
         .scan-box-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
         .scan-box-panel label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block; margin-bottom: 8px; }
         .barcode-input { width: 100%; background: #0f172a; border: 2px solid var(--accent); border-radius: 6px; padding: 12px; color: #fff; font-size: 1rem; outline: none; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 
-        .card-panel { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
+        .card-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; min-height: 220px; }
         .scan-status-text { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
 
         .student-name { font-size: 1.3rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px; line-height: 1.2; text-transform: uppercase; }
@@ -56,6 +56,14 @@
         .search-notice-sub { font-size: 0.8rem; color: var(--muted); line-height: 1.4; max-width: 280px; }
         .btn-resume-scan { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; margin-top: 8px; }
         .btn-resume-scan:hover { background: #1d4ed8; }
+
+        /* Camera Feed Preview Panel */
+        .camera-preview-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: none; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
+        .camera-preview-panel label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 8px; width: 100%; text-align: left; }
+        .video-container { width: 100%; height: 160px; background: #000; border-radius: 6px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .camera-warning-overlay { position: absolute; inset: 0; background: rgba(220, 38, 38, 0.85); color: #fff; font-weight: 800; font-size: 0.85rem; text-align: center; display: flex; align-items: center; justify-content: center; padding: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 10; }
+        .camera-warning-overlay.active { opacity: 1; }
 
         /* Right Column: Today's Logs Table */
         .right-column { flex: 1; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -87,7 +95,7 @@
     </div>
 
     <div class="main-container">
-        <!-- Left: Scanner & Active Card -->
+        <!-- Left: Scanner, Active Card & Optional Camera View -->
         <div class="left-column">
             <div class="scan-box-panel">
                 <label for="barcodeField">Scan Barcode</label>
@@ -121,6 +129,15 @@
                     <button class="btn-resume-scan" onclick="exitSearchMode()">▶ Resume Barcode Scanning</button>
                 </div>
             </div>
+
+            <!-- Live Camera Preview & Block Detection Panel -->
+            <div class="camera-preview-panel" id="cameraPreviewPanel">
+                <label>Live Camera Security Feed</label>
+                <div class="video-container">
+                    <video id="webcamVideo" autoplay playsinline muted></video>
+                    <div class="camera-warning-overlay" id="cameraWarningOverlay">PLEASE UNBLOCK CAMERA, THIS WILL ALERT OFFICE</div>
+                </div>
+            </div>
         </div>
 
         <!-- Right: Realtime Today's Logs Table -->
@@ -149,10 +166,15 @@
         </div>
     </div>
 
+    <!-- Hidden canvas for photo capture & black screen analysis -->
+    <canvas id="analysisCanvas" style="display:none;"></canvas>
+
     <script>
         let todayLogs = [];
         let searchTimerInterval = null;
         let searchTimeLeft = 15;
+        let isCameraBlocked = false;
+        let blockedAlertTimer = null;
 
         const barcodeInput = document.getElementById('barcodeField');
         const searchInput = document.getElementById('tableSearch');
@@ -167,6 +189,97 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        // Initialize Camera & Black Screen Inspection if Enabled
+        async function initCameraFeed() {
+            try {
+                const res = await fetch('/api/settings');
+                const settings = await res.json();
+
+                if (settings.camera_enabled) {
+                    document.getElementById('cameraPreviewPanel').style.display = 'flex';
+                    const video = document.getElementById('webcamVideo');
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+                    video.srcObject = stream;
+
+                    // Start analyzing frames for black screen / camera blockage
+                    setInterval(() => analyzeCameraFeed(), 2000);
+                }
+            } catch (err) {
+                console.error("Camera initialization error:", err);
+            }
+        }
+
+        function analyzeCameraFeed() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('analysisCanvas');
+            const overlay = document.getElementById('cameraWarningOverlay');
+            if (!video || video.paused || video.ended) return;
+
+            canvas.width = 160;
+            canvas.height = 120;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let totalBrightness = 0;
+            let pixelCount = frameData.length / 4;
+
+            for (let i = 0; i < frameData.length; i += 4) {
+                const r = frameData[i];
+                const g = frameData[i+1];
+                const b = frameData[i+2];
+                totalBrightness += (0.299 * r + 0.587 * g + 0.114 * b);
+            }
+
+            const avgBrightness = totalBrightness / pixelCount;
+            const DARK_THRESHOLD = 15;
+
+            if (avgBrightness < DARK_THRESHOLD) {
+                overlay.classList.add('active');
+                if (!isCameraBlocked) {
+                    isCameraBlocked = true;
+                    sendBlockedAlert();
+                    if (blockedAlertTimer) clearInterval(blockedAlertTimer);
+                    blockedAlertTimer = setInterval(() => {
+                        if (isCameraBlocked) {
+                            sendBlockedAlert();
+                        } else {
+                            clearInterval(blockedAlertTimer);
+                        }
+                    }, 60000);
+                }
+            } else {
+                overlay.classList.remove('active');
+                if (isCameraBlocked) {
+                    isCameraBlocked = false;
+                    if (blockedAlertTimer) clearInterval(blockedAlertTimer);
+                }
+            }
+        }
+
+        async function sendBlockedAlert() {
+            try {
+                let imageBase64 = null;
+                const video = document.getElementById('webcamVideo');
+                const canvas = document.getElementById('analysisCanvas');
+                if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth || 320;
+                    canvas.height = video.videoHeight || 240;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                }
+
+                await fetch('/api/camera/blocked', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'blocked', image: imageBase64 })
+                });
+            } catch (err) {
+                console.error("Failed to send blocked camera alert:", err);
+            }
+        }
 
         // Intelligent Auto-Focus Behavior
         document.addEventListener('click', (e) => {
@@ -221,25 +334,24 @@
 
         async function processScan(barcode) {
             try {
+                // Capture snapshot from webcam to send with scan request
+                let imageBase64 = null;
+                const video = document.getElementById('webcamVideo');
+                const canvas = document.getElementById('analysisCanvas');
+                if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth || 320;
+                    canvas.height = video.videoHeight || 240;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                }
+
                 const res = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ barcode })
+                    body: JSON.stringify({ barcode, image: imageBase64 })
                 });
                 const result = await res.json();
-
-                // --- SYSTEM COMMAND HANDLER ---
-                if (result.status === 'command') {
-                    if (result.action === 'launchpad') {
-                        window.location.href = 'launchpad.html';
-                    } else if (result.action === 'close') {
-                        window.close();
-                    } else if (result.action === 'shutdown') {
-                        console.log("System shutting down...");
-                    }
-                    return;
-                }
-                // ------------------------------
 
                 if (result.status === 'success') {
                     updateActiveCard(result.data);
@@ -255,7 +367,6 @@
             document.getElementById('cardName').innerText = data.name;
             document.getElementById('cardBarcode').innerText = `Barcode: ${data.barcode}`;
 
-            // Render Visual Barcode using JsBarcode
             if (data.barcode && data.barcode !== '--') {
                 try {
                     JsBarcode("#barcodeSvg", data.barcode, {
@@ -329,6 +440,7 @@
         }
 
         fetchLogs();
+        initCameraFeed();
     </script>
 </body>
 </html>

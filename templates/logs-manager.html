@@ -57,6 +57,15 @@
         .btn-action.secondary { background: #334155; }
         .btn-action.secondary:hover { background: #475569; }
 
+        /* Toggle Switch */
+        .switch-wrapper { display: flex; align-items: center; gap: 8px; background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; }
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 20px; border: 1px solid var(--border); }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
         /* Table View */
         .table-container { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
@@ -139,6 +148,14 @@
                 </div>
 
                 <div class="toolbar-group">
+                    <!-- Snapshot Preview Toggle Switch (Default Off) -->
+                    <div class="switch-wrapper" title="Enable clickable barcodes to view camera snapshots">
+                        <span style="font-size: 0.75rem; color: var(--muted); font-weight: 700;">SNAPSHOTS:</span>
+                        <label class="switch">
+                            <input type="checkbox" id="snapshotToggle" onchange="toggleSnapshotMode()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                     <button class="btn-action secondary" onclick="loadSelectedLogFile()">🔄 Refresh</button>
                     <button class="btn-action" onclick="exportCSV()">📥 Export CSV</button>
                 </div>
@@ -165,8 +182,24 @@
         </div>
     </div>
 
+    <!-- Snapshot Modal -->
+    <div id="imageModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; flex-direction: column;">
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-width: 480px; width: 90%; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="modalTitle" style="font-size: 0.95rem; color: #fff;">Scan Snapshot</h3>
+                <button onclick="closeImageModal()" style="background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer;">✕</button>
+            </div>
+            <div style="text-align: center; background: #0f172a; border-radius: 6px; padding: 10px; min-height: 220px; display: flex; justify-content: center; align-items: center;">
+                <img id="modalImage" src="" alt="Snapshot" style="max-width: 100%; max-height: 320px; border-radius: 4px; display: none;">
+                <span id="modalLoading" style="color: var(--muted); font-size: 0.85rem;">Loading snapshot...</span>
+            </div>
+            <div id="modalInfo" style="font-size: 0.75rem; color: var(--muted); text-align: center;"></div>
+        </div>
+    </div>
+
     <script>
         let currentLogsData = [];
+        let snapshotPreviewEnabled = false;
 
         // Clock Update
         function updateClock() {
@@ -178,6 +211,11 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        function toggleSnapshotMode() {
+            snapshotPreviewEnabled = document.getElementById('snapshotToggle').checked;
+            filterLogs();
+        }
 
         // Load list of log files from backend
         async function fetchLogFileList() {
@@ -348,12 +386,18 @@
                 const section = row[4] || 'N/A';
                 const access = row[5] || 'REGULAR';
                 const color = row[6] || '#059669';
+                const imageId = row[7] || ''; // ID-MATCHER column
+
+                let barcodeCellContent = `<span style="font-family: monospace; color: #38bdf8; font-weight: 600;">${barcode}</span>`;
+                if (snapshotPreviewEnabled && imageId) {
+                    barcodeCellContent = `<span style="font-family: monospace; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline;" title="Click to view snapshot" onclick="openSnapshotModal('${time}', '${barcode}', '${name}', '${imageId}')">${barcode} 📷</span>`;
+                }
 
                 tbody.innerHTML += `
                     <tr>
                         <td style="color: var(--muted); font-size: 0.75rem;">${data.length - index}</td>
                         <td style="font-family: monospace; color: var(--muted);">${time}</td>
-                        <td style="font-family: monospace; color: #38bdf8; font-weight: 600;">${barcode}</td>
+                        <td>${barcodeCellContent}</td>
                         <td style="font-weight: 700; color: #fff;">${name}</td>
                         <td>${grade}</td>
                         <td>${section}</td>
@@ -363,13 +407,55 @@
             });
         }
 
+        async function openSnapshotModal(timestampStr, barcode, name, imageId) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const modalLoading = document.getElementById('modalLoading');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalInfo = document.getElementById('modalInfo');
+
+            modal.style.display = 'flex';
+            modalImg.style.display = 'none';
+            modalLoading.style.display = 'block';
+            modalLoading.innerText = 'Loading snapshot...';
+            modalTitle.innerText = `Snapshot: ${name} (${barcode})`;
+            modalInfo.innerText = `Timestamp: ${timestampStr}`;
+
+            const activeFile = document.getElementById('kpiActiveFile').innerText;
+
+            try {
+                const res = await fetch(`/api/logs/snapshot?date=${encodeURIComponent(activeFile)}&id=${encodeURIComponent(imageId)}`);
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    modalImg.src = imageUrl;
+                    modalLoading.style.display = 'none';
+                    modalImg.style.display = 'block';
+                } else {
+                    modalLoading.innerText = 'Snapshot image not found for this scan.';
+                }
+            } catch (err) {
+                console.error("Failed to load snapshot:", err);
+                modalLoading.innerText = 'Failed to load snapshot image.';
+            }
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            const modalImg = document.getElementById('modalImage');
+            if (modalImg.src) {
+                URL.revokeObjectURL(modalImg.src);
+                modalImg.src = '';
+            }
+        }
+
         function exportCSV() {
             if (currentLogsData.length === 0) {
                 alert("No logs to export!");
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Barcode,Name,Grade,Section,Access,Color\n";
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Barcode,Name,Grade,Section,Access,Color,ID-MATCHER\n";
             currentLogsData.forEach(row => {
                 csvContent += row.map(field => `"${field}"`).join(",") + "\n";
             });

@@ -1,0 +1,7 @@
+{
+    "camera_enabled": true,
+    "parent_notifications_enabled": true,
+    "office_alerts_enabled": true,
+    "office_ntfy_topic": "CVAFPI-Office-Test",
+    "blocked_camera_alerts_enabled": true
+}
