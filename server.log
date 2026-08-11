@@ -7,11 +7,52 @@
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 233-105-214
-127.0.0.1 - - [11/Aug/2026 21:49:01] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [11/Aug/2026 21:49:05] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [11/Aug/2026 21:49:05] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [11/Aug/2026 21:49:05] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
-127.0.0.1 - - [11/Aug/2026 21:49:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-127.0.0.1 - - [11/Aug/2026 21:49:08] "GET /api/settings HTTP/1.1" 200 -
-127.0.0.1 - - [11/Aug/2026 21:50:28] "POST /api/system/shutdown HTTP/1.1" 200 -
+ * Debugger PIN: 133-514-782
+127.0.0.1 - - [11/Aug/2026 22:59:26] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:29] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:29] "GET /static/CVAFPI-LOGO.png HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:29] "GET /static/Debian%2013%20Logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:30] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+127.0.0.1 - - [11/Aug/2026 22:59:34] "GET /manager.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:34] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 22:59:34] "GET /api/data HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:47] "GET /launchpad.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:47] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 22:59:47] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 22:59:49] "GET /scanner.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:49] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 22:59:50] "GET /api/settings HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 22:59:50] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:05] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:27] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:33] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:47] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:53] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:02:57] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:03:03] "POST /api/scan HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:03:03] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:03] "GET /logs-manager.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:03] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:04:03] "GET /api/logs/list HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:03] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:08] "GET /api/logs/snapshot?date=Today&id=I7v5jg.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:16] "GET /launchpad.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:16] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:04:16] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:04:21] "GET /scanner.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:21] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:04:21] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:21] "GET /api/settings HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:04:24] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:00] "POST /api/camera/blocked HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:13] "POST /api/scan HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:13] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:29] "GET /logs-manager.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:29] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:05:29] "GET /api/logs/list HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:29] "GET /api/logs/today HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:34] "GET /api/logs/snapshot?date=Today&id=EU83XB.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:49] "GET /launchpad.html HTTP/1.1" 200 -
+127.0.0.1 - - [11/Aug/2026 23:05:49] "[36mGET /static/CVAFPI-LOGO.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:05:49] "[36mGET /static/Debian%2013%20Logo.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Aug/2026 23:05:53] "POST /api/exit HTTP/1.1" 200 -
