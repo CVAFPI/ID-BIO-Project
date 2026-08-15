@@ -1,4 +1,4 @@
-<img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION.png?raw=true" alt="Repository Banner" width="100%">
+<img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION%20(1).png?raw=true" alt="Repository Banner" width="100%">
 
 
 # 🛡️ CVAFPI Identification System v2.0 — "The Setting Update"
