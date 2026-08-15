@@ -1,3 +1,6 @@
+<img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION.png?raw=true" alt="Repository Banner" width="100%">
+
+
 # 🛡️ CVAFPI Identification System v2.0 — "The Setting Update"
 
 A production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
