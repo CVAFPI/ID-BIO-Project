@@ -78,7 +78,7 @@ To ensure high-speed barcode processing, stable UI rendering, and continuous 24/
 > Keep secret strings completely private to protect student data and secure parent/office alert channels.
 
 > **Do not use wireless connections for server hardware.**
-> Always connect server kiosks via a hardwired Ethernet cable rather than Wi-Fi to guarantee stability and zero dropped attendance packets.
+> Yes WIFI will work aslong is stable but for 24/7 or long use of this software use ETHERNET (wired) to ensure NTFY works and clocks are synced always
 
 ---
 
