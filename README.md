@@ -8,7 +8,8 @@ A production-ready Linux kiosk solution and Flask REST API backend engineered fo
 Built specifically for educational institutions under **Department of Education (DepEd)** standards.
 
 **Repository:** [github.com/CVAFPI/ID-BIO-Project](https://github.com/CVAFPI/ID-BIO-Project)
-**DEBIAN KDE ISO** [Debian KDE download](https://cdimage.debian.org/cdimage/weekly-live-builds/amd64/iso-hybrid/debian-live-testing-amd64-kde.iso)
+
+**DEBIAN KDE ISO** [Debian KDE download](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-13.6.0-amd64-kde.iso)
 
 ---
 
