@@ -181,8 +181,8 @@ ID-BIO-Project/
 ├── scanner.html                      # Live attendance registry scanner interface
 ├── manager.html                      # Database manager interface
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
-├── CVAFPI-LOGO.png                   # Primary CVA institution logo asset
 ├── README.md                         # Instructions and specifications
+├──LICENSE it's the official MIT open source license of CVAIDSYS
 └── server.log                        # Auto-generated Flask server log
 ```
 
