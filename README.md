@@ -182,7 +182,7 @@ ID-BIO-Project/
 ├── manager.html                      # Database manager interface
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
 ├── README.md                         # Instructions and specifications
-├──LICENSE                            # it's the official MIT open source license of CVAIDSYS
+├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
 └── server.log                        # Auto-generated Flask server log
 ```
 
