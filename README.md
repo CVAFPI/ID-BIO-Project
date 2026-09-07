@@ -276,6 +276,7 @@ Free setup assistance and customization are available if you need help modifying
 - **Email assistance:** [allthingslinux2026@gmail.com](mailto:allthingslinux2026@gmail.com) — please attach your school logo (PNG/JPEG) and requested modifications.
 - **GitHub Issues:** Open a ticket directly on the [GitHub Issues page](https://github.com/CVAFPI/ID-BIO-Project/issues).
 
+(Note) In future update there will be a fork for schools for easy customizability, easy uploads and many more
 ---
 
 <p align="center">
