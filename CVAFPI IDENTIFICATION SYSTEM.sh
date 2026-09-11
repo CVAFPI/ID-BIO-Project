@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v1.5
+#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v2.0
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -22,7 +22,7 @@ clear
 echo -e "${CYAN}"
 echo "======================================================================"
 echo "                       CVAFPI IDENTIFICATION SYSTEM                   "
-echo "                 Kiosk Engine Auto-Launcher (v1.5 Beta)               "
+echo "                Kiosk Engine Auto-Launcher (v2.0 stable)              "
 echo "======================================================================"
 echo -e "${NC}"
 
