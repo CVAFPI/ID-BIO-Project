@@ -62,7 +62,7 @@ The `SQL-IDBIOSYS` branch uses a local SQLite database as the system of record. 
 
 ### Startup and Migration Behavior
 
-On startup, the application automatically creates the database and tables when they do not exist. It then imports legacy student data from `data.csv` and `backup-data.csv`, and imports existing daily attendance CSV files from `CVA_Database/logs_YYYY-MM-DD/` when the attendance table is empty. These source files are retained and are not modified by the migration.
+On startup, the application automatically creates the SQLite database and tables when they do not exist. SQLite is the system of record for students, attendance, and application settings. The old root-level student CSV files have been retired; use the **CSV to SQLite** page for an intentional, reviewed import when receiving a new CSV file.
 
 After migration, use the Database Manager or the **CSV to SQLite** page for changes. Do not edit CSV files or the SQLite database while the server is running.
 
@@ -240,8 +240,6 @@ ID-BIO-Project/
 ├── id_bio.desktop                    # KDE desktop shortcut entry
 ├── Startup                           # Autostart boot script trigger
 ├── CVA_Database/cva.sqlite3          # Local SQLite student, attendance, and settings database
-├── data.csv                          # Legacy one-time migration source
-├── backup-data.csv                   # Legacy fallback migration source
 ├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
 ├── static/kiosk-dialog.css           # Theme-aware in-page security dialog styles
 ├── static/kiosk-dialog.js            # Alert, confirmation, PIN prompt, and keypad behavior

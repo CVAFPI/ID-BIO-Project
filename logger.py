@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 DATABASE_FILE = os.path.join(DB_DIR, 'cva.sqlite3')
-DATA_CSV = os.path.join(BASE_DIR, 'data.csv')
-BACKUP_CSV = os.path.join(BASE_DIR, 'backup-data.csv')
 
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
@@ -78,50 +76,6 @@ def save_app_settings(settings):
                 VALUES (?, ?)
                 ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value
             ''', (key, str(value)))
-
-
-def migrate_csv_data():
-    """Import legacy CSV data once without removing the original files."""
-    with get_connection() as connection:
-        sources = [source for source in (DATA_CSV, BACKUP_CSV) if os.path.exists(source)]
-        for source in sources:
-            with open(source, 'r', encoding='utf-8', errors='ignore') as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    if not row or row[0].strip().upper() == 'BARCODE':
-                        continue
-                    values = [value.strip() for value in row[:7]]
-                    values += [''] * (7 - len(values))
-                    if values[0]:
-                        connection.execute('''
-                            INSERT OR IGNORE INTO students
-                            (barcode, name, grade, section, access, color, topic)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                            values[0], values[1], values[2], values[3],
-                            values[4] or 'REGULAR', values[5] or '#059669',
-                            values[6] or 'None'
-                        ))
-
-        attendance_count = connection.execute(
-            'SELECT COUNT(*) FROM attendance'
-        ).fetchone()[0]
-        if attendance_count == 0:
-            for folder_name in os.listdir(DB_DIR):
-                if not folder_name.startswith('logs_'):
-                    continue
-                file_path = os.path.join(DB_DIR, folder_name, f'{folder_name}.csv')
-                if not os.path.exists(file_path):
-                    continue
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                    for row in csv.reader(file):
-                        if not row or row[0].strip().upper() == 'TIMESTAMP' or len(row) < 8:
-                            continue
-                        connection.execute('''
-                            INSERT OR IGNORE INTO attendance
-                            (timestamp, barcode, name, grade, section, access, color, image_id)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', tuple(value.strip() for value in row[:8]))
 
 
 def parse_student_csv(file_object):
@@ -228,10 +182,9 @@ def cleanup_old_logs(days=7):
             except ValueError:
                 pass # Skip if folder name format doesn't match date
 
-# Run cleanup and initialize the local database automatically on startup.
+# Run cleanup and initialize the local SQLite database automatically on startup.
 cleanup_old_logs(7)
 initialize_database()
-migrate_csv_data()
 
 def generate_unique_id(existing_ids):
     while True:
