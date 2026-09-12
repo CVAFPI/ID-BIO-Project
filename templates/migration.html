@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVA · CSV to SQLite</title>
+    <style>
+        :root { --ink:#e8eef7; --muted:#91a0b5; --canvas:#10161f; --surface:#18212c; --surface-2:#202c3a; --line:#2d3b4b; --blue:#4da3ff; --blue-soft:rgba(77,163,255,.13); --mint:#48d6aa; --amber:#f3b64c; --red:#f27676; }
+        * { box-sizing:border-box; }
+        body { min-height:100vh; margin:0; color:var(--ink); background:var(--canvas); font-family:"Trebuchet MS","Segoe UI",sans-serif; }
+        body[data-theme="light"] { --ink:#17202b; --muted:#5f6f82; --canvas:#eef3f7; --surface:#fff; --surface-2:#e7eef5; --line:#cbd6e2; --blue-soft:rgba(37,99,235,.1); }
+        body[data-theme="grassy"] { --canvas:#101b16; --surface:#17271f; --surface-2:#20372a; --line:#345441; --blue:#71d39d; --blue-soft:rgba(113,211,157,.13); }
+        body[data-theme="ocean"] { --canvas:#071923; --surface:#0e2633; --surface-2:#153747; --line:#285369; --blue:#5cd3e8; --blue-soft:rgba(92,211,232,.13); }
+        body[data-theme="sunset"] { --canvas:#21171a; --surface:#302126; --surface-2:#412b2e; --line:#644247; --blue:#ffad72; --blue-soft:rgba(255,173,114,.14); }
+        .shell { width:min(1040px,calc(100% - 40px)); margin:auto; padding:26px 0 30px; }
+        .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+        .brand { display:flex; align-items:center; gap:12px; }
+        .brand img { width:40px; height:40px; padding:5px; border:1px solid var(--line); border-radius:10px; background:#111a24; object-fit:contain; }
+        .eyebrow { color:var(--amber); font-size:.68rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+        h1 { margin:3px 0 0; font-size:1.12rem; }
+        .top-actions { display:flex; align-items:center; gap:15px; }
+        .clock { color:var(--muted); font:600 .76rem monospace; }
+        .nav { padding:8px 13px; border:1px solid var(--line); border-radius:6px; color:var(--ink); background:var(--surface); text-decoration:none; font-size:.78rem; font-weight:700; }
+        .intro { display:flex; justify-content:space-between; gap:25px; padding:34px 0 25px; }
+        .intro h2 { max-width:520px; margin:0 0 9px; font-size:clamp(1.65rem,3vw,2.25rem); line-height:1.08; letter-spacing:-.035em; }
+        .intro p { max-width:610px; margin:0; color:var(--muted); line-height:1.6; font-size:.9rem; }
+        .database-pill { align-self:flex-end; min-width:165px; padding:11px 13px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+        .database-pill span { display:block; color:var(--muted); font-size:.67rem; text-transform:uppercase; letter-spacing:.1em; }
+        .database-pill strong { display:block; margin-top:5px; color:var(--mint); font:700 .8rem monospace; }
+        .workspace { display:grid; grid-template-columns:250px minmax(0,1fr); gap:14px; align-items:start; }
+        .steps,.card { border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+        .steps { padding:9px; }
+        .step { display:flex; gap:11px; align-items:flex-start; padding:14px 11px; border-radius:7px; color:var(--muted); }
+        .step + .step { margin-top:4px; }
+        .step-number { display:grid; place-items:center; width:25px; height:25px; flex-shrink:0; border:1px solid var(--line); border-radius:50%; color:var(--muted); font:700 .75rem monospace; }
+        .step strong { display:block; color:var(--ink); font-size:.8rem; }
+        .step small { display:block; margin-top:4px; line-height:1.35; font-size:.7rem; }
+        .step.active { background:var(--blue-soft); color:#c8e2ff; }
+        .step.active .step-number { border-color:var(--blue); color:var(--blue); }
+        .step.done .step-number { border-color:var(--mint); color:var(--mint); }
+        .card { padding:22px; }
+        .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+        .card-head h3 { margin:0; font-size:1rem; }
+        .card-head p { margin:5px 0 0; color:var(--muted); font-size:.77rem; }
+        .file-picker { display:block; margin-top:20px; padding:28px 20px; border:1px dashed #596c83; border-radius:8px; background:#121b25; text-align:center; cursor:pointer; transition:.2s; }
+        .file-picker:hover,.file-picker.ready { border-color:var(--blue); background:#142337; }
+        .file-icon { width:42px; height:42px; display:grid; place-items:center; margin:0 auto 12px; border-radius:10px; color:var(--blue); background:var(--blue-soft); }
+        .file-icon svg { width:23px; height:23px; }
+        .file-picker strong { display:block; font-size:.9rem; }
+        .file-picker span { display:block; margin-top:5px; color:var(--muted); font-size:.75rem; }
+        .file-name { min-height:18px; margin-top:11px; color:#b9dcff; font:600 .75rem monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        #csvFile { display:none; }
+        .mode { display:flex; align-items:flex-start; gap:10px; margin-top:15px; padding:13px; border:1px solid var(--line); border-radius:7px; background:#141d27; }
+        .mode input { margin-top:3px; accent-color:var(--blue); }
+        .mode label { font-size:.8rem; font-weight:700; }
+        .mode small { display:block; margin-top:4px; color:var(--muted); font-size:.72rem; font-weight:400; line-height:1.4; }
+        .actions { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
+        button { padding:10px 14px; border:1px solid transparent; border-radius:6px; color:#fff; background:var(--blue); font-weight:700; cursor:pointer; }
+        button.secondary { border-color:var(--line); color:var(--muted); background:transparent; }
+        button:disabled { opacity:.45; cursor:not-allowed; }
+        .result { display:none; margin-top:18px; padding:16px; border:1px solid var(--line); border-radius:8px; background:#121a24; }
+        .result.visible { display:block; }
+        .result.success { border-color:rgba(72,214,170,.5); }
+        .result.error { border-color:rgba(242,118,118,.55); }
+        .result h4 { margin:0; color:var(--mint); font-size:.88rem; }
+        .result.error h4 { color:var(--red); }
+        .result-message { margin-top:5px; color:var(--muted); font-size:.78rem; line-height:1.45; }
+        .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:13px; }
+        .stat { padding:10px 7px; border-radius:6px; background:var(--surface-2); text-align:center; }
+        .stat strong { display:block; color:#b9dcff; font:700 1.15rem monospace; }
+        .stat span { display:block; margin-top:3px; color:var(--muted); font-size:.65rem; text-transform:uppercase; }
+        .sample { max-height:180px; overflow:auto; margin-top:13px; }
+        table { width:100%; border-collapse:collapse; font-size:.74rem; }
+        th,td { padding:8px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+        th { color:var(--muted); font-size:.65rem; text-transform:uppercase; }
+        .note { margin:17px 0 0; color:#718196; font-size:.72rem; line-height:1.5; }
+        @media (max-width:720px) { .intro { display:block; } .database-pill { display:inline-block; margin-top:18px; } .workspace { grid-template-columns:1fr; } .steps { display:grid; grid-template-columns:repeat(3,1fr); } .step { display:block; padding:11px 8px; } .step-number { margin-bottom:7px; } .step small { display:none; } }
+        @media (max-width:500px) { .shell { width:calc(100% - 26px); padding-top:15px; } .top-actions .clock { display:none; } .stats { grid-template-columns:repeat(2,1fr); } .actions { flex-direction:column; } button { width:100%; } }
+    </style>
+</head>
+<body>
+    <main class="shell" style="--blue: {{ accent_color }}">
+        <header class="topbar"><div class="brand"><img src="{{ logo_url }}" alt="{{ institution_name }} logo"><div><div class="eyebrow">{{ institution_name }}</div><h1>CSV to SQLite</h1></div></div><div class="top-actions"><span class="clock" id="clock">PHT --:--</span><a class="nav" href="/launchpad.html">Back to menu</a></div></header>
+        <section class="intro"><div><h2>Move your student list safely.</h2><p>Choose a CSV, review what the system found, then import it into the local SQLite database. The original file is never changed.</p></div><div class="database-pill"><span>Current database</span><strong id="databaseCount">Checking...</strong></div></section>
+        <section class="workspace">
+            <aside class="steps"><div class="step active" id="step1"><div class="step-number">1</div><div><strong>Choose CSV</strong><small>Select the student list from this computer.</small></div></div><div class="step" id="step2"><div class="step-number">2</div><div><strong>Review rows</strong><small>Check the file structure and record counts.</small></div></div><div class="step" id="step3"><div class="step-number">3</div><div><strong>Import records</strong><small>Save the approved list into SQLite.</small></div></div></aside>
+            <section class="card"><div class="card-head"><div><h3>Select a student CSV</h3><p>Required columns: BARCODE and NAME. Other columns are optional.</p></div></div>
+                <label class="file-picker" id="filePicker" for="csvFile"><div class="file-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div><strong>Choose a CSV file</strong><span>Click to browse your files</span><div class="file-name" id="fileName">No file selected</div></label>
+                <input id="csvFile" type="file" accept=".csv,text/csv">
+                <div class="mode"><input id="replaceExisting" type="checkbox"><label for="replaceExisting">Replace the current student list<small>Off by default: matching barcodes are updated and new students are added. Turn this on only when the CSV is the complete master list.</small></label></div>
+                <div class="actions"><button class="secondary" id="clearButton" type="button">Clear</button><button id="previewButton" type="button" disabled>Review CSV</button><button id="importButton" type="button" disabled>Import to SQLite</button></div>
+                <div class="result" id="result"><h4 id="resultTitle"></h4><div class="result-message" id="resultMessage"></div><div class="stats" id="stats"></div><div class="sample" id="sample"></div></div>
+                <p class="note">Your CSV remains on the computer. Attendance history is not affected by student-list imports.</p>
+            </section>
+        </section>
+    </main>
+    <script>
+        document.body.dataset.theme = '{{ theme }}';
+        const fileInput=document.getElementById('csvFile'); const fileName=document.getElementById('fileName'); const previewButton=document.getElementById('previewButton'); const importButton=document.getElementById('importButton'); const result=document.getElementById('result'); let selectedFile=null;
+        function updateClock(){document.getElementById('clock').textContent=`PHT ${new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'medium'}).format(new Date())}`;} setInterval(updateClock,1000); updateClock();
+        fetch('/api/migration/status').then(response=>response.json()).then(data=>{document.getElementById('databaseCount').textContent=`${data.students} students`;}).catch(()=>{document.getElementById('databaseCount').textContent='Unavailable';});
+        fileInput.addEventListener('change',()=>{selectedFile=fileInput.files[0]||null; fileName.textContent=selectedFile?selectedFile.name:'No file selected'; document.getElementById('filePicker').classList.toggle('ready',!!selectedFile); previewButton.disabled=!selectedFile; importButton.disabled=true; result.className='result'; setStep(1);});
+        previewButton.addEventListener('click',async()=>{if(!selectedFile)return; setBusy(true); const form=new FormData(); form.append('file',selectedFile); try{const response=await fetch('/api/migration/preview',{method:'POST',body:form}); const data=await response.json(); if(!response.ok) showError(data.message); else showPreview(data);}catch(error){showError('The CSV could not be read.')}finally{setBusy(false);}});
+        importButton.addEventListener('click',async()=>{if(!selectedFile||!confirm('Import the reviewed records into SQLite?'))return; setBusy(true); const form=new FormData(); form.append('file',selectedFile); form.append('replace_existing',document.getElementById('replaceExisting').checked); try{const response=await fetch('/api/migration/import',{method:'POST',body:form}); const data=await response.json(); if(!response.ok)showError(data.message); else{showSuccess(`Imported ${data.imported} records using ${data.mode} mode. The database now contains ${data.students} students.`); document.getElementById('databaseCount').textContent=`${data.students} students`;}}catch(error){showError('The import failed. Please try again.')}finally{setBusy(false);}});
+        document.getElementById('clearButton').addEventListener('click',()=>{fileInput.value=''; selectedFile=null; fileName.textContent='No file selected'; document.getElementById('filePicker').classList.remove('ready'); previewButton.disabled=true; importButton.disabled=true; result.className='result'; setStep(1);});
+        function setBusy(busy){previewButton.disabled=busy||!selectedFile; importButton.disabled=busy||!selectedFile; previewButton.textContent=busy?'Checking...':'Review CSV';}
+        function setStep(number){[1,2,3].forEach(index=>document.getElementById(`step${index}`).classList.toggle('active',index===number));}
+        function showPreview(data){result.className=`result visible ${data.invalid_rows?'error':'success'}`; document.getElementById('resultTitle').textContent=data.invalid_rows?'Review needed':'CSV is ready'; document.getElementById('resultMessage').textContent=data.errors?.join(' ')||'The file structure looks good. Review the counts before importing.'; document.getElementById('stats').innerHTML=`<div class="stat"><strong>${data.total_rows}</strong><span>Total rows</span></div><div class="stat"><strong>${data.valid_rows}</strong><span>Valid</span></div><div class="stat"><strong>${data.new_records}</strong><span>New</span></div><div class="stat"><strong>${data.updates}</strong><span>Updates</span></div>`; document.getElementById('sample').innerHTML=data.sample?.length?`<table><thead><tr><th>Barcode</th><th>Name</th><th>Grade</th><th>Section</th></tr></thead><tbody>${data.sample.map(row=>`<tr><td>${escapeHtml(row.barcode)}</td><td>${escapeHtml(row.name)}</td><td>${escapeHtml(row.grade)}</td><td>${escapeHtml(row.section)}</td></tr>`).join('')}</tbody></table>`:''; importButton.disabled=!!data.invalid_rows; setStep(2);}
+        function showSuccess(message){result.className='result visible success'; document.getElementById('resultTitle').textContent='Import complete'; document.getElementById('resultMessage').textContent=message; document.getElementById('stats').innerHTML=''; document.getElementById('sample').innerHTML=''; setStep(3);}
+        function showError(message){result.className='result visible error'; document.getElementById('resultTitle').textContent='Unable to continue'; document.getElementById('resultMessage').textContent=message; document.getElementById('stats').innerHTML=''; document.getElementById('sample').innerHTML='';}
+        function escapeHtml(value){return String(value).replace(/[&<>\'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));}
+    </script>
+</body>
+</html>

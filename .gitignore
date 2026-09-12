@@ -1,2 +1,7 @@
 venv/
 __pycache__/
+CVA_Database/cva.sqlite3
+CVA_Database/cva.sqlite3-wal
+CVA_Database/cva.sqlite3-shm
+launcher.log
+static/custom-logo.png

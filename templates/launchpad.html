@@ -3,813 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CVAFPI Identification System - Launchpad</title>
+    <title>CVAFPI Identification System</title>
     <style>
-        :root {
-            --bg: #0f172a;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 70%);
-            --panel: #1e293b;
-            --panel-hover: #26354a;
-            --accent: #2563eb;
-            --accent-glow: rgba(37, 99, 235, 0.35);
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --border: #334155;
-            --border-hover: #475569;
-            --red: #ef4444;
-            --red-glow: rgba(239, 68, 68, 0.25);
-            --amber: #f59e0b;
-            --amber-glow: rgba(245, 158, 11, 0.25);
-            --green: #10b981;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background: var(--bg);
-            background-image: var(--bg-gradient);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-            padding: 20px;
-        }
-
-        /* Container */
-        .launchpad-container {
-            width: 100%;
-            max-width: 960px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Top Institutional Banner */
-        .header-card {
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-top: 2px solid var(--accent);
-            border-radius: 20px;
-            padding: 20px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .logo-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 72px;
-            height: 72px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 8px;
-            flex-shrink: 0;
-            transition: transform 0.3s ease;
-        }
-
-        .logo-box:hover {
-            transform: scale(1.05);
-        }
-
-        .logo-img {
-            max-height: 100%;
-            max-width: 100%;
-            object-fit: contain;
-        }
-
-        .header-title-group {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .header-title-group h1 {
-            font-size: 1.7rem;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            color: #ffffff;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .header-title-group p {
-            color: var(--muted);
-            font-size: 0.88rem;
-            font-weight: 500;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--green);
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 20px;
-            margin-top: 4px;
-            align-self: center;
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--green);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.85); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        /* Interactive Grid Menu */
-        .grid-menu {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-        }
-
-        .menu-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px 20px;
-            text-decoration: none;
-            color: var(--text);
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .menu-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            background: var(--panel-hover);
-            box-shadow: 0 8px 25px -5px var(--accent-glow);
-        }
-
-        .icon-wrapper {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: rgba(37, 99, 235, 0.12);
-            border: 1px solid rgba(37, 99, 235, 0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: #60a5fa;
-            transition: all 0.25s ease;
-        }
-
-        .menu-card:hover .icon-wrapper {
-            background: var(--accent);
-            color: #fff;
-            transform: scale(1.08);
-        }
-
-        .card-content {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .card-content h2 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .card-content p {
-            font-size: 0.8rem;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        /* Warning & Danger Variations */
-        .menu-card.warning .icon-wrapper {
-            background: rgba(245, 158, 11, 0.12);
-            border-color: rgba(245, 158, 11, 0.25);
-            color: var(--amber);
-        }
-        .menu-card.warning:hover {
-            border-color: var(--amber);
-            box-shadow: 0 8px 25px -5px var(--amber-glow);
-        }
-        .menu-card.warning:hover .icon-wrapper {
-            background: var(--amber);
-            color: #fff;
-        }
-
-        .menu-card.danger .icon-wrapper {
-            background: rgba(239, 68, 68, 0.12);
-            border-color: rgba(239, 68, 68, 0.25);
-            color: var(--red);
-        }
-        .menu-card.danger:hover {
-            border-color: var(--red);
-            box-shadow: 0 8px 25px -5px var(--red-glow);
-        }
-        .menu-card.danger:hover .icon-wrapper {
-            background: var(--red);
-            color: #fff;
-        }
-
-        /* Settings Modal Overlay */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 20px;
-        }
-
-        .modal-container {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 600px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
-        }
-
-        @keyframes modalPop {
-            0% { opacity: 0; transform: scale(0.95) translateY(10px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #162238;
-        }
-
-        .modal-header h2 {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-close-modal {
-            background: transparent;
-            border: none;
-            color: var(--muted);
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .btn-close-modal:hover {
-            background: rgba(255,255,255,0.08);
-            color: #fff;
-        }
-
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .setting-item {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .setting-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .setting-info {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .setting-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .setting-desc {
-            font-size: 0.8rem;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        /* Switch Toggle */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 26px;
-            flex-shrink: 0;
-        }
-
-        .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background-color: var(--border);
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 26px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 50%;
-        }
-
-        input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(22px); }
-
-        .setting-input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 4px;
-            display: none;
-        }
-
-        .setting-input-group.active {
-            display: flex;
-        }
-
-        .setting-input-group label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-        }
-
-        .setting-textbox {
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            color: #fff;
-            font-size: 0.9rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .setting-textbox:focus {
-            border-color: var(--accent);
-        }
-
-        .modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid var(--border);
-            background: #162238;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .btn-modal-action {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-modal-action:hover { background: #1d4ed8; }
-        .btn-modal-secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-        .btn-modal-secondary:hover { background: rgba(255,255,255,0.05); color: #fff; }
-
-        /* System Footer Bar */
-        .footer-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 18px;
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 0.82rem;
-            color: var(--muted);
-        }
-
-        .clock-display {
-            font-family: monospace;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-            font-weight: 600;
-        }
+        :root { --ink:#e8eef7; --muted:#91a0b5; --canvas:#10161f; --surface:#18212c; --surface-2:#202c3a; --line:#2d3b4b; --blue:#4da3ff; --blue-soft:rgba(77,163,255,.13); --mint:#48d6aa; --amber:#f3b64c; --red:#f27676; }
+        * { box-sizing:border-box; }
+        body { min-height:100vh; margin:0; color:var(--ink); background:var(--canvas); font-family:"Trebuchet MS","Segoe UI",sans-serif; }
+        body[data-theme="light"] { --ink:#17202b; --muted:#5f6f82; --canvas:#eef3f7; --surface:#ffffff; --surface-2:#e7eef5; --line:#cbd6e2; --blue-soft:rgba(37,99,235,.1); }
+        body[data-theme="grassy"] { --canvas:#101b16; --surface:#17271f; --surface-2:#20372a; --line:#345441; --blue:#71d39d; --blue-soft:rgba(113,211,157,.13); }
+        body[data-theme="ocean"] { --canvas:#071923; --surface:#0e2633; --surface-2:#153747; --line:#285369; --blue:#5cd3e8; --blue-soft:rgba(92,211,232,.13); }
+        body[data-theme="sunset"] { --canvas:#21171a; --surface:#302126; --surface-2:#412b2e; --line:#644247; --blue:#ffad72; --blue-soft:rgba(255,173,114,.14); }
+        body::before { content:""; position:fixed; inset:0 0 auto; height:260px; pointer-events:none; background:linear-gradient(120deg,rgba(77,163,255,.11),transparent 58%); }
+        .shell { width:min(1180px,calc(100% - 40px)); margin:0 auto; padding:28px 0 22px; position:relative; }
+        .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:34px; }
+        .brand { display:flex; align-items:center; gap:13px; }
+        .brand-mark { width:48px; height:48px; padding:6px; border:1px solid var(--line); border-radius:12px; background:#111a24; object-fit:contain; }
+        .eyebrow { color:var(--blue); font-size:.7rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+        .brand h1 { margin:3px 0 0; font-size:1.12rem; letter-spacing:.04em; }
+        .topbar-right { display:flex; align-items:center; gap:15px; }
+        .system-state { display:inline-flex; align-items:center; gap:7px; color:var(--mint); font:700 .72rem monospace; text-transform:uppercase; }
+        .state-dot { width:8px; height:8px; border-radius:50%; background:var(--mint); box-shadow:0 0 12px rgba(72,214,170,.7); }
+        .clock { color:var(--muted); font:600 .78rem monospace; }
+        .intro { max-width:760px; margin-bottom:27px; }
+        .intro h2 { margin:0 0 8px; font-size:clamp(1.7rem,3vw,2.45rem); line-height:1.08; letter-spacing:-.035em; }
+        .intro p { max-width:680px; margin:0; color:var(--muted); line-height:1.6; font-size:.94rem; }
+        .section-heading { display:flex; align-items:baseline; justify-content:space-between; gap:15px; margin:26px 0 11px; }
+        .section-heading h3 { margin:0; font-size:.76rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+        .section-heading span { color:#607086; font-size:.75rem; }
+        .module-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .module { min-height:148px; display:flex; flex-direction:column; justify-content:space-between; padding:18px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:var(--surface); text-decoration:none; transition:border-color .2s,background .2s,transform .2s; }
+        .module:hover { border-color:var(--blue); background:var(--surface-2); transform:translateY(-2px); }
+        .module-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+        .module-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:9px; color:var(--blue); background:var(--blue-soft); }
+        .module-icon svg { width:21px; height:21px; }
+        .module-arrow { color:#607086; font-size:1.15rem; }
+        .module h4 { margin:17px 0 5px; font-size:1rem; }
+        .module p { margin:0; color:var(--muted); font-size:.78rem; line-height:1.45; }
+        .module.accent-amber .module-icon { color:var(--amber); background:rgba(243,182,76,.12); }
+        .module.accent-amber:hover { border-color:var(--amber); }
+        .module.accent-red .module-icon { color:var(--red); background:rgba(242,118,118,.12); }
+        .module.accent-red:hover { border-color:var(--red); }
+        button.module { width:100%; font:inherit; text-align:left; cursor:pointer; }
+        .system-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+        .system-control { min-height:70px; display:flex; align-items:center; gap:12px; padding:13px 15px; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:transparent; text-align:left; cursor:pointer; }
+        .system-control:hover { background:var(--surface); border-color:#52647b; }
+        .system-control .module-icon { width:32px; height:32px; flex-shrink:0; }
+        .system-control strong { display:block; font-size:.83rem; }
+        .system-control span { display:block; margin-top:3px; color:var(--muted); font-size:.7rem; }
+        .system-control.danger { color:var(--red); }
+        .footer { display:flex; justify-content:space-between; gap:15px; margin-top:27px; padding-top:14px; border-top:1px solid var(--line); color:#66758a; font-size:.72rem; }
+        .modal-overlay { position:fixed; inset:0; z-index:10; display:none; place-items:center; padding:20px; background:rgba(6,10,15,.8); backdrop-filter:blur(7px); }
+        .modal { width:min(600px,100%); max-height:90vh; overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 24px 80px rgba(0,0,0,.45); }
+        .modal-head,.modal-foot { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:17px 20px; background:var(--surface-2); }
+        .modal-head { border-bottom:1px solid var(--line); }
+        .modal-head h2 { margin:0; font-size:1rem; }
+        .modal-close { border:0; color:var(--muted); background:transparent; font-size:1.4rem; cursor:pointer; }
+        .modal-body { display:grid; gap:10px; padding:18px 20px; }
+        .setting { padding:13px; border:1px solid var(--line); border-radius:8px; background:#141d27; }
+        .setting-row { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+        .setting-title { display:block; font-size:.83rem; font-weight:700; }
+        .setting-desc { display:block; margin-top:4px; color:var(--muted); font-size:.73rem; line-height:1.4; }
+        .switch { position:relative; width:42px; height:23px; flex-shrink:0; }
+        .switch input { opacity:0; width:0; height:0; }
+        .slider { position:absolute; inset:0; border-radius:20px; background:#344354; cursor:pointer; }
+        .slider::before { content:""; position:absolute; width:17px; height:17px; left:3px; top:3px; border-radius:50%; background:#f4f7fb; transition:transform .2s; }
+        .switch input:checked + .slider { background:var(--blue); }
+        .switch input:checked + .slider::before { transform:translateX(19px); }
+        .setting-input { display:none; gap:6px; margin-top:10px; }
+        .setting-input.active { display:grid; }
+        .setting-input label { color:var(--muted); font-size:.7rem; text-transform:uppercase; }
+        .setting-input input,.setting-input select { width:100%; padding:9px; border:1px solid var(--line); border-radius:6px; color:var(--ink); background:var(--canvas); outline:none; }
+        .setting-input input[type="color"] { height:38px; padding:3px; cursor:pointer; }
+        .modal-foot { justify-content:flex-end; border-top:1px solid var(--line); }
+        .button { padding:9px 14px; border:1px solid transparent; border-radius:6px; color:#fff; background:var(--blue); font-weight:700; cursor:pointer; }
+        .button.secondary { border-color:var(--line); color:var(--muted); background:transparent; }
+        @media (max-width:800px) { .module-grid,.system-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:560px) { .shell { width:min(100% - 26px,480px); padding-top:18px; } .topbar-right .clock { display:none; } .module-grid,.system-grid { grid-template-columns:1fr; } .module { min-height:128px; } .footer { flex-direction:column; } }
     </style>
 </head>
 <body>
-
-    <div class="launchpad-container">
-
-        <!-- Header Banner -->
-        <div class="header-card">
-
-            <!-- LEFT LOGO: CVA School Seal -->
-            <div class="logo-box" title="CVA Institution Logo">
-                <img src="{{ url_for('static', filename='CVAFPI-LOGO.png') }}"
-                     alt="CVA Logo"
-                     class="logo-img"
-                     onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
-            </div>
-
-            <!-- Header Title Group -->
-            <div class="header-title-group">
-                <h1>CVAFPI SYSTEM LAUNCHPAD</h1>
-                <p>Select an operational module or hardware management control</p>
-                <div class="status-badge">
-                    <span class="pulse-dot"></span> Kiosk Engine v2.0 Beta Active
-                </div>
-            </div>
-
-            <!-- RIGHT LOGO: Powered by Debian -->
-            <div class="logo-box" title="Powered by Debian Linux">
-                <img src="{{ url_for('static', filename='Debian 13 Logo.png') }}"
-                     alt="Debian 13 Logo"
-                     class="logo-img"
-                     onerror="this.onerror=null; this.src='/static/Debian%2013%20Logo.png';">
-            </div>
-
-        </div>
-
-        <!-- System Controls Grid -->
-        <div class="grid-menu">
-
-            <!-- Attendance Scanner Module -->
-            <a href="/scanner.html" class="menu-card">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 9h10M7 12h10M7 15h6"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>Attendance Scanner</h2>
-                    <p>Open live barcode scan interface for real-time student log in/out & parental notifications.</p>
-                </div>
-            </a>
-
-            <!-- Student Manager Module -->
-            <a href="/manager.html" class="menu-card">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>Student Manager</h2>
-                    <p>Register, update, or edit student database profiles, badge colors, and NTFY notification topics.</p>
-                </div>
-            </a>
-
-            <!-- Logs Manager Module -->
-            <a href="/logs-manager.html" class="menu-card">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>Logs & Audit Trail</h2>
-                    <p>Filter, review, and export historical daily student attendance logs to CSV spreadsheets.</p>
-                </div>
-            </a>
-
-            <!-- Settings Menu Trigger -->
-            <div class="menu-card" onclick="openSettingsModal()">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>System Settings</h2>
-                    <p>Configure scanner camera feeds, parent notifications, office security alerts, and blocked camera detectors.</p>
-                </div>
-            </div>
-
-            <!-- System Reboot Control -->
-            <div class="menu-card warning" onclick="rebootSystem()">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>System Reboot</h2>
-                    <p>Safely restart the host operating system services and kiosk engine controller.</p>
-                </div>
-            </div>
-
-            <!-- System Shutdown Control -->
-            <div class="menu-card danger" onclick="shutdownSystem()">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>System Shutdown</h2>
-                    <p>Execute an immediate safe power-off sequence for hardware protection.</p>
-                </div>
-            </div>
-
-            <!-- Exit Kiosk Control -->
-            <div class="menu-card danger" onclick="exitKiosk()" style="grid-column: span 2;">
-                <div class="icon-wrapper">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </div>
-                <div class="card-content">
-                    <h2>Exit Kiosk Mode</h2>
-                    <p>Safely minimize full-screen kiosk browser view to return to desktop.</p>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Footer Bar -->
-        <div class="footer-bar">
-            <span>Christian Vision Academy Foundation Inc. • Built for Debian 13 (Trixie)</span>
-            <span class="clock-display" id="pst-clock">PST: Loading Date & Time...</span>
-        </div>
-
-    </div>
-
-    <!-- SETTINGS MODAL DIALOG -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    System Configuration & Settings
-                </h2>
-                <button class="btn-close-modal" onclick="closeSettingsModal()">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <!-- 1. Photo on Scan -->
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Photo on Scan</span>
-                            <span class="setting-desc">Enable live camera preview feed in the attendance scanner interface during student scan events.</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="settingCamera">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 2. Notification Topic for Parents -->
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Notification Topic for Parents</span>
-                            <span class="setting-desc">Toggling this switch controls parental push alerts when students scan in or out.</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="settingParents" onchange="handleParentToggle(this)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 3. Send Alerts to Office -->
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Send Alerts to Office?</span>
-                            <span class="setting-desc">Forward operational security warnings and emergency codes to the main office webhook.</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="settingOfficeAlerts" onchange="toggleOfficeTextbox(this)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="setting-input-group" id="officeTopicGroup">
-                        <label for="settingOfficeTopic">Notification Topic for Office</label>
-                        <input type="text" id="settingOfficeTopic" class="setting-textbox" placeholder="e.g. cva_office_security_alerts">
-                    </div>
-                </div>
-
-                <!-- 4. Blocked Camera Alerts -->
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Blocked Camera Alerts</span>
-                            <span class="setting-desc">Automatically detect if the scanner camera is covered or blacked out and alert the office.</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="settingBlockedCamera">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- 5. Warns Student when blocking Camera -->
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <span class="setting-title">Warns Student when blocking Camera</span>
-                            <span class="setting-desc">Display warning overlay text on the camera view: "PLEASE UNBLOCK CAMERA, THIS WILL ALERT OFFICE".</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="settingStudentWarn" checked disabled>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn-modal-action btn-modal-secondary" onclick="closeSettingsModal()">Cancel</button>
-                <button class="btn-modal-action" onclick="saveSettings()">Save Configuration</button>
-            </div>
-        </div>
-    </div>
-
+    <main class="shell">
+        <header class="topbar"><div class="brand"><img class="brand-mark" id="brandLogo" src="{{ logo_url }}" alt="{{ institution_name }} logo"><div><div class="eyebrow">Operations console</div><h1 id="institutionName">{{ institution_name }}</h1></div></div><div class="topbar-right"><span class="system-state"><i class="state-dot"></i>Online</span><span class="clock" id="clock">PHT --:--</span></div></header>
+        <section class="intro"><h2>Good day. What needs attention?</h2><p>Open a working module below. Student attendance and database tools are kept together; system controls are separated at the bottom for deliberate use.</p></section>
+        <div class="section-heading"><h3>Daily operations</h3><span>Primary workspace</span></div>
+        <section class="module-grid">
+            <a class="module" href="/scanner.html"><div class="module-top"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 9h10M7 12h10M7 15h6"/></svg></div><span class="module-arrow">↗</span></div><div><h4>Attendance scanner</h4><p>Scan IDs, record attendance, and handle camera capture.</p></div></a>
+            <a class="module" href="/manager.html"><div class="module-top"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span class="module-arrow">↗</span></div><div><h4>Student manager</h4><p>Add, update, remove, and style student records.</p></div></a>
+            <a class="module" href="/logs-manager.html"><div class="module-top"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></div><span class="module-arrow">↗</span></div><div><h4>Logs & audit trail</h4><p>Review scans, snapshots, filters, and exportable records.</p></div></a>
+        </section>
+        <div class="section-heading"><h3>Data administration</h3><span>For staff and IT</span></div>
+        <section class="module-grid">
+            <a class="module accent-amber" href="/migration.html"><div class="module-top"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5M17 15v5m0 0-2-2m2 2 2-2"/></svg></div><span class="module-arrow">↗</span></div><div><h4>CSV to SQLite</h4><p>Preview and import a student list without touching the terminal.</p></div></a>
+            <button class="module" type="button" onclick="openSettingsModal()"><div class="module-top"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 0 1 7 4l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5v-.1a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3L17 4a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.2z"/></svg></div><span class="module-arrow">＋</span></div><div><h4>System settings</h4><p>Configure camera, notifications, and office alerts.</p></div></button>
+        </section>
+        <div class="section-heading"><h3>System controls</h3><span>Use only when required</span></div>
+        <section class="system-grid">
+            <button class="system-control" type="button" onclick="rebootSystem()"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg></div><div><strong>Restart system</strong><span>Reboot the kiosk computer</span></div></button>
+            <button class="system-control danger" type="button" onclick="shutdownSystem()"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18.4 6.6a9 9 0 1 1-12.8 0M12 2v10"/></svg></div><div><strong>Shut down</strong><span>Power off the kiosk computer</span></div></button>
+            <button class="system-control danger" type="button" onclick="exitKiosk()"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div><div><strong>Exit kiosk mode</strong><span>Return to the desktop</span></div></button>
+        </section>
+        <footer class="footer"><span id="footerInstitution">{{ institution_name }}</span><span>Built for Debian 13 · <b id="footerClock">PHT --:--</b></span></footer>
+    </main>
+    <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal"><div class="modal-head"><h2 id="settingsTitle">System settings</h2><button class="modal-close" type="button" onclick="closeSettingsModal()" aria-label="Close settings">×</button></div><div class="modal-body">
+        <div class="setting"><div class="setting-row"><div><span class="setting-title">Photo on scan</span><span class="setting-desc">Enable camera preview and capture during attendance scans.</span></div><label class="switch"><input type="checkbox" id="settingCamera"><span class="slider"></span></label></div></div>
+        <div class="setting"><div class="setting-row"><div><span class="setting-title">Parent notifications</span><span class="setting-desc">Send configured alerts when students scan.</span></div><label class="switch"><input type="checkbox" id="settingParents" onchange="handleParentToggle(this)"><span class="slider"></span></label></div></div>
+        <div class="setting"><div class="setting-row"><div><span class="setting-title">Office alerts</span><span class="setting-desc">Forward camera and security alerts to the office.</span></div><label class="switch"><input type="checkbox" id="settingOfficeAlerts" onchange="toggleOfficeTextbox(this)"><span class="slider"></span></label></div><div class="setting-input" id="officeTopicGroup"><label for="settingOfficeTopic">Office notification topic</label><input id="settingOfficeTopic" type="text" placeholder="cva_office_security_alerts"></div></div>
+        <div class="setting"><div class="setting-row"><div><span class="setting-title">Blocked camera alerts</span><span class="setting-desc">Notify the office when the scanner camera is blocked.</span></div><label class="switch"><input type="checkbox" id="settingBlockedCamera"><span class="slider"></span></label></div></div>
+        <div class="setting"><div class="setting-title">School branding</div><div class="setting-input active"><label for="settingInstitution">Institution name</label><input id="settingInstitution" type="text" maxlength="100" placeholder="Your school name"></div><div class="setting-input active"><label for="settingTheme">App theme</label><select id="settingTheme"><option value="night">Night</option><option value="light">Light</option><option value="grassy">Grassy</option><option value="ocean">Ocean</option><option value="sunset">Sunset</option></select></div><div class="setting-input active"><label for="settingAccent">Accent color</label><input id="settingAccent" type="color" value="#4da3ff"></div><div class="setting-input active"><label for="settingLogo">School logo</label><input id="settingLogo" type="file" accept="image/png,image/jpeg,image/webp"></div></div>
+    </div><div class="modal-foot"><button class="button secondary" type="button" onclick="closeSettingsModal()">Cancel</button><button class="button" type="button" onclick="saveSettings()">Save settings</button></div></div></div>
     <script>
-        // Real-Time PST Date & Clock Display
-        function updateClock() {
-            const now = new Date();
-
-            const dateOptions = { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric' };
-            const dateString = now.toLocaleDateString('en-US', dateOptions);
-
-            const timeOptions = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const timeString = now.toLocaleTimeString('en-US', timeOptions);
-
-            document.getElementById('pst-clock').textContent = `PST: ${dateString} | ${timeString}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        // Settings Modal Handlers
-        async function openSettingsModal() {
-            document.getElementById('settingsModal').style.display = 'flex';
-            try {
-                const res = await fetch('/api/settings');
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('settingCamera').checked = !!data.camera_enabled;
-                    document.getElementById('settingParents').checked = !!data.parent_notifications_enabled;
-                    document.getElementById('settingOfficeAlerts').checked = !!data.office_alerts_enabled;
-                    document.getElementById('settingOfficeTopic').value = data.office_ntfy_topic || '';
-                    document.getElementById('settingBlockedCamera').checked = !!data.blocked_camera_alerts_enabled;
-
-                    if (data.office_alerts_enabled) {
-                        document.getElementById('officeTopicGroup').classList.add('active');
-                    } else {
-                        document.getElementById('officeTopicGroup').classList.remove('active');
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to load settings:", err);
-            }
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function handleParentToggle(checkbox) {
-            if (!checkbox.checked) {
-                const confirmed = confirm("THIS WILL TURN OFF ALL NOTIFICATION TO THE PARENTS WHEN THEYRE CHILD SCANS, Are you sure?");
-                if (!confirmed) {
-                    checkbox.checked = true;
-                }
-            }
-        }
-
-        function toggleOfficeTextbox(checkbox) {
-            const group = document.getElementById('officeTopicGroup');
-            if (checkbox.checked) {
-                group.classList.add('active');
-            } else {
-                group.classList.remove('active');
-            }
-        }
-
-        async function saveSettings() {
-            const payload = {
-                camera_enabled: document.getElementById('settingCamera').checked,
-                parent_notifications_enabled: document.getElementById('settingParents').checked,
-                office_alerts_enabled: document.getElementById('settingOfficeAlerts').checked,
-                office_ntfy_topic: document.getElementById('settingOfficeTopic').value.trim(),
-                blocked_camera_alerts_enabled: document.getElementById('settingBlockedCamera').checked
-            };
-
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) {
-                    alert("System settings saved successfully.");
-                    closeSettingsModal();
-                } else {
-                    alert("Failed to save settings.");
-                }
-            } catch (err) {
-                console.error("Save settings error:", err);
-                alert("An error occurred while saving settings.");
-            }
-        }
-
-        // System Control API Handlers
-        async function rebootSystem() {
-            if (confirm("Are you sure you want to REBOOT the kiosk system?")) {
-                try {
-                    await fetch('/api/system/reboot', { method: 'POST' });
-                    alert("System reboot command sent successfully.");
-                } catch (err) {
-                    alert("Failed to trigger reboot request.");
-                }
-            }
-        }
-
-        async function shutdownSystem() {
-            if (confirm("Are you sure you want to SHUT DOWN the kiosk hardware?")) {
-                try {
-                    await fetch('/api/system/shutdown', { method: 'POST' });
-                    alert("System shutdown sequence initiated.");
-                } catch (err) {
-                    alert("Failed to trigger shutdown request.");
-                }
-            }
-        }
-
-        async function exitKiosk() {
-            if (confirm("Are you sure you want to exit the CVA System view?")) {
-                try {
-                    await fetch('/api/exit', { method: 'POST' });
-                } catch (err) {
-                    console.error("Exit request error:", err);
-                }
-                window.close();
-            }
-        }
+        function updateClock() { const value = new Intl.DateTimeFormat('en-US', { timeZone:'Asia/Manila', dateStyle:'medium', timeStyle:'medium' }).format(new Date()); document.getElementById('clock').textContent = `PHT ${value}`; document.getElementById('footerClock').textContent = value; }
+        function applyTheme(theme, accent) { document.body.dataset.theme = theme || 'night'; if (accent) document.documentElement.style.setProperty('--blue', accent); }
+        applyTheme('{{ theme }}', '{{ accent_color }}');
+        setInterval(updateClock,1000); updateClock();
+        async function openSettingsModal() { document.getElementById('settingsModal').style.display='grid'; try { const response=await fetch('/api/settings'); const data=await response.json(); document.getElementById('settingCamera').checked=!!data.camera_enabled; document.getElementById('settingParents').checked=!!data.parent_notifications_enabled; document.getElementById('settingOfficeAlerts').checked=!!data.office_alerts_enabled; document.getElementById('settingOfficeTopic').value=data.office_ntfy_topic||''; document.getElementById('settingBlockedCamera').checked=!!data.blocked_camera_alerts_enabled; document.getElementById('settingInstitution').value=data.institution_name||''; document.getElementById('settingTheme').value=data.theme||'night'; document.getElementById('settingAccent').value=data.accent_color||'#4da3ff'; toggleOfficeTextbox(document.getElementById('settingOfficeAlerts')); } catch (error) { alert('Could not load settings.'); } }
+        function closeSettingsModal() { document.getElementById('settingsModal').style.display='none'; }
+        function handleParentToggle(input) { if (!input.checked && !confirm('Turn off parent notifications?')) input.checked=true; }
+        function toggleOfficeTextbox(input) { document.getElementById('officeTopicGroup').classList.toggle('active',input.checked); }
+        async function saveSettings() { const payload={camera_enabled:document.getElementById('settingCamera').checked,parent_notifications_enabled:document.getElementById('settingParents').checked,office_alerts_enabled:document.getElementById('settingOfficeAlerts').checked,office_ntfy_topic:document.getElementById('settingOfficeTopic').value.trim(),blocked_camera_alerts_enabled:document.getElementById('settingBlockedCamera').checked,institution_name:document.getElementById('settingInstitution').value.trim(),theme:document.getElementById('settingTheme').value,accent_color:document.getElementById('settingAccent').value}; try { const response=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); if(!response.ok) throw new Error(); const logo=document.getElementById('settingLogo').files[0]; if(logo){const form=new FormData(); form.append('logo',logo); const logoResponse=await fetch('/api/branding/logo',{method:'POST',body:form}); if(!logoResponse.ok) throw new Error((await logoResponse.json()).message||'Logo upload failed'); document.getElementById('brandLogo').src=`/static/custom-logo.png?${Date.now()}`;} applyTheme(payload.theme,payload.accent_color); document.getElementById('institutionName').textContent=payload.institution_name; document.getElementById('footerInstitution').textContent=payload.institution_name; closeSettingsModal(); alert('Settings saved.'); } catch (error) { alert(error.message||'Could not save settings.'); } }
+        async function rebootSystem() { if(confirm('Restart the kiosk computer now?')) await fetch('/api/system/reboot',{method:'POST'}); }
+        async function shutdownSystem() { if(confirm('Shut down the kiosk computer now?')) await fetch('/api/system/shutdown',{method:'POST'}); }
+        async function exitKiosk() { if(confirm('Exit kiosk mode and return to the desktop?')) { await fetch('/api/exit',{method:'POST'}); window.close(); } }
+        document.getElementById('settingsModal').addEventListener('click',event=>{ if(event.target.id==='settingsModal') closeSettingsModal(); });
     </script>
 </body>
 </html>

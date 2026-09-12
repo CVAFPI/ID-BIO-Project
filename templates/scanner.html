@@ -17,6 +17,10 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body[data-theme="light"] { --bg:#eef3f7; --panel:#fff; --text:#17202b; --muted:#5f6f82; --border:#cbd6e2; }
+        body[data-theme="grassy"] { --bg:#101b16; --panel:#17271f; --text:#e8f6ed; --muted:#9bb6a4; --border:#345441; --accent:#71d39d; }
+        body[data-theme="ocean"] { --bg:#071923; --panel:#0e2633; --text:#e8f7fb; --muted:#9fc6d1; --border:#285369; --accent:#5cd3e8; }
+        body[data-theme="sunset"] { --bg:#21171a; --panel:#302126; --text:#fff0e8; --muted:#c6a5a0; --border:#644247; --accent:#ffad72; }
 
         /* Clean Header Bar */
         .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #1e293b; border-bottom: 1px solid var(--border); }
@@ -80,16 +84,16 @@
         .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
     </style>
 </head>
-<body>
+    <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
 
     <!-- Header containing ONLY CVAFPI Logo & System Title -->
     <div class="header">
         <div class="header-left">
-            <img src="{{ url_for('static', filename='CVAFPI-LOGO.png') }}"
+            <img src="{{ logo_url }}"
                  alt="CVAFPI Logo"
                  class="logo-img"
                  onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
-            <h1>CVA - LOG IN/OUT SYSTEM</h1>
+            <h1>{{ institution_name }} - LOG IN/OUT SYSTEM</h1>
         </div>
         <div class="clock" id="clockDisplay">PHT: Loading...</div>
     </div>

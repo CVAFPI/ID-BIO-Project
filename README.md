@@ -39,7 +39,8 @@ Built specifically for educational institutions under **Department of Education 
 | **Automated 7-Day Privacy Cleanup** | A built-in startup routine (`cleanup_old_logs`) automatically scans the database directory and permanently purges log folders and webcam snapshots older than one week, ensuring ongoing data privacy compliance. |
 | **Visual Snapshot Audit Trail** | Instantly captures a webcam frame upon every successful ID scan, binding visual proof to the timestamped record for review in the logs manager. |
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
-| **Synchronized Dual-CSV Integrity** | Robust schema mapping keeps primary records (`data.csv`) and backup records (`backup-data.csv`) fully synced during live edits via the database manager. |
+| **Local SQLite Database** | Student records and attendance data are stored in `CVA_Database/cva.sqlite3`, giving the single-machine kiosk transactional writes without requiring a separate database server. |
+| **GUI CSV Migration Tool** | IT can open **CSV to SQLite** from the launchpad, preview a CSV, and import it without using a terminal or database commands. |
 
 ---
 
@@ -64,14 +65,16 @@ To ensure high-speed barcode processing, stable UI rendering, and continuous 24/
 - **64-bit architecture only** — Legacy 32-bit (i386 / x86_32) processors and operating systems are strictly unsupported. Python 3 virtual environments and modern Chromium browser engines require full 64-bit architecture.
 - **Obsolete CPU restriction** — Do **not** deploy on outdated x86 processors manufactured prior to 2009 (e.g., legacy Intel Pentium 4, Intel Atom N-series, or early AMD Sempron/Athlon 64 chips).
 - **Standard chipset suppliers** — Use standard Intel or AMD 64-bit x86 processors, or standard ARM64 (aarch64) single-board computers such as a Raspberry Pi 4/5 running a 64-bit OS. Avoid obscure, unbranded x86 clones lacking stable Linux kernel driver support.
-- **Storage allocation for 24/7 logging** — While basic setups run on 64 GB, a 2 TB drive is strongly recommended for schools running the kiosk continuously (24/7/365), to store multi-year attendance archives (`logs_YYYY-MM-DD.csv`), daily snapshot image folders, local database backups, and system updates.
+- **Storage allocation for 24/7 logging** — While basic setups run on 64 GB, a 2 TB drive is strongly recommended for schools running the kiosk continuously (24/7/365), to store the local SQLite database, attendance archives, daily snapshot image folders, and system updates.
 
 ---
 
 ## ⚠️ Crucial System Warnings: What NOT To Do
 
-> **Do not manually edit `data.csv` while the server is actively running.**
-> Doing so risks file-locking conflicts or data corruption if a scan occurs simultaneously. Always use the built-in Database Manager web interface.
+> **Do not manually edit `CVA_Database/cva.sqlite3` while the server is running.**
+> Use the built-in Database Manager web interface so student changes are validated and written transactionally.
+
+> On the first startup after this migration, the application imports existing records from `data.csv` (or `backup-data.csv`) and existing daily attendance CSV files into SQLite. The CSV files are retained as a one-time migration source and are no longer updated.
 
 > **Do not copy the `venv/` folder across different computers.**
 > Python virtual environments are architecture- and path-specific. The master installer script automatically builds a fresh environment on each machine.
@@ -106,6 +109,16 @@ The core master script (`CVAFPI IDENTIFICATION SYSTEM.sh`) automates environment
 - Provisions and configures an isolated Python virtual environment (`venv`)
 - Installs runtime dependencies (Chromium, unclutter, Flask modules)
 - Handles repository updates and interactive prompts seamlessly
+
+### Migrating a CSV Without the Terminal
+
+1. Start the system from the desktop shortcut or configured startup entry.
+2. Select **CSV to SQLite** on the launchpad.
+3. Choose the existing student CSV and select **Preview CSV**.
+4. Review the valid rows, new records, and updates.
+5. Select **Import into SQLite**.
+
+The default mode merges records by barcode. Use **Replace all current student records** only when the selected CSV is the complete master list. The original CSV is never deleted or modified.
 
 ---
 
@@ -174,8 +187,9 @@ ID-BIO-Project/
 ├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
 ├── id_bio.desktop                    # KDE desktop shortcut entry
 ├── Startup                           # Autostart boot script trigger
-├── data.csv                          # Primary user database (Barcode, Name, Grade, Section, Access, Color, NTFY_TOPIC)
-├── backup-data.csv                   # Mirrored backup user database file
+├── CVA_Database/cva.sqlite3         # Local SQLite student and attendance database
+├── data.csv                          # Legacy one-time migration source
+├── backup-data.csv                   # Legacy fallback migration source
 ├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
 ├── launchpad.html                    # Main dashboard launcher interface
 ├── scanner.html                      # Live attendance registry scanner interface

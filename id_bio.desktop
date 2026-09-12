@@ -1,11 +1,11 @@
 [Desktop Entry]
 Comment=
-Exec=python3 ~/kiosk.py
+Exec=/workspaces/ID-BIO-Project/CVAFPI\ IDENTIFICATION\ SYSTEM.sh
 GenericName=
-Icon=/home/Debook/Projects/ID Bio HTML Project/CVAFPI-LOGO.png
+Icon=/workspaces/ID-BIO-Project/static/CVAFPI-LOGO.png
 MimeType=
 Name=ID Bio System
-Path=
+Path=/workspaces/ID-BIO-Project
 StartupNotify=true
 Terminal=false
 TerminalOptions=

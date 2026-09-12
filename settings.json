@@ -3,5 +3,8 @@
     "parent_notifications_enabled": true,
     "office_alerts_enabled": true,
     "office_ntfy_topic": "CVAFPI-Office-Test",
-    "blocked_camera_alerts_enabled": true
+    "blocked_camera_alerts_enabled": true,
+    "institution_name": "Christian Vision Academy Foundation Inc.",
+    "theme": "night",
+    "accent_color": "#8c00ff"
 }
