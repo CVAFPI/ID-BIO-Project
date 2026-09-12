@@ -79,6 +79,7 @@
 
         .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
     </style>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
 <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
 
@@ -201,6 +202,7 @@
         </div>
     </div>
 
+    <script src="/static/kiosk-dialog.js"></script>
     <script>
         let currentLogsData = [];
         let snapshotPreviewEnabled = false;
@@ -453,9 +455,9 @@
             }
         }
 
-        function exportCSV() {
+        async function exportCSV() {
             if (currentLogsData.length === 0) {
-                alert("No logs to export!");
+                await appAlert("No logs to export!");
                 return;
             }
 

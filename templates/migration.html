@@ -77,6 +77,7 @@
         @media (max-width:720px) { .intro { display:block; } .database-pill { display:inline-block; margin-top:18px; } .workspace { grid-template-columns:1fr; } .steps { display:grid; grid-template-columns:repeat(3,1fr); } .step { display:block; padding:11px 8px; } .step-number { margin-bottom:7px; } .step small { display:none; } }
         @media (max-width:500px) { .shell { width:calc(100% - 26px); padding-top:15px; } .top-actions .clock { display:none; } .stats { grid-template-columns:repeat(2,1fr); } .actions { flex-direction:column; } button { width:100%; } }
     </style>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
 <body>
     <main class="shell" style="--blue: {{ accent_color }}">
@@ -101,7 +102,7 @@
         fetch('/api/migration/status').then(response=>response.json()).then(data=>{document.getElementById('databaseCount').textContent=`${data.students} students`;}).catch(()=>{document.getElementById('databaseCount').textContent='Unavailable';});
         fileInput.addEventListener('change',()=>{selectedFile=fileInput.files[0]||null; fileName.textContent=selectedFile?selectedFile.name:'No file selected'; document.getElementById('filePicker').classList.toggle('ready',!!selectedFile); previewButton.disabled=!selectedFile; importButton.disabled=true; result.className='result'; setStep(1);});
         previewButton.addEventListener('click',async()=>{if(!selectedFile)return; setBusy(true); const form=new FormData(); form.append('file',selectedFile); try{const response=await fetch('/api/migration/preview',{method:'POST',body:form}); const data=await response.json(); if(!response.ok) showError(data.message); else showPreview(data);}catch(error){showError('The CSV could not be read.')}finally{setBusy(false);}});
-        importButton.addEventListener('click',async()=>{if(!selectedFile||!confirm('Import the reviewed records into SQLite?'))return; setBusy(true); const form=new FormData(); form.append('file',selectedFile); form.append('replace_existing',document.getElementById('replaceExisting').checked); try{const response=await fetch('/api/migration/import',{method:'POST',body:form}); const data=await response.json(); if(!response.ok)showError(data.message); else{showSuccess(`Imported ${data.imported} records using ${data.mode} mode. The database now contains ${data.students} students.`); document.getElementById('databaseCount').textContent=`${data.students} students`;}}catch(error){showError('The import failed. Please try again.')}finally{setBusy(false);}});
+        importButton.addEventListener('click',async()=>{if(!selectedFile||!(await appConfirm('Import the reviewed records into SQLite?')))return; setBusy(true); const form=new FormData(); form.append('file',selectedFile); form.append('replace_existing',document.getElementById('replaceExisting').checked); try{const response=await fetch('/api/migration/import',{method:'POST',body:form}); const data=await response.json(); if(!response.ok)showError(data.message); else{showSuccess(`Imported ${data.imported} records using ${data.mode} mode. The database now contains ${data.students} students.`); document.getElementById('databaseCount').textContent=`${data.students} students`;}}catch(error){showError('The import failed. Please try again.')}finally{setBusy(false);}});
         document.getElementById('clearButton').addEventListener('click',()=>{fileInput.value=''; selectedFile=null; fileName.textContent='No file selected'; document.getElementById('filePicker').classList.remove('ready'); previewButton.disabled=true; importButton.disabled=true; result.className='result'; setStep(1);});
         function setBusy(busy){previewButton.disabled=busy||!selectedFile; importButton.disabled=busy||!selectedFile; previewButton.textContent=busy?'Checking...':'Review CSV';}
         function setStep(number){[1,2,3].forEach(index=>document.getElementById(`step${index}`).classList.toggle('active',index===number));}
@@ -110,5 +111,6 @@
         function showError(message){result.className='result visible error'; document.getElementById('resultTitle').textContent='Unable to continue'; document.getElementById('resultMessage').textContent=message; document.getElementById('stats').innerHTML=''; document.getElementById('sample').innerHTML='';}
         function escapeHtml(value){return String(value).replace(/[&<>\'"]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));}
     </script>
+    <script src="/static/kiosk-dialog.js"></script>
 </body>
 </html>

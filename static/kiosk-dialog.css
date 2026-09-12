@@ -1,0 +1,18 @@
+.kiosk-dialog-overlay { position:fixed; inset:0; z-index:1000; display:none; place-items:center; padding:20px; background:rgba(4,8,14,.78); backdrop-filter:blur(8px); }
+.kiosk-dialog-overlay.is-open { display:grid; }
+.kiosk-dialog { width:min(430px,100%); border:1px solid var(--line,var(--border,#334155)); border-radius:12px; color:var(--ink,var(--text,#e8eef7)); background:var(--surface,var(--panel,#18212c)); box-shadow:0 24px 80px rgba(0,0,0,.5); }
+.kiosk-dialog-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line,var(--border,#334155)); background:var(--surface-2,var(--panel-header,#202c3a)); }
+.kiosk-dialog-head h2 { margin:0; font-size:1rem; }
+.kiosk-dialog-close { border:0; color:var(--muted,#91a0b5); background:transparent; font-size:1.4rem; cursor:pointer; }
+.kiosk-dialog-body { padding:20px; line-height:1.5; }
+.kiosk-dialog-message { margin:0; color:var(--muted,#91a0b5); white-space:pre-wrap; }
+.kiosk-dialog-input-wrap { display:flex; align-items:center; gap:8px; margin-top:14px; }
+.kiosk-dialog-input { width:100%; padding:12px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--ink,var(--text,#e8eef7)); background:var(--canvas,var(--bg,#10161f)); font:inherit; outline:none; }
+.kiosk-dialog-input:focus { border-color:var(--blue,var(--accent,#4da3ff)); }
+.kiosk-dialog-toggle { padding:10px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--muted,#91a0b5); background:transparent; cursor:pointer; white-space:nowrap; }
+.kiosk-keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+.kiosk-key { min-height:44px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--ink,var(--text,#e8eef7)); background:var(--surface-2,var(--panel-header,#202c3a)); font-size:1rem; cursor:pointer; }
+.kiosk-key:hover,.kiosk-dialog-toggle:hover { border-color:var(--blue,var(--accent,#4da3ff)); }
+.kiosk-dialog-foot { display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid var(--line,var(--border,#334155)); }
+.kiosk-dialog-button { padding:10px 15px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--muted,#91a0b5); background:transparent; font-weight:700; cursor:pointer; }
+.kiosk-dialog-button.primary { border-color:transparent; color:#fff; background:var(--blue,var(--accent,#4da3ff)); }

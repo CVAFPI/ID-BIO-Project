@@ -83,6 +83,7 @@
 
         .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
     </style>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
     <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
 
@@ -173,6 +174,7 @@
     <!-- Hidden canvas for photo capture & black screen analysis -->
     <canvas id="analysisCanvas" style="display:none;"></canvas>
 
+    <script src="/static/kiosk-dialog.js"></script>
     <script>
         let todayLogs = [];
         let searchTimerInterval = null;
@@ -357,7 +359,15 @@
                 });
                 const result = await res.json();
 
-                if (result.status === 'success') {
+                if (result.status === 'system_command') {
+                    const pin = await appPrompt('Enter the security PIN for this system command:', { title: 'Security PIN', pin: true, keypad: true });
+                    if (pin) {
+                        const commandResponse = await fetch('/api/system/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: result.command, pin }) });
+                        const commandResult = await commandResponse.json();
+                        if (commandResult.status === 'redirect') window.location.href = commandResult.location;
+                        else if (!commandResponse.ok) await appAlert(commandResult.message || 'System command denied.');
+                    }
+                } else if (result.status === 'success') {
                     updateActiveCard(result.data);
                     fetchLogs();
                 }

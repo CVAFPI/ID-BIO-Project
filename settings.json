@@ -5,6 +5,14 @@
     "office_ntfy_topic": "CVAFPI-Office-Test",
     "blocked_camera_alerts_enabled": true,
     "institution_name": "Christian Vision Academy Foundation Inc.",
-    "theme": "night",
-    "accent_color": "#8c00ff"
+    "theme": "sunset",
+    "accent_color": "#8c00ff",
+    "pin_hash": "20e89dd03ce0b0efb318d34c19b190996a322a77cac0b54822b48644dd1f7385",
+    "pin_salt": "b5ab7a0344f4ec66a713335fd1934491",
+    "security_question": "HATDOG",
+    "security_answer_hash": "4fbf05f81c265fc72b912a67a3c0eebf3053c0d1d631d97656073da453bdf082",
+    "security_answer_salt": "fdeb631e32c12126af9b51d30dace54e",
+    "close_kiosk_barcode": "CD=CLOSEBARCODESYS96%&@CVAFPI",
+    "shutdown_barcode": "CD=EMERSHUTDOWNSYSSU62#9CVAFPI",
+    "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI"
 }

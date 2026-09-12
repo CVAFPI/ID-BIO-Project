@@ -16,6 +16,7 @@ Built specifically for educational institutions under **Department of Education 
 ## 📋 Table of Contents
 
 - [What's New in v2.0](#-whats-new-in-version-20)
+- [Security and Kiosk Controls](#-security-and-kiosk-controls)
 - [SQL Branch & Database](#-sql-branch--database)
 - [System Requirements](#-system-requirements--hardware-specifications)
 - [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
@@ -42,6 +43,8 @@ Built specifically for educational institutions under **Department of Education 
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
 | **Local SQLite Database** | Student records and attendance data are stored in `CVA_Database/cva.sqlite3`, giving the single-machine kiosk transactional writes without requiring a separate database server. |
 | **GUI CSV Migration Tool** | IT can open **CSV to SQLite** from the launchpad, preview a CSV, and import it without using a terminal or database commands. |
+| **PIN-Protected Administration** | Reboot, shutdown, kiosk exit, settings changes, logo uploads, and system barcode commands require a configurable security PIN. |
+| **Touch-Friendly Security Dialogs** | In-page modal dialogs replace browser alerts and prompts, preserving kiosk focus and providing masked PIN entry with an on-screen numeric keypad. |
 
 ---
 
@@ -62,6 +65,24 @@ The `SQL-IDBIOSYS` branch uses a local SQLite database as the system of record. 
 On startup, the application automatically creates the database and tables when they do not exist. It then imports legacy student data from `data.csv` and `backup-data.csv`, and imports existing daily attendance CSV files from `CVA_Database/logs_YYYY-MM-DD/` when the attendance table is empty. These source files are retained and are not modified by the migration.
 
 After migration, use the Database Manager or the **CSV to SQLite** page for changes. Do not edit CSV files or the SQLite database while the server is running.
+
+---
+
+## 🔐 Security and Kiosk Controls
+
+Open **System settings** from the launchpad to configure the kiosk security controls:
+
+- Set an initial 4 to 12 digit security PIN.
+- Change the PIN only after entering the current PIN.
+- Configure a security question and answer for PIN recovery.
+- Change the close kiosk, shutdown, and return-to-launchpad barcodes.
+- Upload a custom school logo only after PIN authorization.
+
+The PIN is stored as a salted PBKDF2 hash. It is never returned by the settings API or displayed in the interface. If the PIN is forgotten, use **Forgot PIN** in System settings and answer the configured recovery question. A recovery question must be configured during initial setup.
+
+System actions use custom in-page dialogs rather than native browser alerts, confirmations, or prompts. PIN fields are masked by default and include a **Show PIN / Mask PIN** toggle and touchscreen numeric keypad where appropriate. The dialogs keep the kiosk browser focused and inherit the active application theme.
+
+> **Important:** The PIN protects the application actions, but the kiosk account still requires carefully restricted physical and SSH access. Passwordless `sudo` is required for operating-system reboot and shutdown commands; follow the hardening guidance below.
 
 ### Backup and Restore
 
@@ -222,6 +243,8 @@ ID-BIO-Project/
 ├── data.csv                          # Legacy one-time migration source
 ├── backup-data.csv                   # Legacy fallback migration source
 ├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
+├── static/kiosk-dialog.css           # Theme-aware in-page security dialog styles
+├── static/kiosk-dialog.js            # Alert, confirmation, PIN prompt, and keypad behavior
 ├── launchpad.html                    # Main dashboard launcher interface
 ├── scanner.html                      # Live attendance registry scanner interface
 ├── manager.html                      # Database manager interface
@@ -235,15 +258,15 @@ ID-BIO-Project/
 
 ## 🖨️ Hardware Control Barcodes
 
-Scanning any of these reference command barcodes with a physical scanner immediately executes system-level operations.
+Scanning any configured system barcode with a physical scanner starts the command flow, but system-level operations require the configured security PIN. The three values can be changed from **System settings**; the values below are only the initial defaults.
 
-> **⚠️ Keep printed copies of these barcodes secured — anyone who can scan them can trigger these actions.**
+> **⚠️ Keep printed copies of these barcodes secured. A security PIN is still required, and the barcodes should be changed if they become known.**
 
 | Action | Command Barcode | Description |
 |---|---|---|
-| **Close Kiosk Session** | `CD=CLOSEBARCODESYS96%&@CVAFPI` | Terminates the active kiosk session |
-| **OS Emergency Shutdown** | `CD=EMERSHUTDOWNSYSSU62#9CVAFPI` | Executes an immediate system power-down |
-| **Return to Main Menu** | `CD=RETURNTOMNSYS8(*CVAFPI` | Redirects to `launchpad.html` |
+| **Close Kiosk Session** | Initial default: `CD=CLOSEBARCODESYS96%&@CVAFPI` | Terminates the active kiosk session after PIN verification |
+| **OS Emergency Shutdown** | Initial default: `CD=EMERSHUTDOWNSYSSU62#9CVAFPI` | Executes an immediate system power-down after PIN verification |
+| **Return to Main Menu** | Initial default: `CD=RETURNTOMNSYS8(*CVAFPI` | Redirects to `launchpad.html` after PIN verification |
 
 ---
 

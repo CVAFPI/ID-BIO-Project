@@ -7,6 +7,9 @@ import threading
 import urllib.request
 import base64
 import re
+import hashlib
+import hmac
+import secrets
 from datetime import datetime
 
 app = Flask(__name__)
@@ -23,8 +26,58 @@ DEFAULT_SETTINGS = {
     "blocked_camera_alerts_enabled": True,
     "institution_name": "Christian Vision Academy Foundation Inc.",
     "theme": "night",
-    "accent_color": "#4da3ff"
+    "accent_color": "#4da3ff",
+    "pin_hash": "",
+    "pin_salt": "",
+    "security_question": "",
+    "security_answer_hash": "",
+    "security_answer_salt": "",
+    "close_kiosk_barcode": "CD=CLOSEBARCODESYS96%&@CVAFPI",
+    "shutdown_barcode": "CD=EMERSHUTDOWNSYSSU62#9CVAFPI",
+    "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI"
 }
+
+PUBLIC_SETTINGS = {key for key in DEFAULT_SETTINGS if key not in {
+    'pin_hash', 'pin_salt', 'security_answer_hash', 'security_answer_salt'
+}}
+PIN_PATTERN = re.compile(r'^\d{4,12}$')
+
+
+def hash_secret(value, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac('sha256', value.encode('utf-8'), salt.encode('utf-8'), 200000)
+    return salt, digest.hex()
+
+
+def secret_matches(value, salt, expected_hash):
+    if not value or not salt or not expected_hash:
+        return False
+    _, actual_hash = hash_secret(value, salt)
+    return hmac.compare_digest(actual_hash, expected_hash)
+
+
+def pin_is_configured(settings=None):
+    settings = settings or load_system_settings()
+    return bool(settings.get('pin_hash') and settings.get('pin_salt'))
+
+
+def verify_pin(pin, settings=None):
+    settings = settings or load_system_settings()
+    return secret_matches(str(pin or '').strip(), settings.get('pin_salt'), settings.get('pin_hash'))
+
+
+def protected_response(action='perform this action'):
+    data = request.get_json(silent=True) or request.form
+    settings = load_system_settings()
+    if not pin_is_configured(settings):
+        return jsonify({'status': 'error', 'message': 'A security PIN must be configured first.'}), 403
+    if not verify_pin(data.get('pin'), settings):
+        return jsonify({'status': 'error', 'message': f'Invalid PIN. Cannot {action}.'}), 401
+    return None
+
+
+def public_settings(settings):
+    return {key: settings.get(key, DEFAULT_SETTINGS[key]) for key in PUBLIC_SETTINGS}
 
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
@@ -51,6 +104,9 @@ def save_system_settings(data):
         data['accent_color'] = DEFAULT_SETTINGS['accent_color']
     if 'institution_name' in data:
         data['institution_name'] = str(data['institution_name']).strip()[:100]
+    for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode'):
+        if key in data:
+            data[key] = str(data[key]).strip()[:100]
     safe_data = {key: data[key] for key in DEFAULT_SETTINGS if key in data}
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
@@ -101,19 +157,63 @@ def migration():
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings_api():
-    return jsonify(load_system_settings())
+    return jsonify(public_settings(load_system_settings()))
 
 @app.route('/api/settings', methods=['POST'])
 def save_settings_api():
     data = request.json or {}
     current = load_system_settings()
+    if pin_is_configured(current) and not verify_pin(data.get('current_pin'), current):
+        return jsonify({'status': 'error', 'message': 'Current PIN is required.'}), 401
+
+    new_pin = str(data.get('new_pin', '')).strip()
+    if new_pin and not PIN_PATTERN.fullmatch(new_pin):
+        return jsonify({'status': 'error', 'message': 'PIN must contain 4 to 12 digits.'}), 400
+    question = str(data.get('security_question', current.get('security_question', ''))).strip()[:200]
+    answer = str(data.get('security_answer', '')).strip().lower()
+    if (new_pin or question or answer) and (not new_pin or not question or not answer):
+        return jsonify({'status': 'error', 'message': 'PIN, security question, and answer are all required.'}), 400
+
     current.update(data)
+    if new_pin:
+        current['pin_salt'], current['pin_hash'] = hash_secret(new_pin)
+        current['security_question'] = question
+        current['security_answer_salt'], current['security_answer_hash'] = hash_secret(answer)
+    for key in ('current_pin', 'new_pin', 'security_answer'):
+        current.pop(key, None)
     save_system_settings(current)
+    return jsonify({'status': 'success', 'settings': public_settings(load_system_settings())})
+
+
+@app.route('/api/security/config', methods=['GET'])
+def security_config_api():
+    settings = load_system_settings()
+    return jsonify({
+        'pin_configured': pin_is_configured(settings),
+        'security_question': settings.get('security_question', '')
+    })
+
+
+@app.route('/api/security/recover', methods=['POST'])
+def security_recover_api():
+    data = request.json or {}
+    settings = load_system_settings()
+    answer = str(data.get('security_answer', '')).strip().lower()
+    new_pin = str(data.get('new_pin', '')).strip()
+    if not settings.get('security_question') or not secret_matches(answer, settings.get('security_answer_salt'), settings.get('security_answer_hash')):
+        return jsonify({'status': 'error', 'message': 'Security answer is incorrect.'}), 401
+    if not PIN_PATTERN.fullmatch(new_pin):
+        return jsonify({'status': 'error', 'message': 'PIN must contain 4 to 12 digits.'}), 400
+    settings['pin_salt'], settings['pin_hash'] = hash_secret(new_pin)
+    save_system_settings(settings)
     return jsonify({'status': 'success'})
 
 
 @app.route('/api/branding/logo', methods=['POST'])
 def upload_branding_logo():
+    authorization_error = protected_response('upload the logo')
+    if authorization_error:
+        return authorization_error
     uploaded_file = request.files.get('logo')
     if not uploaded_file or not uploaded_file.filename:
         return jsonify({'status': 'error', 'message': 'Please choose a logo image.'}), 400
@@ -283,6 +383,14 @@ def scan_api():
     image_data = data.get('image', '').strip()
 
     if barcode:
+        settings = load_system_settings()
+        command_map = {
+            settings.get('close_kiosk_barcode'): 'close_kiosk',
+            settings.get('shutdown_barcode'): 'shutdown',
+            settings.get('launchpad_barcode'): 'launchpad'
+        }
+        if barcode in command_map:
+            return jsonify({'status': 'system_command', 'command': command_map[barcode]})
         res = logger.log_attendance(barcode)
 
         if image_data and res.get('status') == 'success':
@@ -307,16 +415,25 @@ def scan_api():
 
 @app.route('/api/system/reboot', methods=['POST'])
 def system_reboot():
+    authorization_error = protected_response('restart the system')
+    if authorization_error:
+        return authorization_error
     os.system('sudo reboot')
     return jsonify({'status': 'rebooting'})
 
 @app.route('/api/system/shutdown', methods=['POST'])
 def system_shutdown():
+    authorization_error = protected_response('shut down the system')
+    if authorization_error:
+        return authorization_error
     os.system('sudo shutdown now')
     return jsonify({'status': 'shutting down'})
 
 @app.route('/api/exit', methods=['POST'])
 def exit_api():
+    authorization_error = protected_response('exit kiosk mode')
+    if authorization_error:
+        return authorization_error
     try:
         os.system("pkill -f cva_kiosk_profile")
     except Exception as e:
@@ -324,6 +441,28 @@ def exit_api():
 
     threading.Timer(0.5, lambda: os._exit(0)).start()
     return jsonify({'status': 'success'})
+
+
+@app.route('/api/system/command', methods=['POST'])
+def system_command_api():
+    authorization_error = protected_response('run this system command')
+    if authorization_error:
+        return authorization_error
+    command = (request.json or {}).get('command')
+    settings = load_system_settings()
+    if command == 'shutdown':
+        os.system('sudo shutdown now')
+        return jsonify({'status': 'shutting down'})
+    if command == 'close_kiosk':
+        try:
+            os.system('pkill -f cva_kiosk_profile')
+        except Exception as error:
+            print(f'[Command Exit Error]: {error}')
+        threading.Timer(0.5, lambda: os._exit(0)).start()
+        return jsonify({'status': 'success'})
+    if command == 'launchpad':
+        return jsonify({'status': 'redirect', 'location': '/launchpad.html'})
+    return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
