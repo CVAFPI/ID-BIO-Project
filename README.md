@@ -16,6 +16,7 @@ Built specifically for educational institutions under **Department of Education 
 ## 📋 Table of Contents
 
 - [What's New in v2.0](#-whats-new-in-version-20)
+- [SQL Branch & Database](#-sql-branch--database)
 - [System Requirements](#-system-requirements--hardware-specifications)
 - [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
 - [Crucial Warnings](#️-crucial-system-warnings-what-not-to-do)
@@ -41,6 +42,36 @@ Built specifically for educational institutions under **Department of Education 
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
 | **Local SQLite Database** | Student records and attendance data are stored in `CVA_Database/cva.sqlite3`, giving the single-machine kiosk transactional writes without requiring a separate database server. |
 | **GUI CSV Migration Tool** | IT can open **CSV to SQLite** from the launchpad, preview a CSV, and import it without using a terminal or database commands. |
+
+---
+
+## 🗄️ SQL Branch & Database
+
+The `SQL-IDBIOSYS` branch uses a local SQLite database as the system of record. It does not require MySQL, PostgreSQL, or a separate database service.
+
+| Database item | Details |
+|---|---|
+| **Database file** | `CVA_Database/cva.sqlite3` |
+| **Student records** | `students` table, keyed by barcode |
+| **Attendance records** | `attendance` table, including timestamp, student details, and snapshot ID |
+| **Application settings** | `app_settings` table |
+| **Database mode** | SQLite WAL mode with foreign-key enforcement enabled |
+
+### Startup and Migration Behavior
+
+On startup, the application automatically creates the database and tables when they do not exist. It then imports legacy student data from `data.csv` and `backup-data.csv`, and imports existing daily attendance CSV files from `CVA_Database/logs_YYYY-MM-DD/` when the attendance table is empty. These source files are retained and are not modified by the migration.
+
+After migration, use the Database Manager or the **CSV to SQLite** page for changes. Do not edit CSV files or the SQLite database while the server is running.
+
+### Backup and Restore
+
+Stop the kiosk before copying the database so its WAL files are included consistently:
+
+```bash
+cp CVA_Database/cva.sqlite3 CVA_Database/cva.sqlite3.backup
+```
+
+To restore, stop the kiosk, replace `CVA_Database/cva.sqlite3` with a known-good backup, and start the launcher again. Keep the backup in a separate location for protection against disk failure.
 
 ---
 
@@ -177,7 +208,7 @@ Copy and execute these commands in sequence to install and deploy the system:
 
 ```
 ID-BIO-Project/
-├── CVA_Database/                     # Date-specific attendance log folders & snapshots (auto-purged after 7 days)
+├── CVA_Database/                     # SQLite database, daily logs, and snapshots (logs auto-purged after 7 days)
 ├── ID-CODES FOR SYSTEM/              # Reference command barcodes for admin control
 ├── logs/                             # Real-time daily scan auxiliary paths
 ├── venv/                             # Python virtual environment (architecture-specific)
@@ -187,7 +218,7 @@ ID-BIO-Project/
 ├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
 ├── id_bio.desktop                    # KDE desktop shortcut entry
 ├── Startup                           # Autostart boot script trigger
-├── CVA_Database/cva.sqlite3         # Local SQLite student and attendance database
+├── CVA_Database/cva.sqlite3          # Local SQLite student, attendance, and settings database
 ├── data.csv                          # Legacy one-time migration source
 ├── backup-data.csv                   # Legacy fallback migration source
 ├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
