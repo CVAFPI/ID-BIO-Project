@@ -5,3 +5,8 @@ CVA_Database/cva.sqlite3-wal
 CVA_Database/cva.sqlite3-shm
 launcher.log
 static/custom-logo.png
+.venv-windows/
+build/
+dist/
+.kiosk-profile/
+__pycache__/

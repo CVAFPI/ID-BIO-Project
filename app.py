@@ -10,13 +10,25 @@ import re
 import hashlib
 import hmac
 import secrets
+import shutil
 from datetime import datetime
+import sys
 
-app = Flask(__name__)
-SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.environ.get('CVAFPI_DATA_DIR', SOURCE_DIR)
+RESOURCE_DIR = getattr(sys, '_MEIPASS', SOURCE_DIR)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(RESOURCE_DIR, 'templates'),
+    static_folder=os.path.join(RESOURCE_DIR, 'static')
+)
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 CUSTOM_LOGO = os.path.join(BASE_DIR, 'static', 'custom-logo.png')
+os.makedirs(os.path.dirname(CUSTOM_LOGO), exist_ok=True)
+PACKAGED_LOGO = os.path.join(app.static_folder, 'custom-logo.png')
+if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO) and os.path.exists(CUSTOM_LOGO):
+    shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
 
 DEFAULT_SETTINGS = {
     "camera_enabled": False,
@@ -221,6 +233,8 @@ def upload_branding_logo():
         from PIL import Image
         image = Image.open(uploaded_file.stream)
         image.convert('RGBA').save(CUSTOM_LOGO, 'PNG', optimize=True)
+        if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO):
+            shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
         return jsonify({'status': 'success', 'logo_url': '/static/custom-logo.png'})
     except Exception as error:
         return jsonify({'status': 'error', 'message': f'Logo conversion failed: {error}'}), 400
@@ -418,7 +432,7 @@ def system_reboot():
     authorization_error = protected_response('restart the system')
     if authorization_error:
         return authorization_error
-    os.system('sudo reboot')
+    os.system('shutdown /r /t 0')
     return jsonify({'status': 'rebooting'})
 
 @app.route('/api/system/shutdown', methods=['POST'])
@@ -426,7 +440,7 @@ def system_shutdown():
     authorization_error = protected_response('shut down the system')
     if authorization_error:
         return authorization_error
-    os.system('sudo shutdown now')
+    os.system('shutdown /s /t 0')
     return jsonify({'status': 'shutting down'})
 
 @app.route('/api/exit', methods=['POST'])
@@ -435,7 +449,9 @@ def exit_api():
     if authorization_error:
         return authorization_error
     try:
-        os.system("pkill -f cva_kiosk_profile")
+        browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
+        if browser_pid.isdigit():
+            os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
     except Exception as e:
         print(f"[Exit Error]: {e}")
 
@@ -451,11 +467,13 @@ def system_command_api():
     command = (request.json or {}).get('command')
     settings = load_system_settings()
     if command == 'shutdown':
-        os.system('sudo shutdown now')
+        os.system('shutdown /s /t 0')
         return jsonify({'status': 'shutting down'})
     if command == 'close_kiosk':
         try:
-            os.system('pkill -f cva_kiosk_profile')
+            browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
+            if browser_pid.isdigit():
+                os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
         except Exception as error:
             print(f'[Command Exit Error]: {error}')
         threading.Timer(0.5, lambda: os._exit(0)).start()
@@ -465,4 +483,4 @@ def system_command_api():
     return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

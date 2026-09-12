@@ -102,7 +102,7 @@
             <button class="system-control danger" type="button" onclick="shutdownSystem()"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18.4 6.6a9 9 0 1 1-12.8 0M12 2v10"/></svg></div><div><strong>Shut down</strong><span>Power off the kiosk computer</span></div></button>
             <button class="system-control danger" type="button" onclick="exitKiosk()"><div class="module-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div><div><strong>Exit kiosk mode</strong><span>Return to the desktop</span></div></button>
         </section>
-        <footer class="footer"><span id="footerInstitution">{{ institution_name }}</span><span>Built for Debian 13 · <b id="footerClock">PHT --:--</b></span></footer>
+        <footer class="footer"><span id="footerInstitution">{{ institution_name }}</span><span>Windows kiosk edition · <b id="footerClock">PHT --:--</b></span></footer>
     </main>
     <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal"><div class="modal-head"><h2 id="settingsTitle">System settings</h2><button class="modal-close" type="button" onclick="closeSettingsModal()" aria-label="Close settings">×</button></div><div class="modal-body">
         <div class="setting"><div class="setting-row"><div><span class="setting-title">Photo on scan</span><span class="setting-desc">Enable camera preview and capture during attendance scans.</span></div><label class="switch"><input type="checkbox" id="settingCamera"><span class="slider"></span></label></div></div>

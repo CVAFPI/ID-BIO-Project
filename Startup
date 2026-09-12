@@ -1,4 +1,0 @@
-#!/bin/bash
-export QT_QPA_PLATFORM=xcb
-export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu"
-exec "/workspaces/ID-BIO-Project/CVAFPI IDENTIFICATION SYSTEM.sh"
