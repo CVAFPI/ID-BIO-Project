@@ -19,12 +19,12 @@ Build on Windows 11. PyInstaller creates Windows executables and cannot cross-co
 1. Install 64-bit Python 3.11 or newer from python.org.
 2. Copy or clone this repository to the Windows computer.
 3. Double-click `build-windows.bat`.
-4. Run `dist\\CVAFPI-IDSYS.exe`.
+4. Run `dist\CVAFPI-IDSYS.exe`.
 
 The build script creates a temporary `.venv-windows` environment, installs the Windows dependencies, and builds a single file. The final executable is:
 
 ```text
-dist\\CVAFPI-IDSYS.exe
+dist\CVAFPI-IDSYS.exe
 ```
 
 No Python installation is needed on the deployment computer after the executable has been built.
@@ -61,11 +61,11 @@ The launcher serves the Flask application through Waitress `2.1.1` instead of Fl
 The executable stores writable data beside itself:
 
 ```text
-CVA_Database\\cva.sqlite3   Student, attendance, and settings database
-CVA_Database\\logs_*         Daily logs and captured snapshots
-logs\\                         Auxiliary application logs
+CVA_Database\cva.sqlite3   Student, attendance, and settings database
+CVA_Database\logs_*         Daily logs and captured snapshots
+logs\                         Auxiliary application logs
 settings.json                  Application settings
-static\\custom-logo.png       Uploaded school logo
+static\custom-logo.png       Uploaded school logo
 ```
 
 Stop the kiosk before copying the database. Back up the complete application data directories, not only the executable. Do not edit the SQLite database while the application is running.
