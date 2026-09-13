@@ -108,4 +108,4 @@ Close the other local service using port 5000, then restart the executable. The 
 
 ### Existing records are missing
 
-Copy the previous `CVA_Database`, `logs`, `settings.json`, and `static\\custom-logo.png` files beside the new executable before starting it.
+Copy the previous `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` files beside the new executable before starting it.
