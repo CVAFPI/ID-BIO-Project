@@ -53,7 +53,7 @@ DEFAULT_SETTINGS = {
 PUBLIC_SETTINGS = {key for key in DEFAULT_SETTINGS if key not in {
     'pin_hash', 'pin_salt', 'security_answer_hash', 'security_answer_salt'
 }}
-PIN_PATTERN = re.compile(r'^\d{4,12}$')
+PASSCODE_PATTERN = re.compile(r'^\S{4,12}$')
 
 
 def hash_secret(value, salt=None):
@@ -111,9 +111,9 @@ def protected_response(action='perform this action'):
     data = request.get_json(silent=True) or request.form
     settings = load_system_settings()
     if not pin_is_configured(settings):
-        return jsonify({'status': 'error', 'message': 'A security PIN must be configured first.'}), 403
+        return jsonify({'status': 'error', 'message': 'A security passcode must be configured first.'}), 403
     if not verify_pin(data.get('pin'), settings):
-        return jsonify({'status': 'error', 'message': f'Invalid PIN. Cannot {action}.'}), 401
+        return jsonify({'status': 'error', 'message': f'Invalid passcode. Cannot {action}.'}), 401
     return None
 
 
@@ -209,15 +209,15 @@ def save_settings_api():
     data = request.json or {}
     current = load_system_settings()
     if pin_is_configured(current) and not verify_pin(data.get('current_pin'), current):
-        return jsonify({'status': 'error', 'message': 'Current PIN is required.'}), 401
+        return jsonify({'status': 'error', 'message': 'Current passcode is required.'}), 401
 
     new_pin = str(data.get('new_pin', '')).strip()
-    if new_pin and not PIN_PATTERN.fullmatch(new_pin):
-        return jsonify({'status': 'error', 'message': 'PIN must contain 4 to 12 digits.'}), 400
+    if new_pin and not PASSCODE_PATTERN.fullmatch(new_pin):
+        return jsonify({'status': 'error', 'message': 'Passcode must be 4 to 12 characters with no spaces.'}), 400
     question = str(data.get('security_question', current.get('security_question', ''))).strip()[:200]
     answer = str(data.get('security_answer', '')).strip().lower()
     if (new_pin or question or answer) and (not new_pin or not question or not answer):
-        return jsonify({'status': 'error', 'message': 'PIN, security question, and answer are all required.'}), 400
+        return jsonify({'status': 'error', 'message': 'Passcode, security question, and answer are all required.'}), 400
 
     current.update(data)
     if new_pin:
@@ -247,8 +247,8 @@ def security_recover_api():
     new_pin = str(data.get('new_pin', '')).strip()
     if not settings.get('security_question') or not secret_matches(answer, settings.get('security_answer_salt'), settings.get('security_answer_hash')):
         return jsonify({'status': 'error', 'message': 'Security answer is incorrect.'}), 401
-    if not PIN_PATTERN.fullmatch(new_pin):
-        return jsonify({'status': 'error', 'message': 'PIN must contain 4 to 12 digits.'}), 400
+    if not PASSCODE_PATTERN.fullmatch(new_pin):
+        return jsonify({'status': 'error', 'message': 'Passcode must be 4 to 12 characters with no spaces.'}), 400
     settings['pin_salt'], settings['pin_hash'] = hash_secret(new_pin)
     save_system_settings(settings)
     return jsonify({'status': 'success'})

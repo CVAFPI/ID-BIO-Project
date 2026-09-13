@@ -1,5 +1,5 @@
 {
-    "camera_enabled": true,
+    "camera_enabled": false,
     "parent_notifications_enabled": true,
     "office_alerts_enabled": true,
     "office_ntfy_topic": "CVAFPI-Office-Test",
@@ -7,11 +7,11 @@
     "institution_name": "Christian Vision Academy Foundation Inc.",
     "theme": "grassy",
     "accent_color": "#00ff33",
-    "pin_hash": "aadd6bb49a64762891a56c6bb50f80615f3aabdcb21561f43d13a9acf6121a5e",
-    "pin_salt": "bb235eabbe770c3da50f5b24be333907",
+    "pin_hash": "e5a4f342724b0c5472f408c69fe44b3c8c61e13bb649c0472518d05279991b79",
+    "pin_salt": "4981d84b60225385db273cdb4429eb8c",
     "security_question": "short term for Christian vision academy Identification System",
-    "security_answer_hash": "ceec30b699157481c40d4f1179c9010614fa8aea88451b4238432d0374423dbd",
-    "security_answer_salt": "b1f933dbddd6a4cbd768296c91a5bdec",
+    "security_answer_hash": "4bedd8553cff179512d2c25bda95de9292fb05f2f34e84d5398fc6aa54814cfa",
+    "security_answer_salt": "d5340f805d567dc45ab1b19436f45d2b",
     "close_kiosk_barcode": "CD=CLOSEBARCODESYS96%&@CVAFPI",
     "shutdown_barcode": "CD=EMERSHUTDOWNSYSSU62#9CVAFPI",
     "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI"

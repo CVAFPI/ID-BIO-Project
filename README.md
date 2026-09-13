@@ -1,8 +1,21 @@
-# CVAFPI Identification System for Windows 11
+# CVAFPI Identification System
 
-CVAFPI is a local school identification and attendance system. It runs on Windows 11, uses a USB barcode scanner, stores data in a local SQLite database, and can capture scan snapshots with a webcam. It also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and PIN-protected kiosk controls.
+CVAFPI is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
 
-The application is designed to keep student data on the kiosk computer. NTFY notifications are the exception: when enabled and configured, the app sends the attendance message to `https://ntfy.sh` over the internet.
+The application is designed to keep student and attendance data on the kiosk computer. NTFY notifications are the exception: when enabled and configured, the application sends attendance messages to `https://ntfy.sh` over the internet.
+
+## How the system works
+
+The application runs as a local web service. The Flask application provides the user interface and API routes, Waitress serves the application in production and development runs, and the browser displays the scanner, database, migration, log-management, and settings pages.
+
+1. The application starts the local web service and initializes the SQLite database if it does not already exist.
+2. The scanner page receives a barcode from a USB scanner or manual input and submits it to the local API.
+3. The API looks up the barcode in the student database. For a recognized student, it records the attendance timestamp and optional image snapshot.
+4. If parent notifications are enabled and the student has a configured topic, the application sends a background notification through NTFY.
+5. Authorized staff can manage student records, review logs, import CSV files, configure branding, and control system behavior through the web interface.
+6. Restart, shutdown, kiosk exit, logo upload, and security settings require the configured passcode. Passcodes are stored as salted PBKDF2-SHA256 hashes; the original passcode is never stored.
+
+The application listens only on the local computer by default. It is not intended to be exposed directly to a public network.
 
 ## Windows requirements
 
@@ -22,7 +35,7 @@ Complete this checklist on a Windows 11 test computer before creating the final 
 - Run the server-only test described below and open every page: launchpad, scanner, manager, logs manager, migration, and settings.
 - Add one test student with a unique barcode and an NTFY topic. Scan the barcode and verify the attendance row, timestamp, saved snapshot if the camera is enabled, and the parent notification.
 - Test a student without a topic, with parent notifications disabled, and with an unknown barcode. None of these should send a parent notification.
-- Test CSV preview/import, log viewing/export, logo upload, PIN setup/recovery, and the configured system barcodes.
+- Test CSV preview/import, log viewing/export, logo upload, passcode setup/recovery, and the configured system barcodes.
 - Back up `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` before packaging.
 
 The Linux development environment can check Python code and server routes, but it cannot produce a Windows executable. The final build must run on Windows 11.
@@ -71,7 +84,7 @@ Starting `CVAFPI-IDSYS.exe` will:
 
 Edge is preferred when installed. Chrome is used as a fallback. If neither browser is installed, the executable reports that a kiosk browser is required.
 
-The kiosk controls are PIN-protected. `Exit kiosk mode` closes only the browser process started by this application. It does not close other Edge or Chrome windows.
+The kiosk controls are passcode-protected. A passcode must contain 4 to 12 non-space characters; letters, numbers, and symbols are supported. `Exit kiosk mode` closes only the browser process started by this application. It does not close other Edge or Chrome windows.
 
 For the strongest Windows lockdown, configure Windows Assigned Access or Shell Launcher for the account used by the kiosk. Browser kiosk mode controls the application window, while Assigned Access controls the Windows desktop and keyboard escape paths.
 
@@ -115,7 +128,7 @@ Stop the kiosk before copying the database. Back up the complete application dat
 
 ## Security controls
 
-The initial setup requires a 4 to 12 digit PIN and a recovery question. The PIN protects settings, logo uploads, kiosk exit, restart, shutdown, and system barcodes.
+The initial setup requires a 4 to 12 character passcode and a recovery question. Letters, numbers, and symbols are supported, but spaces are not. The passcode protects settings, logo uploads, kiosk exit, restart, shutdown, and system barcodes. The passcode is stored as a salted PBKDF2-SHA256 hash.
 
 The Windows restart and shutdown controls use the standard Windows `shutdown` command. Do not run the application from an administrator account unless Windows kiosk policy requires it.
 

@@ -3,7 +3,7 @@
     overlay.className = 'kiosk-dialog-overlay';
     overlay.innerHTML = `<section class="kiosk-dialog" role="dialog" aria-modal="true" aria-labelledby="kioskDialogTitle">
         <header class="kiosk-dialog-head"><h2 id="kioskDialogTitle">System message</h2><button class="kiosk-dialog-close" type="button" aria-label="Close">&times;</button></header>
-        <div class="kiosk-dialog-body"><p class="kiosk-dialog-message"></p><div class="kiosk-dialog-input-wrap" hidden><input class="kiosk-dialog-input" autocomplete="off"><button class="kiosk-dialog-toggle" type="button" hidden>Show PIN</button></div><div class="kiosk-keypad" hidden></div></div>
+        <div class="kiosk-dialog-body"><p class="kiosk-dialog-message"></p><div class="kiosk-dialog-input-wrap" hidden><input class="kiosk-dialog-input" autocomplete="off"><button class="kiosk-dialog-toggle" type="button" hidden>Show passcode</button></div><div class="kiosk-keypad" hidden></div></div>
         <footer class="kiosk-dialog-foot"><button class="kiosk-dialog-button secondary" data-action="cancel" type="button">Cancel</button><button class="kiosk-dialog-button primary" data-action="ok" type="button">OK</button></footer>
     </section>`;
     document.addEventListener('DOMContentLoaded', () => document.body.appendChild(overlay));
@@ -32,44 +32,25 @@
 
     function open(options) {
         title().textContent = options.title || 'System message';
-        message().textContent = options.pin
-            ? `${options.message || ''}\nNumbers only.`
+        message().textContent = options.passcode
+            ? `${options.message || ''}\nUse 4 to 12 letters, numbers, or symbols.`
             : options.message || '';
         inputWrap().hidden = !options.input;
-        keypad().hidden = !options.keypad;
-        toggle().hidden = !options.pin;
-        input().type = options.pin ? 'password' : 'text';
-        input().inputMode = options.pin ? 'numeric' : 'text';
-        input().pattern = options.pin ? '[0-9]*' : '';
-        input().maxLength = options.pin ? 12 : 524288;
-        input().autocomplete = options.pin ? 'off' : 'off';
-        input().oninput = () => {
-            if (options.pin) input().value = input().value.replace(/\D/g, '');
-        };
-        input().onkeydown = event => {
-            if (options.pin && event.key.length === 1 && !/\d/.test(event.key)) {
-                event.preventDefault();
-            }
-        };
+        keypad().hidden = true;
+        toggle().hidden = !options.passcode;
+        input().type = options.passcode ? 'password' : 'text';
+        input().inputMode = 'text';
+        input().pattern = '';
+        input().maxLength = options.passcode ? 12 : 524288;
+        input().autocomplete = 'off';
+        input().oninput = null;
+        input().onkeydown = null;
         input().value = '';
         cancel().hidden = options.kind === 'alert';
         cancel().textContent = options.cancelText || 'Cancel';
         overlay.querySelector('[data-action="ok"]').textContent = options.okText || 'OK';
         keypad().innerHTML = '';
-        if (options.keypad) {
-            [...'123456789', 'Clear', '0', 'Backspace'].forEach(key => {
-                const button = document.createElement('button');
-                button.className = 'kiosk-key'; button.type = 'button'; button.textContent = key;
-                button.addEventListener('click', () => {
-                    if (key === 'Clear') input().value = '';
-                    else if (key === 'Backspace') input().value = input().value.slice(0, -1);
-                    else if (/^\d$/.test(key) && input().value.length < 12) input().value += key;
-                    input().focus();
-                });
-                keypad().appendChild(button);
-            });
-        }
-        toggle().onclick = () => { input().type = input().type === 'password' ? 'text' : 'password'; toggle().textContent = input().type === 'password' ? 'Show PIN' : 'Mask PIN'; };
+        toggle().onclick = () => { input().type = input().type === 'password' ? 'text' : 'password'; toggle().textContent = input().type === 'password' ? 'Show passcode' : 'Mask passcode'; };
         overlay.querySelector('[data-action="ok"]').onclick = () => close(options.input ? input().value : true);
         cancel().onclick = () => close(null);
         overlay.querySelector('.kiosk-dialog-close').onclick = () => close(null);
@@ -81,5 +62,5 @@
 
     window.appAlert = message => open({ message, kind: 'alert' });
     window.appConfirm = message => open({ message, kind: 'confirm' });
-    window.appPrompt = (message, options = {}) => open({ message, input: true, pin: !!options.pin, keypad: !!options.keypad, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
+    window.appPrompt = (message, options = {}) => open({ message, input: true, passcode: !!options.passcode || !!options.pin, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
 })();

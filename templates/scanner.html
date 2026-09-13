@@ -360,7 +360,7 @@
                 const result = await res.json();
 
                 if (result.status === 'system_command') {
-                    const pin = await appPrompt('Enter the security PIN for this system command:', { title: 'Security PIN', pin: true, keypad: true });
+                    const pin = await appPrompt('Enter the security passcode for this system command:', { title: 'Security passcode', passcode: true });
                     if (pin) {
                         const commandResponse = await fetch('/api/system/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: result.command, pin }) });
                         const commandResult = await commandResponse.json();
