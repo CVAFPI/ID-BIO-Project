@@ -33,7 +33,7 @@ No Python installation is needed on the deployment computer after the executable
 
 Starting `CVAFPI-IDSYS.exe` will:
 
-1. Start the local Flask server on `127.0.0.1:5000`.
+1. Start the local Waitress WSGI server on `127.0.0.1:5000`.
 2. Open Microsoft Edge or Chrome using fullscreen kiosk mode.
 3. Use a dedicated `.kiosk-profile` browser profile so an existing personal browser session is not reused.
 4. Keep the application local to the computer; it is not exposed to the network.
@@ -53,6 +53,8 @@ run-windows.bat
 ```
 
 This starts the same server and browser kiosk launcher from `.venv-windows`.
+
+The launcher serves the Flask application through Waitress `2.1.1` instead of Flask's development server.
 
 ## Data and backup
 
@@ -77,6 +79,7 @@ The Windows restart and shutdown controls use the standard Windows `shutdown` co
 ## Project structure
 
 - `app.py` - Flask API and application routes
+- `wsgi.py` - WSGI application entry point
 - `logger.py` - SQLite database and attendance logging
 - `windows_launcher.py` - local server and browser kiosk launcher
 - `ID-BIO-Project.spec` - single-file PyInstaller configuration

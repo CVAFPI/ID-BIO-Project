@@ -53,11 +53,12 @@ def open_kiosk(url):
 
 
 def main():
-    from app import app
+    from waitress import serve
+    from wsgi import app
 
     server = threading.Thread(
-        target=app.run,
-        kwargs={'host': '127.0.0.1', 'port': PORT, 'debug': False, 'use_reloader': False},
+        target=serve,
+        kwargs={'app': app, 'host': '127.0.0.1', 'port': PORT, 'threads': 4},
         daemon=True,
     )
     server.start()
