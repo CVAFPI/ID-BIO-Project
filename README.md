@@ -1,302 +1,157 @@
-<img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION%20(1).png?raw=true" alt="Repository Banner" width="100%">
+# CVAFPI Identification System v2.1.1
 
+Windows 11 kiosk application for barcode attendance, camera snapshots, CSV student records, audit logs, and optional ntfy notifications.
 
-# 🛡️ CVAFPI Identification System v2.1.1 — "The UI and CSV Update"
+This is the CSV edition. Student records remain in `data.csv` and `backup-data.csv`; attendance history remains in `CVA_Database` as dated CSV files with snapshot images.
 
-A production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
+## Requirements
 
-Built specifically for educational institutions under **Department of Education (DepEd)** standards.
+- Windows 11 64-bit
+- Python 3.11 or newer with the Python launcher enabled
+- Microsoft Edge or Google Chrome
+- Internet access during the first setup for Python packages
 
-**Repository:** [github.com/CVAFPI/ID-BIO-Project](https://github.com/CVAFPI/ID-BIO-Project)
+## Run from source
 
-**DEBIAN KDE ISO** [Debian KDE download](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-13.6.0-amd64-kde.iso)
+Double-click `CVAFPI IDENTIFICATION SYSTEM.bat`. It creates `venv`, installs `requirements.txt`, checks the CSV files, starts the Flask application through Waitress, and opens the kiosk browser.
 
----
+The production WSGI target is `wsgi:app`. To start it manually from the project directory:
 
-## 📋 Table of Contents
-
-- [What's New in v2.1.1](#-whats-new-in-version-211)
-- [System Requirements](#-system-requirements--hardware-specifications)
-- [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
-- [Crucial Warnings](#️-crucial-system-warnings-what-not-to-do)
-- [Debian & KDE Plasma Setup](#-debian--kde-plasma-environment-notes)
-- [Master Installer](#-master-installer-setup)
-- [Passwordless Sudo Configuration](#-configured-passwordless-sudo-required)
-- [Deployment Guide](#-step-by-step-deployment-guide)
-- [Project Structure](#-project-directory-structure)
-- [Hardware Control Barcodes](#️-hardware-control-barcodes)
-- [Remote Management](#-remote-management--system-administration)
-- [Open Source Commitment](#-100-free--open-source-for-all-schools)
-- [Recommended PC Builds](#️-recommended-pc-parts-for-new-builds)
-- [Custom Branding & Support](#-custom-branding--free-assistance)
-
----
-
-## 🚀 What's New in Version 2.1.1
-
-| Feature | Description |
-|---|---|
-| **Automated 7-Day Privacy Cleanup** | A built-in startup routine (`cleanup_old_logs`) automatically scans the database directory and permanently purges log folders and webcam snapshots older than one week, ensuring ongoing data privacy compliance. |
-| **Visual Snapshot Audit Trail** | Instantly captures a webcam frame upon every successful ID scan, binding visual proof to the timestamped record for review in the logs manager. |
-| **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
-| **Synchronized Dual-CSV Integrity** | Robust schema mapping keeps primary records (`data.csv`) and backup records (`backup-data.csv`) fully synced during live edits via the database manager. |
-| **Operations Console UI** | A responsive operations console with shared themes, custom branding, CSV migration tools, and consistent controls across every page. |
-
----
-
-## 💻 System Requirements & Hardware Specifications
-
-To ensure high-speed barcode processing, stable UI rendering, and continuous 24/7 reliability, your server hardware must meet or exceed the following specifications:
-
-| Hardware Component | Minimum Requirement | Recommended for 24/7 Deployment |
-|---|---|---|
-| **System Architecture** | 64-bit only (x86_64 / amd64 or aarch64) | 64-bit architecture (amd64 or aarch64) |
-| **Processor (CPU)** | Intel / AMD 64-bit CPU (post-2010) or aarch64 ARM | Modern Intel Core i3/i5, AMD Ryzen, or Raspberry Pi 4/5 (64-bit OS) |
-| **System Memory (RAM)** | 4 GB | 8 GB (ensures smooth KDE Plasma & browser rendering) |
-| **Storage Capacity** | 64 GB SSD / storage | 2 TB SSD/HDD (recommended for multi-year logs and daily visual snapshots) |
-| **Network Interface** | 100 Mbps hardwired Ethernet | Gigabit Ethernet (RJ45 cable connected) |
-| **Operating System** | Debian 13 (Trixie) 64-bit | Debian 13 (Trixie) 64-bit + KDE Plasma Desktop |
-| **Barcode Scanner** | USB / Serial HID barcode scanner | USB handheld or hands-free omnidirectional barcode scanner |
-
----
-
-## ⚠️ Strict Hardware Compatibility Guidelines
-
-- **64-bit architecture only** — Legacy 32-bit (i386 / x86_32) processors and operating systems are strictly unsupported. Python 3 virtual environments and modern Chromium browser engines require full 64-bit architecture.
-- **Obsolete CPU restriction** — Do **not** deploy on outdated x86 processors manufactured prior to 2009 (e.g., legacy Intel Pentium 4, Intel Atom N-series, or early AMD Sempron/Athlon 64 chips).
-- **Standard chipset suppliers** — Use standard Intel or AMD 64-bit x86 processors, or standard ARM64 (aarch64) single-board computers such as a Raspberry Pi 4/5 running a 64-bit OS. Avoid obscure, unbranded x86 clones lacking stable Linux kernel driver support.
-- **Storage allocation for 24/7 logging** — While basic setups run on 64 GB, a 2 TB drive is strongly recommended for schools running the kiosk continuously (24/7/365), to store multi-year attendance archives (`logs_YYYY-MM-DD.csv`), daily snapshot image folders, local database backups, and system updates.
-
----
-
-## ⚠️ Crucial System Warnings: What NOT To Do
-
-> **Do not manually edit `data.csv` while the server is actively running.**
-> Doing so risks file-locking conflicts or data corruption if a scan occurs simultaneously. Always use the built-in Database Manager web interface.
-
-> **Do not copy the `venv/` folder across different computers.**
-> Python virtual environments are architecture- and path-specific. The master installer script automatically builds a fresh environment on each machine.
-
-> **Do not expose your NTFY notification tokens.**
-> Keep secret strings completely private to protect student data and secure parent/office alert channels.
-
-> **Do not use wireless connections for server hardware.**
-> Yes WIFI will work aslong is stable but for 24/7 or long use of this software use ETHERNET (wired) to ensure NTFY works and clocks are synced always
-
----
-
-## 🐧 Debian & KDE Plasma Environment Notes
-
-Standard clean installations of Debian (such as Netinst or minimal server ISOs) do **not** include a graphical desktop environment by default.
-
-Select **KDE Plasma** during the Debian installation task selector, or install it post-installation with:
-
-```bash
-sudo apt update && sudo apt install -y task-kde-desktop
+```bat
+venv\Scripts\waitress-serve.exe --listen=0.0.0.0:5000 --threads=4 --url-scheme=http wsgi:app
 ```
 
-KDE Plasma is strongly recommended for its display scaling support, reliable power-state handling, and smooth kiosk window management out of the box.
+## Build the executable on Windows 11
 
----
+The executable must be built on Windows. PyInstaller does not create a Windows
+executable when run on Linux.
 
-## ⚡ Master Installer Setup
+### 1. Install the prerequisites
 
-The core master script (`CVAFPI IDENTIFICATION SYSTEM.sh`) automates environment preparation:
+Install Python 3.11 or newer from <https://www.python.org/downloads/windows/>.
+During installation, enable **Add python.exe to PATH** and install the Python
+launcher. Install Microsoft Edge or Google Chrome for kiosk mode.
 
-- Performs system package updates (`apt update` and upgrades)
-- Provisions and configures an isolated Python virtual environment (`venv`)
-- Installs runtime dependencies (Chromium, unclutter, Flask modules)
-- Handles repository updates and interactive prompts seamlessly
+### 2. Open the project folder
 
-The launcher runs the CSV-backed Flask application through Gunicorn using the
-production WSGI entry point `wsgi:app`. Do not start `app.py` directly for a
-deployment; `python3 app.py` uses Flask's development server and is intended
-only for local debugging.
+Extract or clone this repository to a local Windows folder. Open that folder in
+File Explorer, click the address bar, type `cmd`, and press Enter. Confirm that
+the folder contains `build-windows.bat`, `requirements.txt`, and
+`ID-BIO-Project.spec`.
 
-The launchpad also includes a CSV Migration page for previewing, merging, or
-replacing student records without editing `data.csv` manually. Branding can be
-customized from System Settings, including the institution name, theme, accent
-color, and launchpad logo.
+### 3. Build the `.exe`
 
-To start the production server manually inside the virtual environment:
+Run this command in the project folder:
 
-```bash
-gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 wsgi:app
+```bat
+build-windows.bat
 ```
 
----
+The script creates `.venv-windows`, installs the Python dependencies and
+PyInstaller, then uses `ID-BIO-Project.spec` to create:
 
-## 🔑 Configured Passwordless Sudo (Required)
-
-Because scanner command barcodes trigger hardware actions (such as emergency shutdowns) and background scripts require root privileges without human interaction, passwordless sudo must be configured for your kiosk user.
-
-1. **Open the sudoers configuration file safely:**
-   ```bash
-   sudo visudo
-   ```
-
-2. **Scroll to the bottom of the file and append the following line** (replace `your-username` with your actual Debian login username):
-   ```
-   your-username ALL=(ALL) NOPASSWD: ALL
-   ```
-
-3. **Save and exit:** `Ctrl + O`, `Enter`, then `Ctrl + X`
-
-> **🔒 Security note:** Passwordless sudo grants full root access to this account with no further prompts. Restrict physical and network (SSH) access to the kiosk accordingly, and never reuse this account's credentials elsewhere.
-
----
-
-## 📥 Step-by-Step Deployment Guide
-
-Copy and execute these commands in sequence to install and deploy the system:
-
-1. **Install Git**
-   ```bash
-   sudo apt update && sudo apt install -y git
-   ```
-
-2. **Clone the repository**
-   ```bash
-   git clone https://github.com/CVAFPI/ID-BIO-Project.git
-   ```
-
-3. **Navigate to the project directory**
-   ```bash
-   cd ID-BIO-Project
-   ```
-
-4. **Grant execution permissions**
-   ```bash
-   chmod +x "CVAFPI IDENTIFICATION SYSTEM.sh" Startup
-   ```
-
-5. **Run the master installer & kiosk launcher**
-   ```bash
-   ./"CVAFPI IDENTIFICATION SYSTEM.sh"
-   ```
-
----
-
-## 📂 Project Directory Structure
-
-```
-ID-BIO-Project/
-├── CVA_Database/                     # Date-specific attendance log folders & snapshots (auto-purged after 7 days)
-├── ID-CODES FOR SYSTEM/              # Reference command barcodes for admin control
-├── logs/                             # Real-time daily scan auxiliary paths
-├── venv/                             # Python virtual environment (architecture-specific)
-├── static/                           # Image assets (school logo & OS logos)
-├── app.py                            # Core Flask REST API backend server
-├── logger.py                         # Internal log processing & 7-day privacy cleanup utility
-├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
-├── id_bio.desktop                    # KDE desktop shortcut entry
-├── Startup                           # Autostart boot script trigger
-├── data.csv                          # Primary user database (Barcode, Name, Grade, Section, Access, Color, NTFY_TOPIC)
-├── backup-data.csv                   # Mirrored backup user database file
-├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
-├── launchpad.html                    # Main dashboard launcher interface
-├── scanner.html                      # Live attendance registry scanner interface
-├── manager.html                      # Database manager interface
-├── logs-manager.html                 # Log manager & visual snapshot viewer interface
-├── migration.html                    # CSV preview and student-list migration interface
-├── README.md                         # Instructions and specifications
-├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
-└── server.log                        # Auto-generated Flask server log
+```text
+dist\CVAFPI-IDSYS.exe
 ```
 
----
+The script also copies `data.csv`, `backup-data.csv`, and `settings.json` into
+`dist`, and creates writable `CVA_Database` and `logs` folders there.
 
-## 🖨️ Hardware Control Barcodes
+### 4. Run the compiled application
 
-Scanning any of these reference command barcodes with a physical scanner immediately executes system-level operations.
+Run this command from the project folder:
 
-> **⚠️ Keep printed copies of these barcodes secured — anyone who can scan them can trigger these actions.**
-
-| Action | Command Barcode | Description |
-|---|---|---|
-| **Close Kiosk Session** | `CD=CLOSEBARCODESYS96%&@CVAFPI` | Terminates the active kiosk session |
-| **OS Emergency Shutdown** | `CD=EMERSHUTDOWNSYSSU62#9CVAFPI` | Executes an immediate system power-down |
-| **Return to Main Menu** | `CD=RETURNTOMNSYS8(*CVAFPI` | Redirects to `launchpad.html` |
-
----
-
-## 🚀 Remote Management & System Administration
-
-### Setting Up SSH Access
-
-To manage the kiosk remotely over the network without plugging in a dedicated monitor:
-
-1. **Install and enable the SSH service:**
-   ```bash
-   sudo apt update && sudo apt install -y openssh-server
-   sudo systemctl enable --now ssh
-   ```
-
-2. **Connect securely from any workstation on the network:**
-   ```bash
-   ssh your-username@your-kiosk-ip-address
-   ```
-
-### Configuring Auto-Start on Boot (KDE Plasma)
-
-To ensure the system boots straight into the attendance kiosk interface automatically after reboot:
-
-**GUI method:**
-Open **System Settings → Autostart → Add... → Add Application or Script...** and select `id_bio.desktop`.
-
-**Terminal method:**
-```bash
-mkdir -p ~/.config/autostart
-cp id_bio.desktop ~/.config/autostart/
+```bat
+run-windows.bat
 ```
 
----
+Or open `dist\CVAFPI-IDSYS.exe` directly. Do not move only the `.exe` to
+another folder. Keep the executable and its data files together:
 
-## 🤝 100% Free & Open Source for ALL Schools
+```text
+dist/
+  CVAFPI-IDSYS.exe
+  data.csv
+  backup-data.csv
+  settings.json
+  CVA_Database/
+  logs/
+```
 
-This software is built to empower educational institutions without costly licensing fees or SaaS subscriptions.
+The compiled launcher sets `CVAFPI_DATA_DIR` to its own directory. Templates
+and static assets are bundled into the executable, while CSV files, settings,
+logs, snapshots, and uploaded branding remain writable beside it.
 
-- **Zero licensing fees** — Download, deploy, and scale across unlimited machines for free.
-- **100% local data privacy** — All attendance logs and snapshot images stay strictly on local school hardware, safeguarded by automated 7-day purging routines. No external cloud harvesting.
-- **Runs on existing hardware** — Designed lean for Debian 13, enabling older school desktop PCs to be repurposed as hardware kiosks.
+### Rebuild after code changes
 
----
+Run `build-windows.bat` again. It cleans and rebuilds the PyInstaller output.
+Copy any updated CSV or settings files into `dist` only when you intentionally
+want to replace the executable's local data.
 
-## 🛠️ Recommended PC Parts for New Builds
+### Common build problems
 
-### Variant 1: Modern Value Platforms (DDR4) — Best Choice for New Hardware
+- **`py` is not recognized:** reinstall Python and enable the Python launcher,
+  or create `.venv-windows` manually with `python -m venv .venv-windows`.
+- **The browser does not open:** install Microsoft Edge or Google Chrome.
+- **The port is busy:** close another copy of the application or stop the
+  process using port `5000` before starting again.
+- **Student records are missing:** confirm that `data.csv` and
+  `backup-data.csv` are beside `CVAFPI-IDSYS.exe`.
 
-| Component | AMD Platform (AM4) | Intel Platform (LGA 1200) |
-|---|---|---|
-| **CPU** | AMD Ryzen 5 4600G or Ryzen 3 3200G | Intel Core i3-10100 or i3-10105 |
-| **Motherboard** | MSI A520M-A Pro or Gigabyte A520M S2H | MSI H510M-A Pro or Gigabyte H510M H |
-| **RAM** | 8GB (1x8GB) DDR4 3200MHz | 8GB (1x8GB) DDR4 2666MHz/3200MHz |
-| **Storage** | 256GB / 512GB 2.5" SATA SSD (+ optional 2TB HDD) | 256GB / 512GB 2.5" SATA SSD (+ optional 2TB HDD) |
-| **Case & PSU** | Micro-ATX case with bundled 450W PSU | Micro-ATX case with bundled 450W PSU |
+Keep these items beside the executable so the CSV data remains writable:
 
-### Variant 2: Ultra-Budget / Legacy Platforms (DDR3 / Early DDR4)
+```text
+dist/
+  CVAFPI-IDSYS.exe
+  data.csv
+  backup-data.csv
+  settings.json
+  CVA_Database/
+  logs/
+```
 
-| Component | AMD Platform (AM4 Entry) | Intel Platform (LGA 1150 Legacy) |
-|---|---|---|
-| **CPU** | AMD Athlon 3000G or Athlon 200GE | Intel Core i5-4570 or i5-4460 |
-| **Motherboard** | Biostar A320MH or ASUS Prime A320M-K | H81M motherboard (ASUS / Gigabyte / Biostar) |
-| **RAM** | 8GB (1x8GB) DDR4 2400MHz/2666MHz | 8GB (2x4GB or 1x8GB) DDR3 1600MHz |
-| **Storage** | 240GB 2.5" SATA SSD | 240GB 2.5" SATA SSD |
-| **Case & PSU** | Basic Micro-ATX office case with 450W PSU | Basic Micro-ATX office case with 450W PSU |
+The compiled launcher sets `CVAFPI_DATA_DIR` to its own directory. Bundled templates and static assets remain read-only application resources, while CSV files, settings, logs, snapshots, and uploaded branding stay beside the executable.
 
----
+## CSV features
 
-## 🎨 Custom Branding & Free Assistance
+- Add, edit, delete, preview, merge, and replace student records.
+- Keep `data.csv` and `backup-data.csv` synchronized.
+- Record daily attendance in `CVA_Database\logs_YYYY-MM-DD\logs_YYYY-MM-DD.csv`.
+- Save scanner snapshots beside the daily attendance CSV.
+- Automatically remove attendance folders older than seven days.
+- Export attendance logs from the logs manager.
 
-Free setup assistance and customization are available if you need help modifying the interface for your school:
+Required student CSV columns:
 
-- **Customization offered:** Official school logo/seal replacement, header text updates, custom accent color matching, and grade/section schema modifications.
-- **Email assistance:** [allthingslinux2026@gmail.com](mailto:allthingslinux2026@gmail.com) — please attach your school logo (PNG/JPEG) and requested modifications.
-- **GitHub Issues:** Open a ticket directly on the [GitHub Issues page](https://github.com/CVAFPI/ID-BIO-Project/issues).
+```text
+BARCODE,NAME,GRADE,SECTION,ACCESS,COLOR,NTFY_TOPIC
+```
 
-(Note) In future update there will be a fork for schools for easy customizability, easy uploads and many more
----
+## Project structure
 
-<p align="center">
-Made with ❤️ for schools everywhere — 100% free, 100% open source.
-</p>
+```text
+app.py                       Flask routes and API
+logger.py                   CSV student and attendance storage
+wsgi.py                     Production WSGI export
+windows_launcher.py         Waitress and kiosk browser launcher
+ID-BIO-Project.spec         PyInstaller configuration
+build-windows.bat           Windows executable build script
+run-windows.bat             Compiled executable runner
+CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode runner
+requirements.txt            Windows Python dependencies
+data.csv                   Primary student CSV
+backup-data.csv             Student CSV backup
+CVA_Database/               Attendance CSV files and snapshots
+logs/                       Runtime log directory
+templates/                  Flask HTML templates
+static/                     Frontend assets and logos
+ID-CODES FOR SYSTEM/        Reference control barcodes
+```
+
+## Hardware controls
+
+The scanner interface provides controls for returning to the launchpad, exiting kiosk mode, restarting Windows, and shutting down Windows. Keep printed control barcodes secured because they trigger local system actions.
+
+## Data safety
+
+Do not manually edit `data.csv` while the application is running. Use the Student Manager or CSV Migration pages so the primary and backup CSV files stay synchronized.

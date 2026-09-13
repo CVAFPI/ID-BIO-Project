@@ -94,6 +94,14 @@
             object-fit: contain;
         }
 
+        .platform-mark {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-align: center;
+        }
+
         .header-title-group {
             text-align: center;
             display: flex;
@@ -552,7 +560,7 @@
             <button class="console-control danger" type="button" onclick="shutdownSystem()"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18.4 6.6a9 9 0 1 1-12.8 0M12 2v10"/></svg></div><div><strong>Shut down</strong><span>Power off the kiosk computer</span></div></button>
             <button class="console-control danger" type="button" onclick="exitKiosk()"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div><div><strong>Exit kiosk mode</strong><span>Return to the desktop</span></div></button>
         </section>
-        <footer class="console-footer"><span>{{ institution_name }} · CSV edition v{{ app_version }}</span><span>Built for Debian 13 · <b id="console-footer-clock">PHT --:--</b></span></footer>
+        <footer class="console-footer"><span>{{ institution_name }} · CSV edition v{{ app_version }}</span><span>Built for {{ platform_name }} · <b id="console-footer-clock">PHT --:--</b></span></footer>
     </main>
 
     <div class="launchpad-container">
@@ -577,12 +585,9 @@
                 </div>
             </div>
 
-            <!-- RIGHT LOGO: Powered by Debian -->
-            <div class="logo-box" title="Powered by Debian Linux">
-                <img src="{{ url_for('static', filename='Debian 13 Logo.png') }}"
-                     alt="Debian 13 Logo"
-                     class="logo-img"
-                     onerror="this.onerror=null; this.src='/static/Debian%2013%20Logo.png';">
+            <!-- RIGHT PLATFORM MARK -->
+            <div class="logo-box" title="{{ platform_name }}">
+                <span class="platform-mark">{{ platform_name }}</span>
             </div>
 
         </div>
@@ -682,7 +687,7 @@
 
         <!-- Footer Bar -->
         <div class="footer-bar">
-            <span>{{ institution_name }} • Built for Debian 13 (Trixie)</span>
+            <span>{{ institution_name }} • Built for {{ platform_name }}</span>
             <span class="clock-display" id="pst-clock">PST: Loading Date & Time...</span>
         </div>
 

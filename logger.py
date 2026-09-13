@@ -6,7 +6,9 @@ import string
 import shutil
 from datetime import datetime, timedelta
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.environ.get(
+    'CVAFPI_DATA_DIR', os.path.dirname(os.path.abspath(__file__))
+)
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 DATA_CSV = os.path.join(BASE_DIR, 'data.csv')
 BACKUP_CSV = os.path.join(BASE_DIR, 'backup-data.csv')

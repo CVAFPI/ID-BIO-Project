@@ -7,14 +7,26 @@ import threading
 import urllib.request
 import base64
 import re
+import shutil
+import sys
 from datetime import datetime
 
-app = Flask(__name__)
 APP_VERSION = "2.1.1"
-SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.environ.get('CVAFPI_DATA_DIR', SOURCE_DIR)
+RESOURCE_DIR = getattr(sys, '_MEIPASS', SOURCE_DIR)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(RESOURCE_DIR, 'templates'),
+    static_folder=os.path.join(RESOURCE_DIR, 'static')
+)
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 CUSTOM_LOGO = os.path.join(BASE_DIR, 'static', 'custom-logo.png')
+os.makedirs(os.path.dirname(CUSTOM_LOGO), exist_ok=True)
+PACKAGED_LOGO = os.path.join(app.static_folder, 'custom-logo.png')
+if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO) and os.path.exists(CUSTOM_LOGO):
+    shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
 DEFAULT_SETTINGS = {
     "camera_enabled": False,
     "parent_notifications_enabled": True,
@@ -28,7 +40,10 @@ DEFAULT_SETTINGS = {
 
 @app.context_processor
 def inject_app_version():
-    return {'app_version': APP_VERSION}
+    return {
+        'app_version': APP_VERSION,
+        'platform_name': 'Windows 11'
+    }
 
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
@@ -122,6 +137,8 @@ def upload_branding_logo():
         from PIL import Image
         image = Image.open(uploaded_file.stream)
         image.convert('RGBA').save(CUSTOM_LOGO, 'PNG', optimize=True)
+        if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO):
+            shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
         return jsonify({'status': 'success', 'logo_url': '/static/custom-logo.png'})
     except Exception as error:
         return jsonify({'status': 'error', 'message': f'Logo conversion failed: {error}'}), 400
@@ -308,18 +325,19 @@ def scan_api():
 
 @app.route('/api/system/reboot', methods=['POST'])
 def system_reboot():
-    os.system('sudo reboot')
+    os.system('shutdown /r /t 0')
     return jsonify({'status': 'rebooting'})
 
 @app.route('/api/system/shutdown', methods=['POST'])
 def system_shutdown():
-    os.system('sudo shutdown now')
+    os.system('shutdown /s /t 0')
     return jsonify({'status': 'shutting down'})
 
 @app.route('/api/exit', methods=['POST'])
 def exit_api():
     try:
-        os.system("pkill -f cva_kiosk_profile")
+        os.system('taskkill /F /IM msedge.exe /T 2>NUL')
+        os.system('taskkill /F /IM chrome.exe /T 2>NUL')
     except Exception as e:
         print(f"[Exit Error]: {e}")
 
