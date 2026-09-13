@@ -464,5 +464,3 @@ def system_command_api():
         return jsonify({'status': 'redirect', 'location': '/launchpad.html'})
     return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)

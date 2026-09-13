@@ -1,7 +1,7 @@
 {
   "name": "id-bio-html-project",
-  "version": "1.0.0",
-  "description": "A dedicated Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and database management.",
+  "version": "2.1.1",
+  "description": "CVAFPI Identification System v2.1.1 — GUI update 1 and WSGI/Gunicorn production server patch 1 for kiosk operations, barcode verification, attendance logging, and database management.",
   "main": "jsbarcode.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

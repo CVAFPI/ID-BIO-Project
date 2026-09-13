@@ -1,9 +1,11 @@
 <img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION%20(1).png?raw=true" alt="Repository Banner" width="100%">
 
 
-# 🛡️ CVAFPI Identification System v2.0 — "The Setting Update"
+# 🛡️ CVAFPI Identification System v2.1.1 — "The Setting Update"
 
-A production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
+A production-ready Linux kiosk solution and Flask-based REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
+
+> Release note: Version 2.1.1 includes the GUI update 1 and the WSGI/Gunicorn production server replacement patch 1.
 
 Built specifically for educational institutions under **Department of Education (DepEd)** standards.
 
@@ -15,7 +17,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ## 📋 Table of Contents
 
-- [What's New in v2.0](#-whats-new-in-version-20)
+- [What's New in v2.1.1](#-whats-new-in-version-211)
 - [Security and Kiosk Controls](#-security-and-kiosk-controls)
 - [SQL Branch & Database](#-sql-branch--database)
 - [System Requirements](#-system-requirements--hardware-specifications)
@@ -34,7 +36,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ---
 
-## 🚀 What's New in Version 2.0
+## 🚀 What's New in Version 2.1.1
 
 | Feature | Description |
 |---|---|
@@ -159,7 +161,7 @@ The core master script (`CVAFPI IDENTIFICATION SYSTEM.sh`) automates environment
 
 - Performs system package updates (`apt update` and upgrades)
 - Provisions and configures an isolated Python virtual environment (`venv`)
-- Installs runtime dependencies (Chromium, unclutter, Flask modules)
+- Installs runtime dependencies (Chromium, unclutter, Python web backend modules)
 - Handles repository updates and interactive prompts seamlessly
 
 ### Migrating a CSV Without the Terminal
@@ -234,7 +236,7 @@ ID-BIO-Project/
 ├── logs/                             # Real-time daily scan auxiliary paths
 ├── venv/                             # Python virtual environment (architecture-specific)
 ├── static/                           # Image assets (school logo & OS logos)
-├── app.py                            # Core Flask REST API backend server
+├── app.py                            # Core Flask WSGI application backend
 ├── logger.py                         # Internal log processing & 7-day privacy cleanup utility
 ├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
 ├── id_bio.desktop                    # KDE desktop shortcut entry
@@ -249,7 +251,7 @@ ID-BIO-Project/
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
 ├── README.md                         # Instructions and specifications
 ├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
-└── server.log                        # Auto-generated Flask server log
+└── server.log                        # Auto-generated Gunicorn server log
 ```
 
 ---
