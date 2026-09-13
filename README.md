@@ -1,7 +1,7 @@
 <img src="https://github.com/CVAFPI/Image-Asset-for-CVAFPI-website/blob/main/CHRISTIAN%20VISON%20ACADEMY%20FONDATION%20PAMPANGA%20INCORPORATION%20(1).png?raw=true" alt="Repository Banner" width="100%">
 
 
-# 🛡️ CVAFPI Identification System v2.0 — "The Setting Update"
+# 🛡️ CVAFPI Identification System v2.1.1 — "The UI and CSV Update"
 
 A production-ready Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
 
@@ -15,7 +15,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ## 📋 Table of Contents
 
-- [What's New in v2.0](#-whats-new-in-version-20)
+- [What's New in v2.1.1](#-whats-new-in-version-211)
 - [System Requirements](#-system-requirements--hardware-specifications)
 - [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
 - [Crucial Warnings](#️-crucial-system-warnings-what-not-to-do)
@@ -32,7 +32,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ---
 
-## 🚀 What's New in Version 2.0
+## 🚀 What's New in Version 2.1.1
 
 | Feature | Description |
 |---|---|
@@ -40,6 +40,7 @@ Built specifically for educational institutions under **Department of Education 
 | **Visual Snapshot Audit Trail** | Instantly captures a webcam frame upon every successful ID scan, binding visual proof to the timestamped record for review in the logs manager. |
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
 | **Synchronized Dual-CSV Integrity** | Robust schema mapping keeps primary records (`data.csv`) and backup records (`backup-data.csv`) fully synced during live edits via the database manager. |
+| **Operations Console UI** | A responsive operations console with shared themes, custom branding, CSV migration tools, and consistent controls across every page. |
 
 ---
 
@@ -106,6 +107,22 @@ The core master script (`CVAFPI IDENTIFICATION SYSTEM.sh`) automates environment
 - Provisions and configures an isolated Python virtual environment (`venv`)
 - Installs runtime dependencies (Chromium, unclutter, Flask modules)
 - Handles repository updates and interactive prompts seamlessly
+
+The launcher runs the CSV-backed Flask application through Gunicorn using the
+production WSGI entry point `wsgi:app`. Do not start `app.py` directly for a
+deployment; `python3 app.py` uses Flask's development server and is intended
+only for local debugging.
+
+The launchpad also includes a CSV Migration page for previewing, merging, or
+replacing student records without editing `data.csv` manually. Branding can be
+customized from System Settings, including the institution name, theme, accent
+color, and launchpad logo.
+
+To start the production server manually inside the virtual environment:
+
+```bash
+gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 wsgi:app
+```
 
 ---
 
@@ -181,6 +198,7 @@ ID-BIO-Project/
 ├── scanner.html                      # Live attendance registry scanner interface
 ├── manager.html                      # Database manager interface
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
+├── migration.html                    # CSV preview and student-list migration interface
 ├── README.md                         # Instructions and specifications
 ├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
 └── server.log                        # Auto-generated Flask server log

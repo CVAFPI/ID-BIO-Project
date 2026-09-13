@@ -25,5 +25,6 @@ jobs:
     - name: Verify Application Code
       run: |
         source venv/bin/activate
-        python3 -m py_compile app.py logger.py
+        python3 -m py_compile app.py logger.py wsgi.py
+        python3 -c "import wsgi; assert wsgi.app.name == 'app'"
         echo "x86 Python compilation check passed successfully!"

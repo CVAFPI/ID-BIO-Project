@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v2.0
+#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v2.1.1
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -22,7 +22,7 @@ clear
 echo -e "${CYAN}"
 echo "======================================================================"
 echo "                       CVAFPI IDENTIFICATION SYSTEM                   "
-echo "                Kiosk Engine Auto-Launcher (v2.0 stable)              "
+echo "                Kiosk Engine Auto-Launcher (v2.1.1 stable)            "
 echo "======================================================================"
 echo -e "${NC}"
 
@@ -33,7 +33,7 @@ elif command -v neofetch &> /dev/null; then
     neofetch
 fi
 
-echo -e "${GREEN}Welcome to CVAFPI ID SYSTEM v1.5${NC}\n"
+echo -e "${GREEN}Welcome to CVAFPI ID SYSTEM v2.1.1${NC}\n"
 
 cd "$APP_DIR" || { echo -e "${RED}[!] Failed to access directory: $APP_DIR${NC}"; exit 1; }
 
@@ -93,8 +93,8 @@ fi
 
 cleanup() {
     echo -e "\n${YELLOW}[!] Shutting down CVAFPI Identification System...${NC}"
-    if [ -n "$FLASK_PID" ]; then
-        kill "$FLASK_PID" 2>/dev/null
+    if [ -n "$SERVER_PID" ]; then
+        kill "$SERVER_PID" 2>/dev/null
     fi
     pkill -f "cva_kiosk_profile" 2>/dev/null
     echo -e "${GREEN}[✓] Shutdown complete.${NC}"
@@ -118,8 +118,9 @@ if [ -d "$VENV_DIR" ]; then
 else
     python3 -m venv venv
     source "${VENV_DIR}/bin/activate"
-    pip install flask
 fi
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 echo -e "${GREEN}[✓] Virtual environment ready.${NC}"
 
 # --- FIRST: CHECK AND FIX data.csv ---
@@ -212,14 +213,21 @@ else
     exit 1
 fi
 
-# --- STEP 3: START FLASK ---
-echo -e "${CYAN}[3/4] Launching CVAFPI Core Server (app.py)...${NC}"
+# --- STEP 3: START PRODUCTION WSGI SERVER ---
+echo -e "${CYAN}[3/4] Launching CVAFPI Core Server (Gunicorn)...${NC}"
 if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
     echo -e "${YELLOW}[!] Port $PORT is active. Reusing existing instance.${NC}"
 else
-    python3 app.py > server.log 2>&1 &
-    FLASK_PID=$!
-    echo -e "${GREEN}[✓] Server process started (PID: $FLASK_PID).${NC}"
+    gunicorn \
+        --bind "0.0.0.0:${PORT}" \
+        --workers 1 \
+        --threads 4 \
+        --timeout 120 \
+        --access-logfile - \
+        --error-logfile - \
+        wsgi:app > server.log 2>&1 &
+    SERVER_PID=$!
+    echo -e "${GREEN}[✓] Production WSGI server started (PID: $SERVER_PID).${NC}"
     echo -n "Waiting for server to respond on port ${PORT}"
     until curl -s "${SERVER_URL}" > /dev/null; do
         echo -n "."
@@ -265,8 +273,8 @@ $BROWSER \
     --autoplay-policy=no-user-gesture-required \
     "${SERVER_URL}/" &
 
-if [ -n "$FLASK_PID" ]; then
-    wait "$FLASK_PID" 2>/dev/null
+if [ -n "$SERVER_PID" ]; then
+    wait "$SERVER_PID" 2>/dev/null
 else
     wait
 fi

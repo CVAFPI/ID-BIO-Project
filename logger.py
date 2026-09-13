@@ -1,5 +1,6 @@
 import os
 import csv
+import io
 import random
 import string
 import shutil
@@ -116,6 +117,63 @@ def save_all_students_to_csv(students_dict):
                 writer.writerows(rows)
         except Exception as e:
             print(f"Error writing to {target_file}: {e}")
+
+def _read_student_csv(uploaded_file):
+    content = uploaded_file.read()
+    text = content.decode('utf-8-sig')
+    reader = csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames:
+        raise ValueError('The CSV file must include a header row.')
+
+    headers = {header.strip().upper(): header for header in reader.fieldnames if header}
+    if 'BARCODE' not in headers or 'NAME' not in headers:
+        raise ValueError('The CSV must include BARCODE and NAME columns.')
+
+    rows = []
+    errors = []
+    for row_number, source in enumerate(reader, start=2):
+        barcode = (source.get(headers['BARCODE']) or '').strip()
+        name = (source.get(headers['NAME']) or '').strip()
+        if not barcode or not name:
+            errors.append(f'Row {row_number} is missing a barcode or name.')
+            continue
+        rows.append({
+            'barcode': barcode,
+            'name': name,
+            'grade': (source.get(headers.get('GRADE', '')) or '').strip(),
+            'section': (source.get(headers.get('SECTION', '')) or '').strip(),
+            'access': (source.get(headers.get('ACCESS', '')) or 'REGULAR').strip(),
+            'color': (source.get(headers.get('COLOR', '')) or '#059669').strip(),
+            'topic': (source.get(headers.get('NTFY_TOPIC', '')) or 'None').strip()
+        })
+    return rows, errors
+
+def preview_student_csv(uploaded_file):
+    rows, errors = _read_student_csv(uploaded_file)
+    existing = get_all_students()
+    barcodes = {row['barcode'] for row in rows}
+    return {
+        'total_rows': len(rows) + len(errors),
+        'valid_rows': len(rows),
+        'invalid_rows': bool(errors),
+        'errors': errors[:10],
+        'new_records': len(barcodes - existing.keys()),
+        'updates': len(barcodes & existing.keys()),
+        'sample': rows[:8]
+    }
+
+def import_student_csv(uploaded_file, replace_existing=False):
+    rows, errors = _read_student_csv(uploaded_file)
+    if errors:
+        raise ValueError(' '.join(errors[:10]))
+    students = {} if replace_existing else get_all_students()
+    for row in rows:
+        students[row['barcode']] = row
+    save_all_students_to_csv(students)
+    return {
+        'imported': len(rows),
+        'mode': 'replace' if replace_existing else 'merge'
+    }
 
 def save_student(b, n, g, s, a, c, t):
     students = get_all_students()

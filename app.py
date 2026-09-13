@@ -1,16 +1,34 @@
 from flask import Flask, render_template, request, jsonify, send_file
 import logger
+import csv
 import os
 import json
 import threading
 import urllib.request
 import base64
+import re
 from datetime import datetime
 
 app = Flask(__name__)
+APP_VERSION = "2.1.1"
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
+CUSTOM_LOGO = os.path.join(BASE_DIR, 'static', 'custom-logo.png')
+DEFAULT_SETTINGS = {
+    "camera_enabled": False,
+    "parent_notifications_enabled": True,
+    "office_alerts_enabled": False,
+    "office_ntfy_topic": "",
+    "blocked_camera_alerts_enabled": True,
+    "institution_name": "Christian Vision Academy Foundation Inc.",
+    "theme": "night",
+    "accent_color": "#2563eb"
+}
+
+@app.context_processor
+def inject_app_version():
+    return {'app_version': APP_VERSION}
 
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
@@ -20,26 +38,38 @@ def get_today_folder():
     return folder_path
 
 def load_system_settings():
+    settings = dict(DEFAULT_SETTINGS)
     try:
         if os.path.exists(SETTINGS_FILE):
             with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                settings.update(json.load(f))
     except Exception:
         pass
-    return {
-        "camera_enabled": False,
-        "parent_notifications_enabled": True,
-        "office_alerts_enabled": False,
-        "office_ntfy_topic": "",
-        "blocked_camera_alerts_enabled": True
-    }
+    return settings
 
 def save_system_settings(data):
+    data = dict(data)
+    if data.get('theme') not in {'night', 'light', 'grassy', 'ocean', 'sunset'}:
+        data['theme'] = 'night'
+    if not re.fullmatch(r'#[0-9a-fA-F]{6}', str(data.get('accent_color', ''))):
+        data['accent_color'] = DEFAULT_SETTINGS['accent_color']
+    data['institution_name'] = str(data.get('institution_name', DEFAULT_SETTINGS['institution_name'])).strip()[:100]
+    safe_data = {key: data.get(key, DEFAULT_SETTINGS[key]) for key in DEFAULT_SETTINGS}
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+            json.dump({**load_system_settings(), **safe_data}, f, indent=4)
     except Exception as e:
         print(f"[Settings Save Error]: {e}")
+
+@app.context_processor
+def inject_customization():
+    settings = load_system_settings()
+    return {
+        'institution_name': settings['institution_name'],
+        'theme': settings['theme'],
+        'accent_color': settings['accent_color'],
+        'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'
+    }
 
 # --- PAGE ROUTES ---
 
@@ -63,6 +93,11 @@ def scanner():
 def logs_manager():
     return render_template('logs-manager.html')
 
+@app.route('/migration')
+@app.route('/migration.html')
+def migration():
+    return render_template('migration.html')
+
 
 # --- API ROUTES ---
 
@@ -77,6 +112,45 @@ def save_settings_api():
     current.update(data)
     save_system_settings(current)
     return jsonify({'status': 'success'})
+
+@app.route('/api/branding/logo', methods=['POST'])
+def upload_branding_logo():
+    uploaded_file = request.files.get('logo')
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({'status': 'error', 'message': 'Please choose an image file.'}), 400
+    try:
+        from PIL import Image
+        image = Image.open(uploaded_file.stream)
+        image.convert('RGBA').save(CUSTOM_LOGO, 'PNG', optimize=True)
+        return jsonify({'status': 'success', 'logo_url': '/static/custom-logo.png'})
+    except Exception as error:
+        return jsonify({'status': 'error', 'message': f'Logo conversion failed: {error}'}), 400
+
+@app.route('/api/migration/status', methods=['GET'])
+def migration_status():
+    return jsonify({'students': len(logger.get_all_students()), 'database': 'CSV'})
+
+@app.route('/api/migration/preview', methods=['POST'])
+def migration_preview():
+    uploaded_file = request.files.get('file')
+    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
+        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
+    try:
+        return jsonify({'status': 'success', **logger.preview_student_csv(uploaded_file)})
+    except (UnicodeDecodeError, csv.Error, ValueError) as error:
+        return jsonify({'status': 'error', 'message': str(error)}), 400
+
+@app.route('/api/migration/import', methods=['POST'])
+def migration_import():
+    uploaded_file = request.files.get('file')
+    replace_existing = request.form.get('replace_existing') == 'true'
+    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
+        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
+    try:
+        result = logger.import_student_csv(uploaded_file, replace_existing)
+        return jsonify({'status': 'success', **result, 'students': len(logger.get_all_students())})
+    except (UnicodeDecodeError, csv.Error, ValueError) as error:
+        return jsonify({'status': 'error', 'message': str(error)}), 400
 
 @app.route('/api/camera/blocked', methods=['POST'])
 def camera_blocked_api():
