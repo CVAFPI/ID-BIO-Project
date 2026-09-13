@@ -13,6 +13,7 @@ import secrets
 import shutil
 from datetime import datetime
 import sys
+from urllib.parse import quote
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.environ.get('CVAFPI_DATA_DIR', SOURCE_DIR)
@@ -67,6 +68,34 @@ def secret_matches(value, salt, expected_hash):
     _, actual_hash = hash_secret(value, salt)
     return hmac.compare_digest(actual_hash, expected_hash)
 
+def dispatch_parent_notification(student, timestamp, settings):
+    if not settings.get('parent_notifications_enabled'):
+        return
+    topic = str(student.get('topic') or '').strip()
+    if not topic or topic.lower() == 'none':
+        return
+
+    topic_path = quote(topic, safe='')
+    url = f'https://ntfy.sh/{topic_path}'
+    message = f"{student.get('name', 'Student')} checked in at {timestamp}."
+
+    def _push():
+        try:
+            req = urllib.request.Request(
+                url,
+                data=message.encode('utf-8'),
+                headers={
+                    'Title': 'CVA Student Attendance',
+                    'Priority': 'default',
+                    'Tags': 'school,attendance'
+                }
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as error:
+            print(f'[ntfy Parent Error]: {error}')
+
+    threading.Thread(target=_push, daemon=True).start()
+
 
 def pin_is_configured(settings=None):
     settings = settings or load_system_settings()
@@ -106,7 +135,11 @@ def load_system_settings():
                 settings.update(json.load(f))
     except Exception:
         pass
-    settings.update(logger.get_app_settings())
+    stored_settings = logger.get_app_settings()
+    for key in ('camera_enabled', 'parent_notifications_enabled', 'office_alerts_enabled', 'blocked_camera_alerts_enabled'):
+        if key in stored_settings:
+            stored_settings[key] = str(stored_settings[key]).strip().lower() in {'1', 'true', 'yes', 'on'}
+    settings.update(stored_settings)
     return settings
 
 def save_system_settings(data):
@@ -406,6 +439,11 @@ def scan_api():
         if barcode in command_map:
             return jsonify({'status': 'system_command', 'command': command_map[barcode]})
         res = logger.log_attendance(barcode)
+
+        if res.get('status') == 'success':
+            timestamp = datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')
+            res['data']['timestamp'] = timestamp
+            dispatch_parent_notification(res['data'], timestamp, settings)
 
         if image_data and res.get('status') == 'success':
             try:

@@ -32,12 +32,25 @@
 
     function open(options) {
         title().textContent = options.title || 'System message';
-        message().textContent = options.message || '';
+        message().textContent = options.pin
+            ? `${options.message || ''}\nNumbers only.`
+            : options.message || '';
         inputWrap().hidden = !options.input;
         keypad().hidden = !options.keypad;
         toggle().hidden = !options.pin;
         input().type = options.pin ? 'password' : 'text';
         input().inputMode = options.pin ? 'numeric' : 'text';
+        input().pattern = options.pin ? '[0-9]*' : '';
+        input().maxLength = options.pin ? 12 : 524288;
+        input().autocomplete = options.pin ? 'off' : 'off';
+        input().oninput = () => {
+            if (options.pin) input().value = input().value.replace(/\D/g, '');
+        };
+        input().onkeydown = event => {
+            if (options.pin && event.key.length === 1 && !/\d/.test(event.key)) {
+                event.preventDefault();
+            }
+        };
         input().value = '';
         cancel().hidden = options.kind === 'alert';
         cancel().textContent = options.cancelText || 'Cancel';
@@ -50,7 +63,7 @@
                 button.addEventListener('click', () => {
                     if (key === 'Clear') input().value = '';
                     else if (key === 'Backspace') input().value = input().value.slice(0, -1);
-                    else input().value += key;
+                    else if (/^\d$/.test(key) && input().value.length < 12) input().value += key;
                     input().focus();
                 });
                 keypad().appendChild(button);

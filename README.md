@@ -1,6 +1,8 @@
 # CVAFPI Identification System for Windows 11
 
-A local Windows kiosk application for barcode attendance, student management, CSV migration, audit logs, webcam snapshots, school branding, and PIN-protected system controls.
+CVAFPI is a local school identification and attendance system. It runs on Windows 11, uses a USB barcode scanner, stores data in a local SQLite database, and can capture scan snapshots with a webcam. It also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and PIN-protected kiosk controls.
+
+The application is designed to keep student data on the kiosk computer. NTFY notifications are the exception: when enabled and configured, the app sends the attendance message to `https://ntfy.sh` over the internet.
 
 ## Windows requirements
 
@@ -12,6 +14,19 @@ A local Windows kiosk application for barcode attendance, student management, CS
 
 The packaged application does not require Python. The browser is required because the interface runs in locked browser kiosk mode.
 
+## Before building
+
+Complete this checklist on a Windows 11 test computer before creating the final executable:
+
+- Confirm the computer has 64-bit Python 3.11 or newer, Edge or Chrome, and network access if NTFY will be used.
+- Run the server-only test described below and open every page: launchpad, scanner, manager, logs manager, migration, and settings.
+- Add one test student with a unique barcode and an NTFY topic. Scan the barcode and verify the attendance row, timestamp, saved snapshot if the camera is enabled, and the parent notification.
+- Test a student without a topic, with parent notifications disabled, and with an unknown barcode. None of these should send a parent notification.
+- Test CSV preview/import, log viewing/export, logo upload, PIN setup/recovery, and the configured system barcodes.
+- Back up `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` before packaging.
+
+The Linux development environment can check Python code and server routes, but it cannot produce a Windows executable. The final build must run on Windows 11.
+
 ## Build one executable
 
 Build on Windows 11. PyInstaller creates Windows executables and cannot cross-compile a Windows binary from Debian or Linux.
@@ -19,15 +34,31 @@ Build on Windows 11. PyInstaller creates Windows executables and cannot cross-co
 1. Install 64-bit Python 3.11 or newer from python.org.
 2. Copy or clone this repository to the Windows computer.
 3. Double-click `build-windows.bat`.
-4. Run `dist\\CVAFPI-IDSYS.exe`.
+4. Run `dist\CVAFPI-IDSYS.exe`.
 
 The build script creates a temporary `.venv-windows` environment, installs the Windows dependencies, and builds a single file. The final executable is:
 
 ```text
-dist\\CVAFPI-IDSYS.exe
+dist\CVAFPI-IDSYS.exe
 ```
 
 No Python installation is needed on the deployment computer after the executable has been built.
+
+## Server-only development run
+
+To inspect the application in a normal browser without opening kiosk mode, activate the project environment and run:
+
+```text
+python -m waitress --listen=127.0.0.1:8080 wsgi:app
+```
+
+The server listens on `http://127.0.0.1:8080`. Open that address and test the pages and APIs. To use another port:
+
+```text
+python -m waitress --listen=127.0.0.1:5050 wsgi:app
+```
+
+For a quick Python-only route check, run `python -m py_compile app.py logger.py windows_launcher.py wsgi.py`.
 
 ## Kiosk mode
 
@@ -56,16 +87,28 @@ This starts the same server and browser kiosk launcher from `.venv-windows`.
 
 The launcher serves the Flask application through Waitress `2.1.1` instead of Flask's development server.
 
+## Notifications
+
+### Parent notifications
+
+Parent notifications are controlled by the `Parent notifications` setting and a topic on each student record. A successful scan sends a message such as `Student Name checked in at 09/13/2026 08:30:00 AM.` to `https://ntfy.sh/<topic>`. A blank topic or `None` skips the notification. Notification delivery happens in the background so a slow internet connection does not block the scanner.
+
+Use unique, private topic names. Anyone who knows an NTFY topic can subscribe to it. For stronger privacy, use an authenticated NTFY server and extend the configuration before deployment.
+
+### Office alerts
+
+Office alerts use the configured office topic for camera-blocked alerts. They are separate from parent notifications and can be enabled independently.
+
 ## Data and backup
 
 The executable stores writable data beside itself:
 
 ```text
-CVA_Database\\cva.sqlite3   Student, attendance, and settings database
-CVA_Database\\logs_*         Daily logs and captured snapshots
-logs\\                         Auxiliary application logs
-settings.json                  Application settings
-static\\custom-logo.png       Uploaded school logo
+CVA_Database\cva.sqlite3   Student, attendance, and settings database
+CVA_Database\logs_*        Daily logs and captured snapshots
+logs\                      Auxiliary application logs
+settings.json              Application settings
+static\custom-logo.png    Uploaded school logo
 ```
 
 Stop the kiosk before copying the database. Back up the complete application data directories, not only the executable. Do not edit the SQLite database while the application is running.
@@ -108,4 +151,8 @@ Close the other local service using port 5000, then restart the executable. The 
 
 ### Existing records are missing
 
-Copy the previous `CVA_Database`, `logs`, `settings.json`, and `static\\custom-logo.png` files beside the new executable before starting it.
+Copy the previous `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` files beside the new executable before starting it.
+
+### Parent notification did not arrive
+
+Check that parent notifications are enabled, the student topic is not blank or `None`, the kiosk has internet access, and the topic is spelled exactly the same in the NTFY subscriber and student record. Check the server console for `[ntfy Parent Error]` messages.
