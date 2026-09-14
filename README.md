@@ -1,6 +1,6 @@
 # CVAFPI Identification System
 
-CVAFPI is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
+CVAIDSYS (Windows) is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
 
 The application is designed to keep student and attendance data on the kiosk computer. NTFY notifications are the exception: when enabled and configured, the application sends attendance messages to `https://ntfy.sh` over the internet.
 
