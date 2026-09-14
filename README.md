@@ -2,6 +2,7 @@
 
 # CVAFPI Identification System v2.1.1
 
+
 <br clear="left"/>
 
 Windows 11 kiosk application for barcode attendance, camera snapshots, CSV student records, audit logs, and optional ntfy notifications.
