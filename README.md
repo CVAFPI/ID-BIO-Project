@@ -1,9 +1,10 @@
 <img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
 
+
 # CVAFPI Identification System v2.1.1
 
-
 <br clear="left"/>
+
 
 Windows 11 kiosk application for barcode attendance, camera snapshots, CSV student records, audit logs, and optional ntfy notifications.
 
