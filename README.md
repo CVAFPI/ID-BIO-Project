@@ -1,4 +1,9 @@
-# CVAFPI Identification System
+<img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
+
+
+# CVAFPI Identification System SQL for Windows 11
+
+<br clear="left"/>
 
 CVAIDSYS (Windows) is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
 
