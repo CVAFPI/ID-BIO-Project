@@ -29,82 +29,153 @@ venv\Scripts\waitress-serve.exe --listen=0.0.0.0:5000 --threads=4 --url-scheme=h
 
 ## Build the executable on Windows 11
 
-The executable must be built on Windows. PyInstaller does not create a Windows
-executable when run on Linux.
+This project must be built on Windows to produce the final `.exe` file. PyInstaller
+will not create a Windows executable from a Linux environment.
 
-### 1. Install the prerequisites
+Use the steps below when creating the production kiosk build for distribution or testing.
 
-Install Python 3.11 or newer from <https://www.python.org/downloads/windows/>.
-During installation, enable **Add python.exe to PATH** and install the Python
-launcher. Install Microsoft Edge or Google Chrome for kiosk mode.
+### 1. Install the required software
 
-### 2. Open the project folder
+Before you build anything, install the following on a Windows 11 machine:
 
-Extract or clone this repository to a local Windows folder. Open that folder in
-File Explorer, click the address bar, type `cmd`, and press Enter. Confirm that
-the folder contains `build-windows.bat`, `requirements.txt`, and
-`ID-BIO-Project.spec`.
+- Python 3.11 or newer from <https://www.python.org/downloads/windows/>
+- The Python launcher enabled during installation
+- Microsoft Edge or Google Chrome for the kiosk browser
+- Git if you are cloning the repository instead of using a local zip file
 
-### 3. Build the `.exe`
+Important: during the Python install, check the option to add Python to PATH and enable the Python launcher.
 
-Run this command in the project folder:
+### 2. Prepare the project folder
+
+Copy or clone this repository to a local Windows folder such as:
+
+```text
+C:\Users\YourName\Desktop\ID-BIO-Project
+```
+
+Open that folder in File Explorer, then do one of these:
+
+- click the address bar,
+- type `cmd`,
+- press Enter.
+
+This opens a Command Prompt in the project directory.
+
+Confirm the folder contains these build files:
+
+```text
+build-windows.bat
+ID-BIO-Project.spec
+requirements.txt
+app.py
+logger.py
+wsgi.py
+```
+
+If those files are missing, the build will not run correctly.
+
+### 3. Understand what the build script does
+
+The script `build-windows.bat` should be treated as the official Windows build command.
+It performs the following actions automatically:
+
+1. Creates a Windows virtual environment named `.venv-windows`
+2. Installs the Python dependencies from `requirements.txt`
+3. Installs PyInstaller if it is not already present
+4. Runs PyInstaller using `ID-BIO-Project.spec`
+5. Produces the executable in `dist\CVAFPI-IDSYS.exe`
+6. Copies `data.csv`, `backup-data.csv`, and `settings.json` into the output folder
+7. Creates writable `CVA_Database` and `logs` directories beside the executable
+
+This is the exact command you run:
 
 ```bat
 build-windows.bat
 ```
 
-The script creates `.venv-windows`, installs the Python dependencies and
-PyInstaller, then uses `ID-BIO-Project.spec` to create:
+### 4. Build the executable
+
+From the project folder, run:
+
+```bat
+build-windows.bat
+```
+
+Wait until the process finishes. The result should be a generated file similar to:
 
 ```text
 dist\CVAFPI-IDSYS.exe
 ```
 
-The script also copies `data.csv`, `backup-data.csv`, and `settings.json` into
-`dist`, and creates writable `CVA_Database` and `logs` folders there.
+If the build is successful, you should also see a `dist` folder with the supporting runtime files.
 
-### 4. Run the compiled application
+### 5. Verify the output folder
 
-Run this command from the project folder:
+After the build completes, the output should look like this:
+
+```text
+dist/
+  CVAFPI-IDSYS.exe
+  data.csv
+  backup-data.csv
+  settings.json
+  CVA_Database/
+  logs/
+```
+
+This layout is intentional. The executable needs its data files and writable folders beside it.
+
+Do not move only the `.exe` into another folder. Leave the CSV files, settings, logs,
+and database directory with it.
+
+### 6. Run the compiled application
+
+You can start the built app in either of these ways:
+
+#### Option A: from the project folder
 
 ```bat
 run-windows.bat
 ```
 
-Or open `dist\CVAFPI-IDSYS.exe` directly. Do not move only the `.exe` to
-another folder. Keep the executable and its data files together:
+#### Option B: run the built executable directly
 
-```text
-dist/
-  CVAFPI-IDSYS.exe
-  data.csv
-  backup-data.csv
-  settings.json
-  CVA_Database/
-  logs/
+```bat
+dist\CVAFPI-IDSYS.exe
 ```
 
-The compiled launcher sets `CVAFPI_DATA_DIR` to its own directory. Templates
-and static assets are bundled into the executable, while CSV files, settings,
-logs, snapshots, and uploaded branding remain writable beside it.
+The compiled startup code sets `CVAFPI_DATA_DIR` to the app's own output directory. That means
+CSV records, logs, snapshots, and settings remain writable next to the executable while the
+bundled Flask templates and static files remain packaged with the app.
 
-### Rebuild after code changes
+### 7. Rebuild after code changes
 
-Run `build-windows.bat` again. It cleans and rebuilds the PyInstaller output.
-Copy any updated CSV or settings files into `dist` only when you intentionally
-want to replace the executable's local data.
+Whenever you update the Python code, run the build again:
+
+```bat
+build-windows.bat
+```
+
+This rebuilds the app from scratch and refreshes the output in `dist`.
+
+Only copy updated CSV or settings files into `dist` if you intentionally want to replace the local app data.
 
 ### Common build problems
 
-- **`py` is not recognized:** reinstall Python and enable the Python launcher,
-  or create `.venv-windows` manually with `python -m venv .venv-windows`.
-- **The browser does not open:** install Microsoft Edge or Google Chrome.
-- **The port is busy:** close another copy of the application or stop the
-  process using port `5000` before starting again.
-- **Student records are missing:** confirm that `data.csv` and
-  `backup-data.csv` are beside `CVAFPI-IDSYS.exe`.
+- **`py` is not recognized:** reinstall Python and enable the Python launcher, or create the virtual environment manually with:
 
-Keep these items beside the executable so the CSV data remains writable:
+  ```bat
+  python -m venv .venv-windows
+  ```
+
+- **The browser does not open:** install Microsoft Edge or Google Chrome.
+- **The port is busy:** close another instance of the app or stop the process using port `5000`.
+- **Student records are missing:** confirm that `data.csv` and `backup-data.csv` are located beside `CVAFPI-IDSYS.exe`.
+- **The build stops unexpectedly:** make sure the project folder is not nested inside a protected folder such as OneDrive or a system-managed directory.
+
+### Required output layout
+
+Keep these files beside the executable so the app can read and write the data safely:
 
 ```text
 dist/
@@ -116,7 +187,7 @@ dist/
   logs/
 ```
 
-The compiled launcher sets `CVAFPI_DATA_DIR` to its own directory. Bundled templates and static assets remain read-only application resources, while CSV files, settings, logs, snapshots, and uploaded branding stay beside the executable.
+This layout ensures the application can maintain daily attendance records, student CSV data, and runtime logs without breaking the packaged executable.
 
 ## CSV features
 
@@ -136,22 +207,26 @@ BARCODE,NAME,GRADE,SECTION,ACCESS,COLOR,NTFY_TOPIC
 ## Project structure
 
 ```text
-app.py                       Flask routes and API
-logger.py                   CSV student and attendance storage
-wsgi.py                     Production WSGI export
-windows_launcher.py         Waitress and kiosk browser launcher
-ID-BIO-Project.spec         PyInstaller configuration
-build-windows.bat           Windows executable build script
-run-windows.bat             Compiled executable runner
-CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode runner
-requirements.txt            Windows Python dependencies
-data.csv                   Primary student CSV
-backup-data.csv             Student CSV backup
-CVA_Database/               Attendance CSV files and snapshots
-logs/                       Runtime log directory
-templates/                  Flask HTML templates
-static/                     Frontend assets and logos
-ID-CODES FOR SYSTEM/        Reference control barcodes
+app.py                       Flask routes, kiosk UI, and app logic
+logger.py                    CSV persistence, attendance logging, and backups
+wsgi.py                      Production WSGI export
+windows_launcher.py          Waitress and kiosk browser launcher
+jsbarcode.js                 Barcode rendering library used by the UI
+settings.json                Runtime settings and branding configuration
+ID-BIO-Project.spec          PyInstaller build configuration
+build-windows.bat            Windows executable build script
+run-windows.bat              Windows launcher for the compiled app
+CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode launcher
+requirements.txt             Python dependencies
+LICENSE                      Project license
+README.md                    Project documentation
+data.csv                     Primary student records
+backup-data.csv              Backup student records
+CVA_Database/                Attendance logs and snapshot folders
+logs/                       Generated runtime logs
+templates/                   Flask HTML templates
+static/                     Frontend CSS, JS, and assets
+ID-CODES FOR SYSTEM/        Reference control barcode files
 ```
 
 ## Hardware controls
