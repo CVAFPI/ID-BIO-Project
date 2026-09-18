@@ -82,6 +82,13 @@
         tr:hover { background: #253349; }
 
         .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
+        body[data-theme] .header { background: var(--panel); }
+        body[data-theme] .header h1 { color: var(--text); }
+        body[data-theme] .clock, body[data-theme] .student-name, body[data-theme] .search-timer-text { color: var(--accent); }
+        body[data-theme] .toolbar, body[data-theme] th { background: var(--panel); }
+        body[data-theme] .barcode-input, body[data-theme] .search-box { background: var(--bg); color: var(--text); }
+        body[data-theme] td { border-bottom-color: var(--border); }
+        body[data-theme] tr:hover { background: var(--border); }
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
@@ -370,10 +377,26 @@
                 } else if (result.status === 'success') {
                     updateActiveCard(result.data);
                     fetchLogs();
+                } else if (result.status === 'error' || !res.ok) {
+                    updateScanError(barcode, result.message || 'Student not found. Add this student to the database.');
                 }
             } catch (err) {
                 console.error("Scan error:", err);
+                updateScanError(barcode, 'Scan could not be completed. Check the server.');
             }
+        }
+
+        function updateScanError(barcode, message) {
+            document.getElementById('scanStatus').innerText = 'Scan Error';
+            document.getElementById('cardName').innerText = message;
+            document.getElementById('cardBarcode').innerText = `Barcode: ${barcode}`;
+            document.getElementById('barcodeBox').style.display = 'none';
+            document.getElementById('cardMeta').innerText = 'Student record not found';
+            document.getElementById('cardTime').innerText = `Time: ${new Date().toLocaleTimeString()}`;
+
+            const badge = document.getElementById('cardBadge');
+            badge.innerText = 'ERROR';
+            badge.style.backgroundColor = '#dc2626';
         }
 
         function updateActiveCard(data) {
@@ -423,7 +446,7 @@
 
         function filterLogs() {
             const query = searchInput.value.toLowerCase();
-            const filtered = todayLogs.filter(row => row.some(cell => cell.toLowerCase().includes(query)));
+            const filtered = todayLogs.filter(row => row.some(cell => String(cell ?? '').toLowerCase().includes(query)));
 
             document.getElementById('logCount').innerText = `${filtered.length} records`;
             renderTable(filtered.slice().reverse());
@@ -438,16 +461,19 @@
                 return;
             }
 
+            const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+
             data.forEach(row => {
                 const [time, barcode, name, grade, section, access = 'REGULAR', color = '#059669'] = row;
+                const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#059669';
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-family: monospace; color: var(--muted);">${time || ''}</td>
-                        <td style="font-family: monospace;">${barcode || ''}</td>
-                        <td style="font-weight: 600; color: #fff;">${name || ''}</td>
-                        <td>${grade || ''}</td>
-                        <td>${section || ''}</td>
-                        <td><span class="table-badge" style="background-color: ${color};">${access}</span></td>
+                        <td style="font-family: monospace; color: var(--muted);">${escapeHtml(time)}</td>
+                        <td style="font-family: monospace;">${escapeHtml(barcode)}</td>
+                        <td style="font-weight: 600; color: var(--text);">${escapeHtml(name)}</td>
+                        <td>${escapeHtml(grade)}</td>
+                        <td>${escapeHtml(section)}</td>
+                        <td><span class="table-badge" style="background-color: ${safeColor};">${escapeHtml(access)}</span></td>
                     </tr>
                 `;
             });

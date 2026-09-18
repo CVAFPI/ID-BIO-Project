@@ -27,7 +27,7 @@
 
     function onKeydown(event) {
         if (event.key === 'Escape') close(null);
-        if (event.key === 'Enter' && !cancel().hidden) close(input().value);
+        if (event.key === 'Enter' && !cancel().hidden) close(inputWrap().hidden ? true : input().value);
     }
 
     function open(options) {

@@ -76,6 +76,13 @@
         .btn-clear:hover { background: #475569; }
 
         .badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; display: inline-block; }
+        body[data-theme] .header { background: var(--panel); }
+        body[data-theme] .header h1 { color: var(--text); }
+        body[data-theme] .clock { color: var(--accent); }
+        body[data-theme] .toolbar, body[data-theme] th { background: var(--panel); }
+        body[data-theme] .search-box, body[data-theme] .form-input, body[data-theme] .caps-toggle-row { background: var(--bg); color: var(--text); }
+        body[data-theme] td { border-bottom-color: var(--border); }
+        body[data-theme] tr:hover { background: var(--border); }
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
@@ -240,6 +247,14 @@
             renderTable(filtered);
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        }
+
+        function encodeArgument(value) {
+            return encodeURIComponent(value ?? '').replace(/'/g, '%27');
+        }
+
         function renderTable(data) {
             const tbody = document.getElementById('dbTableBody');
             tbody.innerHTML = '';
@@ -251,23 +266,30 @@
 
             data.forEach(row => {
                 const [barcode, name, grade, section, access = 'REGULAR', color = '#059669', topic = 'None'] = row;
+                const safeBarcode = escapeHtml(barcode);
+                const safeName = escapeHtml(name);
+                const safeGrade = escapeHtml(grade);
+                const safeSection = escapeHtml(section);
+                const safeAccess = escapeHtml(access);
+                const safeTopic = escapeHtml(topic);
+                const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#059669';
 
                 const isNone = !topic || topic.trim() === '' || topic.trim().toLowerCase() === 'none';
                 const topicDisplay = isNone
                     ? `<span style="color: var(--muted); font-style: italic;">None</span>`
-                    : `<code style="color: #38bdf8; font-family: monospace; font-weight: 600; background: #0c1e38; padding: 3px 8px; border-radius: 4px; border: 1px solid #1d4ed8;">${topic}</code>`;
+                    : `<code style="color: #38bdf8; font-family: monospace; font-weight: 600; background: #0c1e38; padding: 3px 8px; border-radius: 4px; border: 1px solid #1d4ed8;">${safeTopic}</code>`;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-family: monospace;">${barcode || ''}</td>
-                        <td style="font-weight: 600; color: #fff;">${name || ''}</td>
-                        <td>${grade || ''}</td>
-                        <td>${section || ''}</td>
-                        <td><span class="badge" style="background-color: ${color}; color: #fff;">${access}</span></td>
+                        <td style="font-family: monospace;">${safeBarcode}</td>
+                        <td style="font-weight: 600; color: var(--text);">${safeName}</td>
+                        <td>${safeGrade}</td>
+                        <td>${safeSection}</td>
+                        <td><span class="badge" style="background-color: ${safeColor}; color: #fff;">${safeAccess}</span></td>
                         <td>${topicDisplay}</td>
                         <td>
-                            <span class="action-icon" title="Edit" onclick="editStudent('${barcode}', '${encodeURIComponent(name)}', '${encodeURIComponent(grade)}', '${encodeURIComponent(section)}', '${encodeURIComponent(access)}', '${color}', '${encodeURIComponent(topic)}')">✏️</span>
-                            <span class="action-icon" title="Delete" onclick="deleteStudent('${barcode}')">🗑️</span>
+                            <span class="action-icon" title="Edit" onclick="editStudent('${encodeArgument(barcode)}', '${encodeArgument(name)}', '${encodeArgument(grade)}', '${encodeArgument(section)}', '${encodeArgument(access)}', '${safeColor}', '${encodeArgument(topic)}')">✏️</span>
+                            <span class="action-icon" title="Delete" onclick="deleteStudent(decodeURIComponent('${encodeArgument(barcode)}'))">🗑️</span>
                         </td>
                     </tr>
                 `;
@@ -275,7 +297,7 @@
         }
 
         function editStudent(barcode, name, grade, section, access, color, topic) {
-            document.getElementById('inputBarcode').value = barcode;
+            document.getElementById('inputBarcode').value = decodeURIComponent(barcode);
             document.getElementById('inputName').value = decodeURIComponent(name);
             document.getElementById('inputGrade').value = decodeURIComponent(grade);
             document.getElementById('inputSection').value = decodeURIComponent(section);
@@ -301,16 +323,21 @@
                 return;
             }
 
+            const pin = await appPrompt('Enter the security passcode to save this student record.', { title: 'Security passcode', passcode: true });
+            if (pin === null) return;
+
             try {
                 const res = await fetch('/api/save_student', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ b, n, g, s, a, c, t })
+                    body: JSON.stringify({ b, n, g, s, a, c, t, pin })
                 });
                 const result = await res.json();
                 if (result.status === 'success') {
                     clearFields();
                     fetchDatabase();
+                } else {
+                    await appAlert(result.message || 'Could not save student record.');
                 }
             } catch (err) {
                 console.error("Save error:", err);
@@ -319,15 +346,19 @@
 
         async function deleteStudent(barcode) {
             if (!(await appConfirm(`Are you sure you want to delete barcode ${barcode}?`))) return;
+            const pin = await appPrompt('Enter the security passcode to delete this student record.', { title: 'Security passcode', passcode: true });
+            if (pin === null) return;
             try {
                 const res = await fetch('/api/delete_student', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ barcode })
+                    body: JSON.stringify({ barcode, pin })
                 });
                 const result = await res.json();
                 if (result.status === 'success') {
                     fetchDatabase();
+                } else {
+                    await appAlert(result.message || 'Could not delete student record.');
                 }
             } catch (err) {
                 console.error("Delete error:", err);

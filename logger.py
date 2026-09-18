@@ -5,6 +5,9 @@ import random
 import string
 import sqlite3
 import shutil
+import threading
+import time
+import tempfile
 from datetime import datetime, timedelta
 
 BASE_DIR = os.environ.get(
@@ -12,6 +15,13 @@ BASE_DIR = os.environ.get(
 )
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 DATABASE_FILE = os.path.join(DB_DIR, 'cva.sqlite3')
+DATABASE_BACKUP_FILE = os.path.join(DB_DIR, 'cva.sqlite3.backup')
+DOUBLE_SCAN_WINDOW_SECONDS = 2
+_last_scan_barcode = None
+_last_scan_deadline = 0.0
+_scan_lock = threading.Lock()
+_backup_lock = threading.Lock()
+database_startup_error = None
 
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
@@ -26,8 +36,9 @@ def get_connection():
 
 
 def initialize_database():
-    with get_connection() as connection:
-        connection.executescript('''
+    global database_startup_error
+
+    schema = '''
             CREATE TABLE IF NOT EXISTS students (
                 barcode TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -59,7 +70,80 @@ def initialize_database():
                 setting_key TEXT PRIMARY KEY,
                 setting_value TEXT NOT NULL
             );
-        ''')
+            CREATE TABLE IF NOT EXISTS audit_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                message TEXT NOT NULL,
+                barcode TEXT NOT NULL DEFAULT '',
+                details TEXT NOT NULL DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp
+                ON audit_events(timestamp);
+        '''
+
+    try:
+        with get_connection() as connection:
+            connection.executescript(schema)
+        database_startup_error = None
+    except sqlite3.DatabaseError as error:
+        if not os.path.exists(DATABASE_BACKUP_FILE):
+            database_startup_error = f'Database could not be opened: {error}'
+            return
+        try:
+            shutil.copy2(DATABASE_BACKUP_FILE, DATABASE_FILE)
+            with get_connection() as connection:
+                connection.executescript(schema)
+            record_event('database_recovery', 'Database restored automatically from backup.')
+            database_startup_error = None
+        except (OSError, sqlite3.DatabaseError) as recovery_error:
+            database_startup_error = f'Database recovery failed: {recovery_error}'
+
+
+def backup_database():
+    if database_startup_error or not os.path.exists(DATABASE_FILE):
+        return False
+    temporary_backup = None
+    try:
+        with _backup_lock:
+            with get_connection() as source:
+                fd, temporary_backup = tempfile.mkstemp(
+                    prefix='cva.sqlite3.', suffix='.backup', dir=DB_DIR
+                )
+                os.close(fd)
+                with sqlite3.connect(temporary_backup) as destination:
+                    source.backup(destination)
+                os.replace(temporary_backup, DATABASE_BACKUP_FILE)
+        return True
+    except (OSError, sqlite3.DatabaseError) as error:
+        if temporary_backup and os.path.exists(temporary_backup):
+            os.unlink(temporary_backup)
+        print(f'[Database Backup Error]: {error}')
+        return False
+
+
+def record_event(event_type, message, barcode='', details=''):
+    try:
+        with get_connection() as connection:
+            connection.execute('''
+                INSERT INTO audit_events (timestamp, event_type, message, barcode, details)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'),
+                str(event_type)[:80], str(message)[:500], str(barcode)[:100], str(details)[:1000]
+            ))
+        backup_database()
+    except sqlite3.DatabaseError as error:
+        print(f'[Audit Log Error]: {error}')
+
+
+def get_audit_events(limit=500):
+    with get_connection() as connection:
+        rows = connection.execute('''
+            SELECT timestamp, event_type, message, barcode, details
+            FROM audit_events ORDER BY id DESC LIMIT ?
+        ''', (max(1, min(int(limit), 2000)),)).fetchall()
+    return [list(row) for row in rows]
 
 
 def get_app_settings():
@@ -78,6 +162,7 @@ def save_app_settings(settings):
                 VALUES (?, ?)
                 ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value
             ''', (key, str(value)))
+    backup_database()
 
 
 def parse_student_csv(file_object):
@@ -162,6 +247,7 @@ def import_student_csv(file_object, replace_existing=False):
             ''', tuple(record[field] for field in (
                 'barcode', 'name', 'grade', 'section', 'access', 'color', 'topic'
             )))
+    backup_database()
     return {'imported': len(records), 'mode': 'replace' if replace_existing else 'merge'}
 
 def cleanup_old_logs(days=7):
@@ -217,10 +303,12 @@ def save_student(b, n, g, s, a, c, t):
                 section = excluded.section, access = excluded.access,
                 color = excluded.color, topic = excluded.topic
         ''', (b, n, g, s, a, c, t))
+    backup_database()
 
 def delete_student(barcode):
     with get_connection() as connection:
         connection.execute('DELETE FROM students WHERE barcode = ?', (barcode,))
+    backup_database()
 
 def get_available_log_files():
     with get_connection() as connection:
@@ -255,36 +343,48 @@ def get_logs_by_filename_raw(filename):
     return get_logs_by_date(base_name.removeprefix('logs_'))
 
 def log_attendance(barcode):
-    with get_connection() as connection:
-        row = connection.execute(
-            'SELECT * FROM students WHERE barcode = ?', (barcode,)
-        ).fetchone()
-    if row is None:
-        return {'status': 'error', 'message': 'Student not found'}
+    global _last_scan_barcode, _last_scan_deadline
 
-    student = dict(row)
-    with get_connection() as connection:
-        existing_ids = {
-            item[0] for item in connection.execute('SELECT image_id FROM attendance')
+    with _scan_lock:
+        with get_connection() as connection:
+            row = connection.execute(
+                'SELECT * FROM students WHERE barcode = ?', (barcode,)
+            ).fetchone()
+        if row is None:
+            return {'status': 'error', 'message': 'Student not found'}
+
+        now_monotonic = time.monotonic()
+        if barcode == _last_scan_barcode and now_monotonic < _last_scan_deadline:
+            return {'status': 'duplicate', 'message': 'Duplicate scan ignored'}
+
+        student = dict(row)
+        with get_connection() as connection:
+            existing_ids = {
+                item[0] for item in connection.execute('SELECT image_id FROM attendance')
+            }
+        image_id = generate_unique_id(existing_ids)
+        filename_id = f"{image_id}.jpg"
+
+        now = datetime.now()
+        timestamp_str = now.strftime('%m/%d/%Y %I:%M:%S %p')
+
+        with get_connection() as connection:
+            connection.execute('''
+                INSERT INTO attendance
+                (timestamp, barcode, name, grade, section, access, color, image_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                timestamp_str, student['barcode'], student['name'], student['grade'],
+                student['section'], student['access'], student['color'], filename_id
+            ))
+
+        backup_database()
+
+        _last_scan_barcode = barcode
+        _last_scan_deadline = now_monotonic + DOUBLE_SCAN_WINDOW_SECONDS
+
+        return {
+            'status': 'success',
+            'data': student,
+            'image_id': filename_id
         }
-    image_id = generate_unique_id(existing_ids)
-    filename_id = f"{image_id}.jpg"
-
-    now = datetime.now()
-    timestamp_str = now.strftime('%m/%d/%Y %I:%M:%S %p')
-
-    with get_connection() as connection:
-        connection.execute('''
-            INSERT INTO attendance
-            (timestamp, barcode, name, grade, section, access, color, image_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            timestamp_str, student['barcode'], student['name'], student['grade'],
-            student['section'], student['access'], student['color'], filename_id
-        ))
-
-    return {
-        'status': 'success',
-        'data': student,
-        'image_id': filename_id
-    }

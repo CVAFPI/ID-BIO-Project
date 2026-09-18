@@ -76,6 +76,10 @@
         .modal-foot { justify-content:flex-end; border-top:1px solid var(--line); }
         .button { padding:9px 14px; border:1px solid transparent; border-radius:6px; color:#fff; background:var(--blue); font-weight:700; cursor:pointer; }
         .button.secondary { border-color:var(--line); color:var(--muted); background:transparent; }
+        body[data-theme] .setting { background:var(--surface); }
+        body[data-theme] .brand-mark { background:var(--surface-2); }
+        body[data-theme] .button { color:#fff; }
+        body[data-theme] .setting-input input, body[data-theme] .setting-input select { background:var(--canvas); color:var(--ink); }
         @media (max-width:800px) { .module-grid,.system-grid { grid-template-columns:repeat(2,1fr); } }
         @media (max-width:560px) { .shell { width:min(100% - 26px,480px); padding-top:18px; } .topbar-right .clock { display:none; } .module-grid,.system-grid { grid-template-columns:1fr; } .module { min-height:128px; } .footer { flex-direction:column; } }
     </style>
