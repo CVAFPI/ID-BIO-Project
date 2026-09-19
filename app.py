@@ -47,7 +47,10 @@ DEFAULT_SETTINGS = {
     "security_answer_salt": "",
     "close_kiosk_barcode": "CD=CLOSEBARCODESYS96%&@CVAFPI",
     "shutdown_barcode": "CD=EMERSHUTDOWNSYSSU62#9CVAFPI",
-    "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI"
+    "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI",
+    "database_manager_barcode": "DataManagerCVAFPI8%/?",
+    "log_manager_barcode": "LogManagerCVAFPI34#%",
+    "settings_barcode": "SettingsCVAFPI8&5?"
 }
 
 PUBLIC_SETTINGS = {key for key in DEFAULT_SETTINGS if key not in {
@@ -165,7 +168,7 @@ def save_system_settings(data):
         data['accent_color'] = DEFAULT_SETTINGS['accent_color']
     if 'institution_name' in data:
         data['institution_name'] = str(data['institution_name']).strip()[:100]
-    for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode'):
+    for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
         if key in data:
             data[key] = str(data[key]).strip()[:100]
     safe_data = {key: data[key] for key in DEFAULT_SETTINGS if key in data}
@@ -500,7 +503,10 @@ def scan_api():
         command_map = {
             settings.get('close_kiosk_barcode'): 'close_kiosk',
             settings.get('shutdown_barcode'): 'shutdown',
-            settings.get('launchpad_barcode'): 'launchpad'
+            settings.get('launchpad_barcode'): 'launchpad',
+            settings.get('database_manager_barcode'): 'database_manager',
+            settings.get('log_manager_barcode'): 'log_manager',
+            settings.get('settings_barcode'): 'settings'
         }
         if barcode in command_map:
             return jsonify({'status': 'system_command', 'command': command_map[barcode]})
@@ -591,6 +597,12 @@ def system_command_api():
         return jsonify({'status': 'success'})
     if command == 'launchpad':
         return jsonify({'status': 'redirect', 'location': '/launchpad.html'})
+    if command == 'database_manager':
+        return jsonify({'status': 'redirect', 'location': '/manager.html'})
+    if command == 'log_manager':
+        return jsonify({'status': 'redirect', 'location': '/logs-manager.html'})
+    if command == 'settings':
+        return jsonify({'status': 'redirect', 'location': '/launchpad.html?settings=1'})
     return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
 
 if __name__ == '__main__':

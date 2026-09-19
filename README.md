@@ -104,6 +104,14 @@ Edge is preferred when installed. Chrome is used as a fallback. If neither brows
 
 The kiosk controls are passcode-protected. A passcode must contain 4 to 12 non-space characters; letters, numbers, and symbols are supported. `Exit kiosk mode` closes only the browser process started by this application. It does not close other Edge or Chrome windows.
 
+The scanner also supports protected quick-access barcodes:
+
+- `DataManagerCVAFPI8%/?` opens Student Manager.
+- `LogManagerCVAFPI34#%` opens Logs & Audit Trail.
+- `SettingsCVAFPI8&5?` opens the System Settings modal.
+
+These values can be changed in the `System barcodes` section of Settings. Quick-access commands require the configured passcode before redirecting.
+
 For the strongest Windows lockdown, configure Windows Assigned Access or Shell Launcher for the account used by the kiosk. Browser kiosk mode controls the application window, while Assigned Access controls the Windows desktop and keyboard escape paths.
 
 ## Development run

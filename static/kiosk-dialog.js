@@ -4,7 +4,7 @@
     overlay.innerHTML = `<section class="kiosk-dialog" role="dialog" aria-modal="true" aria-labelledby="kioskDialogTitle">
         <header class="kiosk-dialog-head"><h2 id="kioskDialogTitle">System message</h2><button class="kiosk-dialog-close" type="button" aria-label="Close">&times;</button></header>
         <div class="kiosk-dialog-body"><p class="kiosk-dialog-message"></p><div class="kiosk-dialog-input-wrap" hidden><input class="kiosk-dialog-input" autocomplete="off"><button class="kiosk-dialog-toggle" type="button" hidden>Show passcode</button></div><div class="kiosk-keypad" hidden></div></div>
-        <footer class="kiosk-dialog-foot"><button class="kiosk-dialog-button secondary" data-action="cancel" type="button">Cancel</button><button class="kiosk-dialog-button primary" data-action="ok" type="button">OK</button></footer>
+        <footer class="kiosk-dialog-foot"><button class="kiosk-dialog-forgot" data-action="forgot" type="button" hidden>Forgot Password</button><button class="kiosk-dialog-button secondary" data-action="cancel" type="button">Cancel</button><button class="kiosk-dialog-button primary" data-action="ok" type="button">OK</button></footer>
     </section>`;
     document.addEventListener('DOMContentLoaded', () => document.body.appendChild(overlay));
 
@@ -16,6 +16,7 @@
     const toggle = () => overlay.querySelector('.kiosk-dialog-toggle');
     const keypad = () => overlay.querySelector('.kiosk-keypad');
     const cancel = () => overlay.querySelector('[data-action="cancel"]');
+    const forgot = () => overlay.querySelector('[data-action="forgot"]');
 
     function close(value) {
         overlay.classList.remove('is-open');
@@ -47,12 +48,14 @@
         input().onkeydown = null;
         input().value = '';
         cancel().hidden = options.kind === 'alert';
+        forgot().hidden = !options.passcode || options.allowForgot === false;
         cancel().textContent = options.cancelText || 'Cancel';
         overlay.querySelector('[data-action="ok"]').textContent = options.okText || 'OK';
         keypad().innerHTML = '';
         toggle().onclick = () => { input().type = input().type === 'password' ? 'text' : 'password'; toggle().textContent = input().type === 'password' ? 'Show passcode' : 'Mask passcode'; };
         overlay.querySelector('[data-action="ok"]').onclick = () => close(options.input ? input().value : true);
         cancel().onclick = () => close(null);
+        forgot().onclick = () => { close(null); setTimeout(recoverPassword, 0); };
         overlay.querySelector('.kiosk-dialog-close').onclick = () => close(null);
         overlay.classList.add('is-open');
         document.addEventListener('keydown', onKeydown);
@@ -62,5 +65,24 @@
 
     window.appAlert = message => open({ message, kind: 'alert' });
     window.appConfirm = message => open({ message, kind: 'confirm' });
-    window.appPrompt = (message, options = {}) => open({ message, input: true, passcode: !!options.passcode || !!options.pin, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
+    window.appPrompt = (message, options = {}) => open({ message, input: true, passcode: !!options.passcode || !!options.pin, allowForgot: options.allowForgot, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
+
+    async function recoverPassword() {
+        try {
+            const config = await (await fetch('/api/security/config')).json();
+            if (!config.security_question) {
+                await appAlert('Set a security question during initial setup first.');
+                return;
+            }
+            const answer = await appPrompt(config.security_question, { title: 'Password recovery answer' });
+            const newPin = await appPrompt('Enter a new passcode:', { title: 'New passcode', passcode: true, allowForgot: false });
+            if (answer === null || newPin === null) return;
+            const response = await fetch('/api/security/recover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ security_answer: answer, new_pin: newPin }) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Could not reset password.');
+            await appAlert('Password reset. Use the new password to continue.');
+        } catch (error) {
+            await appAlert(error.message || 'Could not reset password.');
+        }
+    }
 })();

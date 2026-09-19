@@ -14,5 +14,6 @@
 .kiosk-key { min-height:44px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--ink,var(--text,#e8eef7)); background:var(--surface-2,var(--panel-header,#202c3a)); font-size:1rem; cursor:pointer; }
 .kiosk-key:hover,.kiosk-dialog-toggle:hover { border-color:var(--blue,var(--accent,#4da3ff)); }
 .kiosk-dialog-foot { display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid var(--line,var(--border,#334155)); }
+.kiosk-dialog-forgot { margin-right:auto; padding:10px 0; border:0; color:var(--blue,var(--accent,#4da3ff)); background:transparent; font-weight:700; cursor:pointer; }
 .kiosk-dialog-button { padding:10px 15px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--muted,#91a0b5); background:transparent; font-weight:700; cursor:pointer; }
 .kiosk-dialog-button.primary { border-color:transparent; color:#fff; background:var(--blue,var(--accent,#4da3ff)); }
