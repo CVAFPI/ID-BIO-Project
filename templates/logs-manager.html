@@ -10,7 +10,7 @@
             --panel: #1e293b;
             --panel-header: #162238;
             --accent: #2563eb;
-            --accent-hover: var(--accent);
+            --accent-hover: #1d4ed8;
             --text: #f1f5f9;
             --muted: #94a3b8;
             --border: #334155;
@@ -26,23 +26,14 @@
         body[data-theme="grassy"] { --bg:#101b16; --panel:#17271f; --panel-header:#20372a; --text:#e8f6ed; --muted:#9bb6a4; --border:#345441; --accent:#71d39d; }
         body[data-theme="ocean"] { --bg:#071923; --panel:#0e2633; --panel-header:#153747; --text:#e8f7fb; --muted:#9fc6d1; --border:#285369; --accent:#5cd3e8; }
         body[data-theme="sunset"] { --bg:#21171a; --panel:#302126; --panel-header:#412b2e; --text:#fff0e8; --muted:#c6a5a0; --border:#644247; --accent:#ffad72; }
-        .header { background:var(--panel); }
-        .select-box, .search-box, .time-box, .switch-wrapper { color:var(--text); background:var(--bg); }
-        .header h1 { color:var(--text); }
-        .clock, .kpi-value { color:var(--accent); }
-        .btn-launchpad, .btn-action.secondary { color:var(--text); background:var(--panel-header); }
-        input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea { color:var(--text); background:var(--bg); border-color:var(--border); }
-        input::placeholder, textarea::placeholder { color:var(--muted); opacity:1; }
-        input:focus, select:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent); outline:none; }
-        input[type="checkbox"] { accent-color:var(--accent); }
 
         /* Top Header */
         .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--border); }
         .header-left { display: flex; align-items: center; gap: 12px; }
         .logo-img { height: 32px; width: 32px; object-fit: contain; }
-        .header h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+        .header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
         .header-right { display: flex; align-items: center; gap: 16px; }
-        .clock { color: var(--accent); font-family: monospace; font-size: 0.95rem; font-weight: 600; }
+        .clock { color: #38bdf8; font-family: monospace; font-size: 0.95rem; font-weight: 600; }
         .btn-launchpad { background: #334155; color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
         .btn-launchpad:hover { background: #475569; }
 
@@ -52,7 +43,7 @@
         .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .kpi-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
         .kpi-label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.5px; }
-        .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--accent); font-family: monospace; }
+        .kpi-value { font-size: 1.6rem; font-weight: 800; color: #38bdf8; font-family: monospace; }
 
         /* Logs Section */
         .logs-panel { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
@@ -60,7 +51,7 @@
         .toolbar { padding: 12px 16px; background: var(--panel-header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
         .toolbar-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-        .select-box, .search-box, .time-box { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 0.85rem; outline: none; }
+        .select-box, .search-box, .time-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 0.85rem; outline: none; }
         .select-box:focus, .search-box:focus, .time-box:focus { border-color: var(--accent); }
         .search-box { width: 220px; }
         .time-box { width: 110px; color-scheme: dark; }
@@ -71,7 +62,7 @@
         .btn-action.secondary:hover { background: #475569; }
 
         /* Toggle Switch */
-        .switch-wrapper { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; }
+        .switch-wrapper { display: flex; align-items: center; gap: 8px; background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; }
         .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 20px; border: 1px solid var(--border); }
@@ -87,7 +78,13 @@
         tr:hover { background: #253349; }
 
         .table-badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; color: #fff; display: inline-block; }
+        body[data-theme] .header h1 { color: var(--text); }
+        body[data-theme] .clock, body[data-theme] .kpi-value { color: var(--accent); }
+        body[data-theme] .select-box, body[data-theme] .search-box, body[data-theme] .time-box, body[data-theme] .switch-wrapper { background: var(--bg); color: var(--text); }
+        body[data-theme] td { border-bottom-color: var(--border); }
+        body[data-theme] tr:hover { background: var(--border); }
     </style>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
 <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
 
@@ -170,6 +167,7 @@
                         </label>
                     </div>
                     <button class="btn-action secondary" onclick="loadSelectedLogFile()">🔄 Refresh</button>
+                    <button class="btn-action secondary" onclick="showAuditEvents()">🛡 Audit Events</button>
                     <button class="btn-action" onclick="exportCSV()">📥 Export CSV</button>
                 </div>
             </div>
@@ -202,7 +200,7 @@
                 <h3 id="modalTitle" style="font-size: 0.95rem; color: #fff;">Scan Snapshot</h3>
                 <button onclick="closeImageModal()" style="background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer;">✕</button>
             </div>
-            <div style="text-align: center; background: var(--bg); border-radius: 6px; padding: 10px; min-height: 220px; display: flex; justify-content: center; align-items: center;">
+            <div style="text-align: center; background: #0f172a; border-radius: 6px; padding: 10px; min-height: 220px; display: flex; justify-content: center; align-items: center;">
                 <img id="modalImage" src="" alt="Snapshot" style="max-width: 100%; max-height: 320px; border-radius: 4px; display: none;">
                 <span id="modalLoading" style="color: var(--muted); font-size: 0.85rem;">Loading snapshot...</span>
             </div>
@@ -210,11 +208,48 @@
         </div>
     </div>
 
-    <link rel="stylesheet" href="/static/kiosk-dialog.css">
+    <div id="auditModal" style="display:none; position:fixed; z-index:1001; inset:0; background:rgba(0,0,0,.8); justify-content:center; align-items:center; padding:18px;">
+        <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; width:min(900px,100%); max-height:90vh; overflow:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                <h3 style="color:var(--text);">Audit Events</h3>
+                <button class="btn-action secondary" onclick="closeAuditEvents()">Close</button>
+            </div>
+            <table><thead><tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Barcode</th><th>Details</th></tr></thead><tbody id="auditEventsBody"></tbody></table>
+        </div>
+    </div>
+
     <script src="/static/kiosk-dialog.js"></script>
     <script>
         let currentLogsData = [];
         let snapshotPreviewEnabled = false;
+
+        function auditEscape(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        }
+
+        async function showAuditEvents() {
+            const pin = await appPrompt('Enter the security passcode to view audit events.', { title: 'Security passcode', passcode: true });
+            if (pin === null) return;
+            try {
+                const response = await fetch('/api/audit/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Could not load audit events.');
+                document.getElementById('auditEventsBody').innerHTML = result.length
+                    ? result.map(row => `<tr><td>${auditEscape(row[0])}</td><td>${auditEscape(row[1])}</td><td>${auditEscape(row[2])}</td><td>${auditEscape(row[3])}</td><td>${auditEscape(row[4])}</td></tr>`).join('')
+                    : '<tr><td colspan="5">No audit events recorded.</td></tr>';
+                document.getElementById('auditModal').style.display = 'flex';
+            } catch (error) {
+                await appAlert(error.message || 'Could not load audit events.');
+            }
+        }
+
+        function closeAuditEvents() {
+            document.getElementById('auditModal').style.display = 'none';
+        }
 
         // Clock Update
         function updateClock() {
@@ -353,7 +388,7 @@
             }
 
             const filtered = currentLogsData.filter(row => {
-                const matchesText = row.some(cell => cell.toLowerCase().includes(query));
+                const matchesText = row.some(cell => String(cell ?? '').toLowerCase().includes(query));
                 if (!matchesText) return false;
 
                 if (startMinutes !== null || endMinutes !== null) {
@@ -393,6 +428,9 @@
                 return;
             }
 
+            const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+            const encodeArgument = value => encodeURIComponent(value ?? '').replace(/'/g, '%27');
+
             data.forEach((row, index) => {
                 const time = row[0] || '';
                 const barcode = row[1] || '';
@@ -402,27 +440,32 @@
                 const access = row[5] || 'REGULAR';
                 const color = row[6] || '#059669';
                 const imageId = row[7] || ''; // ID-MATCHER column
+                const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#059669';
 
-                let barcodeCellContent = `<span style="font-family: monospace; color: var(--accent); font-weight: 600;">${barcode}</span>`;
+                let barcodeCellContent = `<span style="font-family: monospace; color: #38bdf8; font-weight: 600;">${escapeHtml(barcode)}</span>`;
                 if (snapshotPreviewEnabled && imageId) {
-                    barcodeCellContent = `<span style="font-family: monospace; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline;" title="Click to view snapshot" onclick="openSnapshotModal('${time}', '${barcode}', '${name}', '${imageId}')">${barcode} 📷</span>`;
+                    barcodeCellContent = `<span style="font-family: monospace; color: #38bdf8; font-weight: 600; cursor: pointer; text-decoration: underline;" title="Click to view snapshot" onclick="openSnapshotModal('${encodeArgument(time)}', '${encodeArgument(barcode)}', '${encodeArgument(name)}', '${encodeArgument(imageId)}')">${escapeHtml(barcode)} 📷</span>`;
                 }
 
                 tbody.innerHTML += `
                     <tr>
                         <td style="color: var(--muted); font-size: 0.75rem;">${data.length - index}</td>
-                        <td style="font-family: monospace; color: var(--muted);">${time}</td>
+                        <td style="font-family: monospace; color: var(--muted);">${escapeHtml(time)}</td>
                         <td>${barcodeCellContent}</td>
-                        <td style="font-weight: 700; color: #fff;">${name}</td>
-                        <td>${grade}</td>
-                        <td>${section}</td>
-                        <td><span class="table-badge" style="background-color: ${color};">${access}</span></td>
+                        <td style="font-weight: 700; color: var(--text);">${escapeHtml(name)}</td>
+                        <td>${escapeHtml(grade)}</td>
+                        <td>${escapeHtml(section)}</td>
+                        <td><span class="table-badge" style="background-color: ${safeColor};">${escapeHtml(access)}</span></td>
                     </tr>
                 `;
             });
         }
 
         async function openSnapshotModal(timestampStr, barcode, name, imageId) {
+            timestampStr = decodeURIComponent(timestampStr);
+            barcode = decodeURIComponent(barcode);
+            name = decodeURIComponent(name);
+            imageId = decodeURIComponent(imageId);
             const modal = document.getElementById('imageModal');
             const modalImg = document.getElementById('modalImage');
             const modalLoading = document.getElementById('modalLoading');
@@ -466,7 +509,7 @@
 
         async function exportCSV() {
             if (currentLogsData.length === 0) {
-            await appAlert("No logs to export!");
+                await appAlert("No logs to export!");
                 return;
             }
 

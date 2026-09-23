@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [2026-09-13 03:18:01 +0000] [18304] [INFO] Starting gunicorn 23.0.0
 [2026-09-13 03:18:01 +0000] [18304] [INFO] Listening at: http://0.0.0.0:5000 (18304)
 [2026-09-13 03:18:01 +0000] [18304] [INFO] Using worker: gthread
@@ -7,3 +8,18 @@
 [2026-09-13 03:18:02 +0000] [18304] [INFO] Handling signal: term
 [2026-09-13 03:18:03 +0000] [18307] [INFO] Worker exiting (pid: 18307)
 [2026-09-13 03:18:03 +0000] [18304] [INFO] Shutting down: Master
+=======
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.45:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 417-628-364
+127.0.0.1 - - [12/Sep/2026 05:44:22] "GET / HTTP/1.1" 200 -
+/home/codespace/.python/current/lib/python3.14/multiprocessing/resource_tracker.py:396: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-f7_zys5o'}
+  warnings.warn(
+>>>>>>> origin/SQL-IDBIOSYS-VERWIN

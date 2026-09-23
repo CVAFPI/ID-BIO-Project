@@ -7,14 +7,30 @@ import threading
 import urllib.request
 import base64
 import re
+import hashlib
+import hmac
+import secrets
+import shutil
 from datetime import datetime
+import sys
+from urllib.parse import quote
 
-app = Flask(__name__)
-APP_VERSION = "2.1.1"
-SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.environ.get('CVAFPI_DATA_DIR', SOURCE_DIR)
+RESOURCE_DIR = getattr(sys, '_MEIPASS', SOURCE_DIR)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(RESOURCE_DIR, 'templates'),
+    static_folder=os.path.join(RESOURCE_DIR, 'static')
+)
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 CUSTOM_LOGO = os.path.join(BASE_DIR, 'static', 'custom-logo.png')
+os.makedirs(os.path.dirname(CUSTOM_LOGO), exist_ok=True)
+PACKAGED_LOGO = os.path.join(app.static_folder, 'custom-logo.png')
+if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO) and os.path.exists(CUSTOM_LOGO):
+    shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
+
 DEFAULT_SETTINGS = {
     "camera_enabled": False,
     "parent_notifications_enabled": True,
@@ -23,12 +39,96 @@ DEFAULT_SETTINGS = {
     "blocked_camera_alerts_enabled": True,
     "institution_name": "Christian Vision Academy Foundation Inc.",
     "theme": "night",
-    "accent_color": "#2563eb"
+    "accent_color": "#4da3ff",
+    "pin_hash": "",
+    "pin_salt": "",
+    "security_question": "",
+    "security_answer_hash": "",
+    "security_answer_salt": "",
+    "close_kiosk_barcode": "CD=CLOSEBARCODESYS96%&@CVAFPI",
+    "shutdown_barcode": "CD=EMERSHUTDOWNSYSSU62#9CVAFPI",
+    "launchpad_barcode": "CD=RETURNTOMNSYS8(*CVAFPI",
+    "database_manager_barcode": "DataManagerCVAFPI8%/?",
+    "log_manager_barcode": "LogManagerCVAFPI34#%",
+    "settings_barcode": "SettingsCVAFPI8&5?"
 }
 
-@app.context_processor
-def inject_app_version():
-    return {'app_version': APP_VERSION}
+PUBLIC_SETTINGS = {key for key in DEFAULT_SETTINGS if key not in {
+    'pin_hash', 'pin_salt', 'security_answer_hash', 'security_answer_salt'
+}}
+PASSCODE_PATTERN = re.compile(r'^\S{4,12}$')
+BOOLEAN_SETTING_KEYS = (
+    'camera_enabled', 'parent_notifications_enabled',
+    'office_alerts_enabled', 'blocked_camera_alerts_enabled'
+)
+VALID_THEMES = {'night', 'light', 'grassy', 'ocean', 'sunset'}
+
+
+def hash_secret(value, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac('sha256', value.encode('utf-8'), salt.encode('utf-8'), 200000)
+    return salt, digest.hex()
+
+
+def secret_matches(value, salt, expected_hash):
+    if not value or not salt or not expected_hash:
+        return False
+    _, actual_hash = hash_secret(value, salt)
+    return hmac.compare_digest(actual_hash, expected_hash)
+
+def dispatch_parent_notification(student, timestamp, settings):
+    if not settings.get('parent_notifications_enabled'):
+        return
+    topic = str(student.get('topic') or '').strip()
+    if not topic or topic.lower() == 'none':
+        return
+
+    topic_path = quote(topic, safe='')
+    url = f'https://ntfy.sh/{topic_path}'
+    message = f"{student.get('name', 'Student')} checked in at {timestamp}."
+
+    def _push():
+        try:
+            req = urllib.request.Request(
+                url,
+                data=message.encode('utf-8'),
+                headers={
+                    'Title': 'CVA Student Attendance',
+                    'Priority': 'default',
+                    'Tags': 'school,attendance'
+                }
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as error:
+            print(f'[ntfy Parent Error]: {error}')
+
+    threading.Thread(target=_push, daemon=True).start()
+
+
+def pin_is_configured(settings=None):
+    settings = settings or load_system_settings()
+    return bool(settings.get('pin_hash') and settings.get('pin_salt'))
+
+
+def verify_pin(pin, settings=None):
+    settings = settings or load_system_settings()
+    return secret_matches(str(pin or '').strip(), settings.get('pin_salt'), settings.get('pin_hash'))
+
+
+def protected_response(action='perform this action'):
+    data = request.get_json(silent=True) or request.form
+    settings = load_system_settings()
+    if not pin_is_configured(settings):
+        logger.record_event('security_error', f'Blocked attempt to {action} because no passcode is configured.')
+        return jsonify({'status': 'error', 'message': 'A security passcode must be configured first.'}), 403
+    if not verify_pin(data.get('pin'), settings):
+        logger.record_event('security_error', f'Invalid passcode while attempting to {action}.')
+        return jsonify({'status': 'error', 'message': f'Invalid passcode. Cannot {action}.'}), 401
+    return None
+
+
+def public_settings(settings):
+    return {key: settings.get(key, DEFAULT_SETTINGS[key]) for key in PUBLIC_SETTINGS}
 
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
@@ -45,31 +145,62 @@ def load_system_settings():
                 settings.update(json.load(f))
     except Exception:
         pass
+    stored_settings = logger.get_app_settings()
+    for key in BOOLEAN_SETTING_KEYS:
+        if key in stored_settings:
+            stored_settings[key] = str(stored_settings[key]).strip().lower() in {'1', 'true', 'yes', 'on'}
+    settings.update(stored_settings)
+    for key in BOOLEAN_SETTING_KEYS:
+        settings[key] = str(settings.get(key, False)).strip().lower() in {'1', 'true', 'yes', 'on'} if isinstance(settings.get(key), str) else bool(settings.get(key, False))
+    if settings.get('theme') not in VALID_THEMES:
+        settings['theme'] = DEFAULT_SETTINGS['theme']
+    if not re.fullmatch(r'#[0-9a-fA-F]{6}', str(settings.get('accent_color', ''))):
+        settings['accent_color'] = DEFAULT_SETTINGS['accent_color']
     return settings
 
 def save_system_settings(data):
-    data = dict(data)
-    if data.get('theme') not in {'night', 'light', 'grassy', 'ocean', 'sunset'}:
+    for key in BOOLEAN_SETTING_KEYS:
+        if key in data:
+            data[key] = str(data[key]).strip().lower() in {'1', 'true', 'yes', 'on'} if isinstance(data[key], str) else bool(data[key])
+    if 'theme' in data and data['theme'] not in VALID_THEMES:
         data['theme'] = 'night'
-    if not re.fullmatch(r'#[0-9a-fA-F]{6}', str(data.get('accent_color', ''))):
+    if 'accent_color' in data and not re.fullmatch(r'#[0-9a-fA-F]{6}', str(data['accent_color'])):
         data['accent_color'] = DEFAULT_SETTINGS['accent_color']
-    data['institution_name'] = str(data.get('institution_name', DEFAULT_SETTINGS['institution_name'])).strip()[:100]
-    safe_data = {key: data.get(key, DEFAULT_SETTINGS[key]) for key in DEFAULT_SETTINGS}
+    if 'institution_name' in data:
+        data['institution_name'] = str(data['institution_name']).strip()[:100]
+    for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
+        if key in data:
+            data[key] = str(data[key]).strip()[:100]
+    safe_data = {key: data[key] for key in DEFAULT_SETTINGS if key in data}
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump({**load_system_settings(), **safe_data}, f, indent=4)
+        logger.save_app_settings(safe_data)
     except Exception as e:
         print(f"[Settings Save Error]: {e}")
 
+
 @app.context_processor
-def inject_customization():
+def inject_branding():
     settings = load_system_settings()
     return {
-        'institution_name': settings['institution_name'],
-        'theme': settings['theme'],
-        'accent_color': settings['accent_color'],
+        'institution_name': settings.get('institution_name', DEFAULT_SETTINGS['institution_name']),
+        'theme': settings.get('theme', DEFAULT_SETTINGS['theme']),
+        'accent_color': settings.get('accent_color', DEFAULT_SETTINGS['accent_color']),
         'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'
     }
+
+
+@app.before_request
+def database_startup_guard():
+    if not logger.database_startup_error:
+        return None
+    message = logger.database_startup_error
+    if request.path.startswith('/api/'):
+        return jsonify({'status': 'error', 'message': message}), 503
+    return f'''<!doctype html><html><head><title>Database error</title></head>
+        <body><script>alert({json.dumps(message)});</script>
+        <h1>Database error</h1><p>{message}</p></body></html>''', 503
 
 # --- PAGE ROUTES ---
 
@@ -93,7 +224,6 @@ def scanner():
 def logs_manager():
     return render_template('logs-manager.html')
 
-@app.route('/migration')
 @app.route('/migration.html')
 def migration():
     return render_template('migration.html')
@@ -103,54 +233,82 @@ def migration():
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings_api():
-    return jsonify(load_system_settings())
+    return jsonify(public_settings(load_system_settings()))
 
 @app.route('/api/settings', methods=['POST'])
 def save_settings_api():
     data = request.json or {}
     current = load_system_settings()
-    current.update(data)
+    if pin_is_configured(current) and not verify_pin(data.get('current_pin'), current):
+        logger.record_event('security_error', 'Settings save rejected because the current passcode was invalid.')
+        return jsonify({'status': 'error', 'message': 'Current passcode is required.'}), 401
+
+    new_pin = str(data.get('new_pin', '')).strip()
+    if new_pin and not PASSCODE_PATTERN.fullmatch(new_pin):
+        logger.record_event('settings_error', 'Settings save rejected because the new passcode was invalid.')
+        return jsonify({'status': 'error', 'message': 'Passcode must be 4 to 12 characters with no spaces.'}), 400
+    question = str(data.get('security_question', current.get('security_question', ''))).strip()[:200]
+    answer = str(data.get('security_answer', '')).strip().lower()
+    security_change_requested = (
+        bool(new_pin) or bool(answer) or question != current.get('security_question', '')
+    )
+    if security_change_requested and (not new_pin or not question or not answer):
+        logger.record_event('settings_error', 'Settings save rejected because passcode recovery fields were incomplete.')
+        return jsonify({'status': 'error', 'message': 'Passcode, security question, and answer are all required.'}), 400
+
+    current.update({key: data[key] for key in PUBLIC_SETTINGS if key in data})
+    if new_pin:
+        current['pin_salt'], current['pin_hash'] = hash_secret(new_pin)
+        current['security_question'] = question
+        current['security_answer_salt'], current['security_answer_hash'] = hash_secret(answer)
+    for key in ('current_pin', 'new_pin', 'security_answer'):
+        current.pop(key, None)
     save_system_settings(current)
+    logger.record_event('settings_saved', 'System settings were saved.')
+    return jsonify({'status': 'success', 'settings': public_settings(load_system_settings())})
+
+
+@app.route('/api/security/config', methods=['GET'])
+def security_config_api():
+    settings = load_system_settings()
+    return jsonify({
+        'pin_configured': pin_is_configured(settings),
+        'security_question': settings.get('security_question', '')
+    })
+
+
+@app.route('/api/security/recover', methods=['POST'])
+def security_recover_api():
+    data = request.json or {}
+    settings = load_system_settings()
+    answer = str(data.get('security_answer', '')).strip().lower()
+    new_pin = str(data.get('new_pin', '')).strip()
+    if not settings.get('security_question') or not secret_matches(answer, settings.get('security_answer_salt'), settings.get('security_answer_hash')):
+        return jsonify({'status': 'error', 'message': 'Security answer is incorrect.'}), 401
+    if not PASSCODE_PATTERN.fullmatch(new_pin):
+        return jsonify({'status': 'error', 'message': 'Passcode must be 4 to 12 characters with no spaces.'}), 400
+    settings['pin_salt'], settings['pin_hash'] = hash_secret(new_pin)
+    save_system_settings(settings)
     return jsonify({'status': 'success'})
+
 
 @app.route('/api/branding/logo', methods=['POST'])
 def upload_branding_logo():
+    authorization_error = protected_response('upload the logo')
+    if authorization_error:
+        return authorization_error
     uploaded_file = request.files.get('logo')
     if not uploaded_file or not uploaded_file.filename:
-        return jsonify({'status': 'error', 'message': 'Please choose an image file.'}), 400
+        return jsonify({'status': 'error', 'message': 'Please choose a logo image.'}), 400
     try:
         from PIL import Image
         image = Image.open(uploaded_file.stream)
         image.convert('RGBA').save(CUSTOM_LOGO, 'PNG', optimize=True)
+        if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO):
+            shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
         return jsonify({'status': 'success', 'logo_url': '/static/custom-logo.png'})
     except Exception as error:
         return jsonify({'status': 'error', 'message': f'Logo conversion failed: {error}'}), 400
-
-@app.route('/api/migration/status', methods=['GET'])
-def migration_status():
-    return jsonify({'students': len(logger.get_all_students()), 'database': 'CSV'})
-
-@app.route('/api/migration/preview', methods=['POST'])
-def migration_preview():
-    uploaded_file = request.files.get('file')
-    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
-        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
-    try:
-        return jsonify({'status': 'success', **logger.preview_student_csv(uploaded_file)})
-    except (UnicodeDecodeError, csv.Error, ValueError) as error:
-        return jsonify({'status': 'error', 'message': str(error)}), 400
-
-@app.route('/api/migration/import', methods=['POST'])
-def migration_import():
-    uploaded_file = request.files.get('file')
-    replace_existing = request.form.get('replace_existing') == 'true'
-    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
-        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
-    try:
-        result = logger.import_student_csv(uploaded_file, replace_existing)
-        return jsonify({'status': 'success', **result, 'students': len(logger.get_all_students())})
-    except (UnicodeDecodeError, csv.Error, ValueError) as error:
-        return jsonify({'status': 'error', 'message': str(error)}), 400
 
 @app.route('/api/camera/blocked', methods=['POST'])
 def camera_blocked_api():
@@ -216,6 +374,36 @@ def get_data():
         ])
     return jsonify(rows)
 
+@app.route('/api/migration/status', methods=['GET'])
+def migration_status():
+    return jsonify({'students': len(logger.get_all_students()), 'database': logger.DATABASE_FILE})
+
+@app.route('/api/migration/preview', methods=['POST'])
+def migration_preview():
+    uploaded_file = request.files.get('file')
+    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
+        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
+    try:
+        return jsonify({'status': 'success', **logger.preview_student_csv(uploaded_file)})
+    except (UnicodeDecodeError, csv.Error, ValueError) as error:
+        return jsonify({'status': 'error', 'message': str(error)}), 400
+
+@app.route('/api/migration/import', methods=['POST'])
+def migration_import():
+    authorization_error = protected_response('import student records')
+    if authorization_error:
+        return authorization_error
+    uploaded_file = request.files.get('file')
+    replace_existing = request.form.get('replace_existing') == 'true'
+    if not uploaded_file or not uploaded_file.filename.lower().endswith('.csv'):
+        return jsonify({'status': 'error', 'message': 'Please choose a CSV file.'}), 400
+    try:
+        result = logger.import_student_csv(uploaded_file, replace_existing)
+        logger.record_event('database_import', f"Imported {result['imported']} student records.")
+        return jsonify({'status': 'success', **result, 'students': len(logger.get_all_students())})
+    except (UnicodeDecodeError, csv.Error, ValueError) as error:
+        return jsonify({'status': 'error', 'message': str(error)}), 400
+
 @app.route('/api/logs/list', methods=['GET'])
 def api_logs_list():
     files = logger.get_available_log_files()
@@ -229,8 +417,19 @@ def api_logs_today():
 @app.route('/api/logs/view', methods=['GET'])
 def api_logs_view():
     filename = request.args.get('file', '').strip()
-    logs = logger.get_logs_by_filename_raw(filename)
+    try:
+        logs = logger.get_logs_by_filename_raw(filename)
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Invalid log file.'}), 400
     return jsonify(logs)
+
+
+@app.route('/api/audit/events', methods=['POST'])
+def audit_events_api():
+    authorization_error = protected_response('view audit events')
+    if authorization_error:
+        return authorization_error
+    return jsonify(logger.get_audit_events())
 
 @app.route('/api/logs/snapshot', methods=['GET'])
 def get_log_snapshot():
@@ -239,6 +438,10 @@ def get_log_snapshot():
 
     if not date_str or date_str.lower() == 'today':
         date_str = datetime.now().strftime('%Y-%m-%d')
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', date_str):
+        return jsonify({'status': 'error', 'message': 'Invalid log date.'}), 400
+    if not image_id or image_id != os.path.basename(image_id):
+        return jsonify({'status': 'error', 'message': 'Invalid snapshot ID.'}), 400
 
     folder_path = os.path.join(DB_DIR, f"logs_{date_str}")
     if not os.path.exists(folder_path):
@@ -252,6 +455,9 @@ def get_log_snapshot():
 
 @app.route('/api/save_student', methods=['POST'])
 def save_student_api():
+    authorization_error = protected_response('save student records')
+    if authorization_error:
+        return authorization_error
     data = request.json or {}
     b = data.get('b', '').strip()
     n = data.get('n', '').strip()
@@ -263,28 +469,60 @@ def save_student_api():
 
     if not b or not n:
         return jsonify({'status': 'error', 'message': 'Barcode and Name are required'}), 400
+    if any(len(value) > 100 for value in (b, n, g, s, a, t)):
+        return jsonify({'status': 'error', 'message': 'Student fields must be 100 characters or fewer.'}), 400
+    if not re.fullmatch(r'#[0-9a-fA-F]{6}', c):
+        return jsonify({'status': 'error', 'message': 'Badge color must be a valid hexadecimal color.'}), 400
 
     logger.save_student(b, n, g, s, a, c, t)
+    logger.record_event('student_saved', 'Student record added or updated.', b)
     return jsonify({'status': 'success'})
 
 @app.route('/api/delete_student', methods=['POST'])
 def delete_student_api():
+    authorization_error = protected_response('delete student records')
+    if authorization_error:
+        return authorization_error
     data = request.json or {}
     barcode = data.get('barcode', '').strip()
 
     if barcode:
         logger.delete_student(barcode)
+        logger.record_event('student_deleted', 'Student record deleted.', barcode)
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error', 'message': 'Barcode missing'}), 400
 
 @app.route('/api/scan', methods=['POST'])
 def scan_api():
     data = request.json or {}
-    barcode = data.get('barcode', '').strip()
-    image_data = data.get('image', '').strip()
+    barcode = str(data.get('barcode') or '').strip()
+    image_data = str(data.get('image') or '').strip()
 
     if barcode:
+        settings = load_system_settings()
+        command_map = {
+            settings.get('close_kiosk_barcode'): 'close_kiosk',
+            settings.get('shutdown_barcode'): 'shutdown',
+            settings.get('launchpad_barcode'): 'launchpad',
+            settings.get('database_manager_barcode'): 'database_manager',
+            settings.get('log_manager_barcode'): 'log_manager',
+            settings.get('settings_barcode'): 'settings'
+        }
+        if barcode in command_map:
+            return jsonify({'status': 'system_command', 'command': command_map[barcode]})
         res = logger.log_attendance(barcode)
+
+        if res.get('status') == 'error':
+            logger.record_event('invalid_scan', res.get('message', 'Unknown barcode.'), barcode)
+            return jsonify({**res, 'message': f"Scan error: {res.get('message', 'Unknown barcode.')}"}), 404
+        if res.get('status') == 'duplicate':
+            logger.record_event('duplicate_scan', res.get('message', 'Duplicate scan ignored.'), barcode)
+
+        if res.get('status') == 'success':
+            timestamp = datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')
+            res['data']['timestamp'] = timestamp
+            dispatch_parent_notification(res['data'], timestamp, settings)
+            logger.record_event('scan_logged', 'Attendance scan logged.', barcode)
 
         if image_data and res.get('status') == 'success':
             try:
@@ -308,23 +546,64 @@ def scan_api():
 
 @app.route('/api/system/reboot', methods=['POST'])
 def system_reboot():
-    os.system('sudo reboot')
+    authorization_error = protected_response('restart the system')
+    if authorization_error:
+        return authorization_error
+    os.system('shutdown /r /t 0')
     return jsonify({'status': 'rebooting'})
 
 @app.route('/api/system/shutdown', methods=['POST'])
 def system_shutdown():
-    os.system('sudo shutdown now')
+    authorization_error = protected_response('shut down the system')
+    if authorization_error:
+        return authorization_error
+    os.system('shutdown /s /t 0')
     return jsonify({'status': 'shutting down'})
 
 @app.route('/api/exit', methods=['POST'])
 def exit_api():
+    authorization_error = protected_response('exit kiosk mode')
+    if authorization_error:
+        return authorization_error
     try:
-        os.system("pkill -f cva_kiosk_profile")
+        browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
+        if browser_pid.isdigit():
+            os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
     except Exception as e:
         print(f"[Exit Error]: {e}")
 
     threading.Timer(0.5, lambda: os._exit(0)).start()
     return jsonify({'status': 'success'})
 
+
+@app.route('/api/system/command', methods=['POST'])
+def system_command_api():
+    authorization_error = protected_response('run this system command')
+    if authorization_error:
+        return authorization_error
+    command = (request.json or {}).get('command')
+    settings = load_system_settings()
+    if command == 'shutdown':
+        os.system('shutdown /s /t 0')
+        return jsonify({'status': 'shutting down'})
+    if command == 'close_kiosk':
+        try:
+            browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
+            if browser_pid.isdigit():
+                os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
+        except Exception as error:
+            print(f'[Command Exit Error]: {error}')
+        threading.Timer(0.5, lambda: os._exit(0)).start()
+        return jsonify({'status': 'success'})
+    if command == 'launchpad':
+        return jsonify({'status': 'redirect', 'location': '/launchpad.html'})
+    if command == 'database_manager':
+        return jsonify({'status': 'redirect', 'location': '/manager.html'})
+    if command == 'log_manager':
+        return jsonify({'status': 'redirect', 'location': '/logs-manager.html'})
+    if command == 'settings':
+        return jsonify({'status': 'redirect', 'location': '/launchpad.html?settings=1'})
+    return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)
