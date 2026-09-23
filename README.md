@@ -292,10 +292,9 @@ This software is built to empower educational institutions without costly licens
 Free setup assistance and customization are available if you need help modifying the interface for your school:
 
 - **Customization offered:** Official school logo/seal replacement, header text updates, custom accent color matching, and grade/section schema modifications.
-- **Email assistance:** [allthingslinux2026@gmail.com](mailto:allthingslinux2026@gmail.com) — please attach your school logo (PNG/JPEG) and requested modifications.
+- **Email assistance:** [Linux-Content@proton.me](mailto:Linux-Content@proton.me) — please attach your school logo (PNG/JPEG) and requested modifications.
 - **GitHub Issues:** Open a ticket directly on the [GitHub Issues page](https://github.com/CVAFPI/ID-BIO-Project/issues).
 
-(Note) In future update there will be a fork for schools for easy customizability, easy uploads and many more
 ---
 
 <p align="center">
