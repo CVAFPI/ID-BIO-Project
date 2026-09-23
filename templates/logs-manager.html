@@ -229,7 +229,7 @@
 
         async function showAuditEvents() {
             const pin = await appPrompt('Enter the security passcode to view audit events.', { title: 'Security passcode', passcode: true });
-            if (pin === null) return;
+            if (pin === null || !pin.trim()) return;
             try {
                 const response = await fetch('/api/audit/events', {
                     method: 'POST',

@@ -145,11 +145,7 @@ def load_system_settings():
                 settings.update(json.load(f))
     except Exception:
         pass
-    stored_settings = logger.get_app_settings()
-    for key in BOOLEAN_SETTING_KEYS:
-        if key in stored_settings:
-            stored_settings[key] = str(stored_settings[key]).strip().lower() in {'1', 'true', 'yes', 'on'}
-    settings.update(stored_settings)
+
     for key in BOOLEAN_SETTING_KEYS:
         settings[key] = str(settings.get(key, False)).strip().lower() in {'1', 'true', 'yes', 'on'} if isinstance(settings.get(key), str) else bool(settings.get(key, False))
     if settings.get('theme') not in VALID_THEMES:
@@ -171,11 +167,10 @@ def save_system_settings(data):
     for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
         if key in data:
             data[key] = str(data[key]).strip()[:100]
-    safe_data = {key: data[key] for key in DEFAULT_SETTINGS if key in data}
+    safe_data = {key: data.get(key, DEFAULT_SETTINGS[key]) for key in DEFAULT_SETTINGS if key in data or key in DEFAULT_SETTINGS}
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump({**load_system_settings(), **safe_data}, f, indent=4)
-        logger.save_app_settings(safe_data)
     except Exception as e:
         print(f"[Settings Save Error]: {e}")
 
@@ -190,17 +185,6 @@ def inject_branding():
         'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'
     }
 
-
-@app.before_request
-def database_startup_guard():
-    if not logger.database_startup_error:
-        return None
-    message = logger.database_startup_error
-    if request.path.startswith('/api/'):
-        return jsonify({'status': 'error', 'message': message}), 503
-    return f'''<!doctype html><html><head><title>Database error</title></head>
-        <body><script>alert({json.dumps(message)});</script>
-        <h1>Database error</h1><p>{message}</p></body></html>''', 503
 
 # --- PAGE ROUTES ---
 
@@ -239,11 +223,8 @@ def get_settings_api():
 def save_settings_api():
     data = request.json or {}
     current = load_system_settings()
-    if pin_is_configured(current) and not verify_pin(data.get('current_pin'), current):
-        logger.record_event('security_error', 'Settings save rejected because the current passcode was invalid.')
-        return jsonify({'status': 'error', 'message': 'Current passcode is required.'}), 401
-
-    new_pin = str(data.get('new_pin', '')).strip()
+    new_pin = str(data.get('new_pin') or '').strip()
+    current_pin = str(data.get('current_pin') or '').strip()
     if new_pin and not PASSCODE_PATTERN.fullmatch(new_pin):
         logger.record_event('settings_error', 'Settings save rejected because the new passcode was invalid.')
         return jsonify({'status': 'error', 'message': 'Passcode must be 4 to 12 characters with no spaces.'}), 400
@@ -252,6 +233,9 @@ def save_settings_api():
     security_change_requested = (
         bool(new_pin) or bool(answer) or question != current.get('security_question', '')
     )
+    if security_change_requested and pin_is_configured(current) and not verify_pin(current_pin, current):
+        logger.record_event('security_error', 'Settings save rejected because the current passcode was invalid.')
+        return jsonify({'status': 'error', 'message': 'Enter the current passcode before changing the password.'}), 401
     if security_change_requested and (not new_pin or not question or not answer):
         logger.record_event('settings_error', 'Settings save rejected because passcode recovery fields were incomplete.')
         return jsonify({'status': 'error', 'message': 'Passcode, security question, and answer are all required.'}), 400
@@ -376,7 +360,7 @@ def get_data():
 
 @app.route('/api/migration/status', methods=['GET'])
 def migration_status():
-    return jsonify({'students': len(logger.get_all_students()), 'database': logger.DATABASE_FILE})
+    return jsonify({'students': len(logger.get_all_students()), 'database': 'CSV'})
 
 @app.route('/api/migration/preview', methods=['POST'])
 def migration_preview():
@@ -549,7 +533,7 @@ def system_reboot():
     authorization_error = protected_response('restart the system')
     if authorization_error:
         return authorization_error
-    os.system('shutdown /r /t 0')
+    os.system('sudo reboot')
     return jsonify({'status': 'rebooting'})
 
 @app.route('/api/system/shutdown', methods=['POST'])
@@ -557,7 +541,7 @@ def system_shutdown():
     authorization_error = protected_response('shut down the system')
     if authorization_error:
         return authorization_error
-    os.system('shutdown /s /t 0')
+    os.system('sudo shutdown now')
     return jsonify({'status': 'shutting down'})
 
 @app.route('/api/exit', methods=['POST'])
@@ -566,9 +550,7 @@ def exit_api():
     if authorization_error:
         return authorization_error
     try:
-        browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
-        if browser_pid.isdigit():
-            os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
+        os.system("pkill -f cva_kiosk_profile")
     except Exception as e:
         print(f"[Exit Error]: {e}")
 
@@ -584,13 +566,11 @@ def system_command_api():
     command = (request.json or {}).get('command')
     settings = load_system_settings()
     if command == 'shutdown':
-        os.system('shutdown /s /t 0')
+        os.system('sudo shutdown now')
         return jsonify({'status': 'shutting down'})
     if command == 'close_kiosk':
         try:
-            browser_pid = os.environ.get('CVAFPI_BROWSER_PID', '').strip()
-            if browser_pid.isdigit():
-                os.system(f'taskkill /PID {browser_pid} /T /F >NUL 2>&1')
+            os.system("pkill -f cva_kiosk_profile")
         except Exception as error:
             print(f'[Command Exit Error]: {error}')
         threading.Timer(0.5, lambda: os._exit(0)).start()

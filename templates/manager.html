@@ -324,7 +324,7 @@
             }
 
             const pin = await appPrompt('Enter the security passcode to save this student record.', { title: 'Security passcode', passcode: true });
-            if (pin === null) return;
+            if (pin === null || !pin.trim()) return;
 
             try {
                 const res = await fetch('/api/save_student', {
@@ -347,7 +347,7 @@
         async function deleteStudent(barcode) {
             if (!(await appConfirm(`Are you sure you want to delete barcode ${barcode}?`))) return;
             const pin = await appPrompt('Enter the security passcode to delete this student record.', { title: 'Security passcode', passcode: true });
-            if (pin === null) return;
+            if (pin === null || !pin.trim()) return;
             try {
                 const res = await fetch('/api/delete_student', {
                     method: 'POST',

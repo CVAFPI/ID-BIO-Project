@@ -26,12 +26,24 @@
         if (callback) callback(value);
     }
 
-    function onKeydown(event) {
-        if (event.key === 'Escape') close(null);
-        if (event.key === 'Enter' && !cancel().hidden) close(inputWrap().hidden ? true : input().value);
+    function submit(options) {
+        if (options.passcode && !input().value.trim()) {
+            message().textContent = 'A passcode is required.';
+            input().focus();
+            return;
+        }
+        close(options.input ? input().value : true);
     }
 
+    function onKeydown(event) {
+        if (event.key === 'Escape') close(null);
+        if (event.key === 'Enter' && !cancel().hidden) submit(currentOptions);
+    }
+
+    let currentOptions = {};
+
     function open(options) {
+        currentOptions = options;
         title().textContent = options.title || 'System message';
         message().textContent = options.passcode
             ? `${options.message || ''}\nUse 4 to 12 letters, numbers, or symbols.`
@@ -53,7 +65,7 @@
         overlay.querySelector('[data-action="ok"]').textContent = options.okText || 'OK';
         keypad().innerHTML = '';
         toggle().onclick = () => { input().type = input().type === 'password' ? 'text' : 'password'; toggle().textContent = input().type === 'password' ? 'Show passcode' : 'Mask passcode'; };
-        overlay.querySelector('[data-action="ok"]').onclick = () => close(options.input ? input().value : true);
+        overlay.querySelector('[data-action="ok"]').onclick = () => submit(options);
         cancel().onclick = () => close(null);
         forgot().onclick = () => { close(null); setTimeout(recoverPassword, 0); };
         overlay.querySelector('.kiosk-dialog-close').onclick = () => close(null);
