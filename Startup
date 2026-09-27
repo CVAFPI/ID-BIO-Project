@@ -1,5 +1,6 @@
-# /home/{User}/ID Bio HTML Project/Startup
 #!/bin/bash
+# CVAFPI Identification System startup entry point
 export QT_QPA_PLATFORM=xcb
 export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu"
-python3 /home/{User}/ID\ Bio\ HTML\ Project/kiosk.py
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/CVAFPI IDENTIFICATION SYSTEM.sh" "$@"

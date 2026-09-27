@@ -1,8 +1,7 @@
 [Desktop Entry]
 Comment=
-Exec=python3 ~/kiosk.py
+Exec=/bin/bash -c "cd \"$(dirname \"$1\")\" && exec \"./CVAFPI IDENTIFICATION SYSTEM.sh\"" -- %k
 GenericName=
-Icon=/home/Debook/Projects/ID Bio HTML Project/CVAFPI-LOGO.png
 MimeType=
 Name=ID Bio System
 Path=

@@ -54,7 +54,8 @@ DEFAULT_SETTINGS = {
 }
 
 PUBLIC_SETTINGS = {key for key in DEFAULT_SETTINGS if key not in {
-    'pin_hash', 'pin_salt', 'security_answer_hash', 'security_answer_salt'
+    'pin_hash', 'pin_salt', 'security_question',
+    'security_answer_hash', 'security_answer_salt'
 }}
 PASSCODE_PATTERN = re.compile(r'^\S{4,12}$')
 BOOLEAN_SETTING_KEYS = (
@@ -167,10 +168,11 @@ def save_system_settings(data):
     for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
         if key in data:
             data[key] = str(data[key]).strip()[:100]
-    safe_data = {key: data.get(key, DEFAULT_SETTINGS[key]) for key in DEFAULT_SETTINGS if key in data or key in DEFAULT_SETTINGS}
+    safe_data = {key: data[key] for key in DEFAULT_SETTINGS if key in data}
     try:
+        merged_settings = {**load_system_settings(), **safe_data}
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump({**load_system_settings(), **safe_data}, f, indent=4)
+            json.dump(merged_settings, f, indent=4)
     except Exception as e:
         print(f"[Settings Save Error]: {e}")
 
@@ -212,6 +214,10 @@ def logs_manager():
 def migration():
     return render_template('migration.html')
 
+@app.route('/audit-manager.html')
+def audit_manager():
+    return render_template('audit-manager.html')
+
 
 # --- API ROUTES ---
 
@@ -223,6 +229,10 @@ def get_settings_api():
 def save_settings_api():
     data = request.json or {}
     current = load_system_settings()
+    if pin_is_configured(current):
+        if not verify_pin(data.get('current_pin'), current):
+            logger.record_event('security_error', 'Invalid passcode while attempting to save system settings.')
+            return jsonify({'status': 'error', 'message': 'Invalid passcode. Cannot save system settings.'}), 401
     new_pin = str(data.get('new_pin') or '').strip()
     current_pin = str(data.get('current_pin') or '').strip()
     if new_pin and not PASSCODE_PATTERN.fullmatch(new_pin):
@@ -298,6 +308,8 @@ def upload_branding_logo():
 def camera_blocked_api():
     data = request.json or {}
     image_data = data.get('image', '').strip()
+    blocked_date = datetime.now().strftime('%Y-%m-%d')
+    snapshot_id = ''
 
     if image_data:
         try:
@@ -316,8 +328,16 @@ def camera_blocked_api():
             image_bytes = base64.b64decode(encoded)
             with open(file_path, 'wb') as fh:
                 fh.write(image_bytes)
+            snapshot_id = filename
         except Exception as e:
             print(f"[Blocked Camera Photo Save Error]: {e}")
+
+    audit_details = f'snapshot_date={blocked_date};snapshot_id={snapshot_id}' if snapshot_id else ''
+    logger.record_event(
+        'camera_blocked',
+        'Scanner camera blocked or not working.',
+        details=audit_details,
+    )
 
     settings = load_system_settings()
     if settings.get('office_alerts_enabled') and settings.get('blocked_camera_alerts_enabled'):

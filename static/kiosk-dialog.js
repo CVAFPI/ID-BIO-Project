@@ -86,13 +86,23 @@
                 await appAlert('Set a security question during initial setup first.');
                 return;
             }
-            const answer = await appPrompt(config.security_question, { title: 'Password recovery answer' });
-            const newPin = await appPrompt('Enter a new passcode:', { title: 'New passcode', passcode: true, allowForgot: false });
-            if (answer === null || newPin === null) return;
-            const response = await fetch('/api/security/recover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ security_answer: answer, new_pin: newPin }) });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || 'Could not reset password.');
-            await appAlert('Password reset. Use the new password to continue.');
+            while (true) {
+                const answer = await appPrompt(config.security_question, { title: 'Password recovery answer' });
+                if (answer === null) return;
+                if (!answer.trim()) {
+                    await appAlert('A security answer is required.');
+                    continue;
+                }
+                const newPin = await appPrompt('Enter a new passcode:', { title: 'New passcode', passcode: true, allowForgot: false });
+                if (newPin === null) return;
+                const response = await fetch('/api/security/recover', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ security_answer: answer, new_pin: newPin }) });
+                const result = await response.json();
+                if (response.ok) {
+                    await appAlert('Password reset. Use the new password to continue.');
+                    return;
+                }
+                await appAlert(result.message || 'Could not reset password.');
+            }
         } catch (error) {
             await appAlert(error.message || 'Could not reset password.');
         }

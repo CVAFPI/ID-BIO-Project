@@ -167,7 +167,6 @@
                         </label>
                     </div>
                     <button class="btn-action secondary" onclick="loadSelectedLogFile()">🔄 Refresh</button>
-                    <button class="btn-action secondary" onclick="showAuditEvents()">🛡 Audit Events</button>
                     <button class="btn-action" onclick="exportCSV()">📥 Export CSV</button>
                 </div>
             </div>
@@ -208,48 +207,10 @@
         </div>
     </div>
 
-    <div id="auditModal" style="display:none; position:fixed; z-index:1001; inset:0; background:rgba(0,0,0,.8); justify-content:center; align-items:center; padding:18px;">
-        <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; width:min(900px,100%); max-height:90vh; overflow:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
-                <h3 style="color:var(--text);">Audit Events</h3>
-                <button class="btn-action secondary" onclick="closeAuditEvents()">Close</button>
-            </div>
-            <table><thead><tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Barcode</th><th>Details</th></tr></thead><tbody id="auditEventsBody"></tbody></table>
-        </div>
-    </div>
-
     <script src="/static/kiosk-dialog.js"></script>
     <script>
         let currentLogsData = [];
         let snapshotPreviewEnabled = false;
-
-        function auditEscape(value) {
-            return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-        }
-
-        async function showAuditEvents() {
-            const pin = await appPrompt('Enter the security passcode to view audit events.', { title: 'Security passcode', passcode: true });
-            if (pin === null || !pin.trim()) return;
-            try {
-                const response = await fetch('/api/audit/events', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pin })
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'Could not load audit events.');
-                document.getElementById('auditEventsBody').innerHTML = result.length
-                    ? result.map(row => `<tr><td>${auditEscape(row[0])}</td><td>${auditEscape(row[1])}</td><td>${auditEscape(row[2])}</td><td>${auditEscape(row[3])}</td><td>${auditEscape(row[4])}</td></tr>`).join('')
-                    : '<tr><td colspan="5">No audit events recorded.</td></tr>';
-                document.getElementById('auditModal').style.display = 'flex';
-            } catch (error) {
-                await appAlert(error.message || 'Could not load audit events.');
-            }
-        }
-
-        function closeAuditEvents() {
-            document.getElementById('auditModal').style.display = 'none';
-        }
 
         // Clock Update
         function updateClock() {
@@ -461,7 +422,7 @@
             });
         }
 
-        async function openSnapshotModal(timestampStr, barcode, name, imageId) {
+        async function openSnapshotModal(timestampStr, barcode, name, imageId, snapshotDate = '') {
             timestampStr = decodeURIComponent(timestampStr);
             barcode = decodeURIComponent(barcode);
             name = decodeURIComponent(name);
@@ -479,7 +440,7 @@
             modalTitle.innerText = `Snapshot: ${name} (${barcode})`;
             modalInfo.innerText = `Timestamp: ${timestampStr}`;
 
-            const activeFile = document.getElementById('kpiActiveFile').innerText;
+            const activeFile = snapshotDate || document.getElementById('kpiActiveFile').innerText;
 
             try {
                 const res = await fetch(`/api/logs/snapshot?date=${encodeURIComponent(activeFile)}&id=${encodeURIComponent(imageId)}`);

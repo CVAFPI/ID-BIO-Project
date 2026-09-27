@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v2.1.1
+#                 CVAFPI IDENTIFICATION SYSTEM - KIOSK LAUNCHER v2.1.2
 # ==============================================================================
 
 CYAN='\033[0;36m'
@@ -22,7 +22,7 @@ clear
 echo -e "${CYAN}"
 echo "======================================================================"
 echo "                       CVAFPI IDENTIFICATION SYSTEM                   "
-echo "                Kiosk Engine Auto-Launcher (v2.1.1 stable)            "
+echo "                Kiosk Engine Auto-Launcher (v2.1.2 stable)            "
 echo "======================================================================"
 echo -e "${NC}"
 
@@ -33,7 +33,7 @@ elif command -v neofetch &> /dev/null; then
     neofetch
 fi
 
-echo -e "${GREEN}Welcome to CVAFPI ID SYSTEM v2.1.1${NC}\n"
+echo -e "${GREEN}Welcome to CVAFPI ID SYSTEM v2.1.2${NC}\n"
 
 cd "$APP_DIR" || { echo -e "${RED}[!] Failed to access directory: $APP_DIR${NC}"; exit 1; }
 

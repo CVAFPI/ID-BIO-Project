@@ -1,6 +1,6 @@
 <img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
 
-# 🛡️ CVAFPI Identification System v2.1.1 — "The UI and CSV Update"
+# 🛡️ CVAFPI Identification System v2.1.2 — "The Audit and Security Update"
 
 <br clear="left"/>
 
@@ -16,7 +16,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ## 📋 Table of Contents
 
-- [What's New in v2.1.1](#-whats-new-in-version-211)
+- [What's New in v2.1.2](#-whats-new-in-version-212)
 - [System Requirements](#-system-requirements--hardware-specifications)
 - [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
 - [Crucial Warnings](#️-crucial-system-warnings-what-not-to-do)
@@ -33,7 +33,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ---
 
-## 🚀 What's New in Version 2.1.1
+## 🚀 What's New in Version 2.1.2
 
 | Feature | Description |
 |---|---|
@@ -42,6 +42,8 @@ Built specifically for educational institutions under **Department of Education 
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
 | **Synchronized Dual-CSV Integrity** | Robust schema mapping keeps primary records (`data.csv`) and backup records (`backup-data.csv`) fully synced during live edits via the database manager. |
 | **Operations Console UI** | A responsive operations console with shared themes, custom branding, CSV migration tools, and consistent controls across every page. |
+| **Dedicated Audit Manager** | Protected audit review now has its own page, with direct access to blocked-camera snapshots. |
+| **Protected Settings Flow** | Settings saves use a dedicated passcode prompt, while passcode changes and recovery stay in the settings page. |
 
 ---
 
