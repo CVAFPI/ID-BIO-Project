@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">CVA - AUDIT MANAGER</title>
+    <style>
+        :root { --bg:#10161f; --panel:#18212c; --panel-2:#202c3a; --text:#e8eef7; --muted:#91a0b5; --border:#2d3b4b; --accent:#4da3ff; --red:#f27676; }
+        * { box-sizing:border-box; }
+        body { min-height:100vh; margin:0; color:var(--text); background:var(--bg); font-family:"Trebuchet MS","Segoe UI",sans-serif; }
+        body[data-theme="light"] { --bg:#eef3f7; --panel:#fff; --panel-2:#e7eef5; --text:#17202b; --muted:#5f6f82; --border:#cbd6e2; }
+        body[data-theme="grassy"] { --bg:#101b16; --panel:#17271f; --panel-2:#20372a; --border:#345441; --accent:#71d39d; }
+        body[data-theme="ocean"] { --bg:#071923; --panel:#0e2633; --panel-2:#153747; --border:#285369; --accent:#5cd3e8; }
+        body[data-theme="sunset"] { --bg:#21171a; --panel:#302126; --panel-2:#412b2e; --border:#644247; --accent:#ffad72; }
+        .shell { width:min(1200px,calc(100% - 32px)); margin:auto; padding:22px 0; }
+        .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+        .brand { display:flex; align-items:center; gap:12px; }
+        .brand img { width:42px; height:42px; padding:5px; border:1px solid var(--border); border-radius:9px; background:var(--panel-2); object-fit:contain; }
+        .eyebrow { color:var(--accent); font-size:.68rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+        h1 { margin:3px 0 0; font-size:1.15rem; }
+        .top-actions { display:flex; align-items:center; gap:12px; }
+        .clock { color:var(--muted); font:600 .76rem monospace; }
+        .button { padding:9px 13px; border:1px solid transparent; border-radius:6px; color:#fff; background:var(--accent); font-weight:700; cursor:pointer; }
+        .button.secondary { border-color:var(--border); color:var(--muted); background:transparent; text-decoration:none; }
+        .intro { display:flex; align-items:end; justify-content:space-between; gap:20px; padding:28px 0 18px; }
+        .intro h2 { margin:0 0 7px; font-size:clamp(1.5rem,3vw,2.2rem); }
+        .intro p { max-width:670px; margin:0; color:var(--muted); line-height:1.5; font-size:.87rem; }
+        .panel { overflow:hidden; border:1px solid var(--border); border-radius:9px; background:var(--panel); }
+        .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border-bottom:1px solid var(--border); background:var(--panel-2); }
+        .search { width:min(360px,100%); padding:9px 11px; border:1px solid var(--border); border-radius:6px; color:var(--text); background:var(--bg); outline:none; }
+        .search:focus { border-color:var(--accent); }
+        .status { color:var(--muted); font:600 .74rem monospace; }
+        .table-wrap { overflow:auto; max-height:calc(100vh - 245px); }
+        table { width:100%; border-collapse:collapse; min-width:760px; text-align:left; font-size:.82rem; }
+        th { position:sticky; top:0; padding:10px 13px; color:var(--muted); background:var(--panel-2); border-bottom:1px solid var(--border); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; }
+        td { padding:11px 13px; border-bottom:1px solid var(--border); vertical-align:top; }
+        tr:hover { background:var(--panel-2); }
+        .event-type { color:var(--accent); font-weight:700; }
+        .snapshot-link { margin-left:8px; padding:4px 7px; border:1px solid var(--accent); border-radius:4px; color:var(--accent); background:transparent; font-size:.7rem; cursor:pointer; }
+        .snapshot-link:hover { color:#fff; background:var(--accent); }
+        .empty { padding:28px; color:var(--muted); text-align:center; }
+        #imageModal { display:none; position:fixed; inset:0; z-index:20; place-items:center; padding:18px; background:rgba(0,0,0,.8); }
+        .image-dialog { width:min(520px,100%); padding:16px; border:1px solid var(--border); border-radius:9px; background:var(--panel); }
+        .image-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+        .image-head h3 { margin:0; font-size:.95rem; }
+        .image { display:block; width:100%; max-height:430px; object-fit:contain; border-radius:5px; background:#000; }
+        .image-info { margin-top:10px; color:var(--muted); font-size:.75rem; text-align:center; }
+        @media (max-width:650px) { .shell { width:calc(100% - 24px); padding-top:14px; } .topbar,.intro,.toolbar { align-items:flex-start; flex-direction:column; } .top-actions { width:100%; justify-content:space-between; } .table-wrap { max-height:calc(100vh - 300px); } }
+    </style>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
+</head>
+<body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand"><img src="{{ logo_url }}" alt="{{ institution_name }} logo"><div><div class="eyebrow">Data administration</div><h1>{{ institution_name }} - Audit Manager</h1></div></div>
+            <div class="top-actions"><span class="clock" id="clock">PHT --:--</span><a class="button secondary" href="/launchpad.html">Back to menu</a></div>
+        </header>
+        <section class="intro"><div><h2>Audit events</h2><p>Review security, settings, scan, and blocked-camera events. Blocked-camera entries include access to their saved snapshots.</p></div><button class="button" type="button" onclick="loadAuditEvents()">Reload events</button></section>
+        <section class="panel">
+            <div class="toolbar"><input class="search" id="auditSearch" type="search" placeholder="Search audit events..." oninput="renderAuditEvents()"><span class="status" id="auditStatus">Not loaded</span></div>
+            <div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Barcode</th><th>Details</th></tr></thead><tbody id="auditEventsBody"><tr><td class="empty" colspan="5">Enter the passcode to load audit events.</td></tr></tbody></table></div>
+        </section>
+    </main>
+    <div id="imageModal"><div class="image-dialog"><div class="image-head"><h3 id="modalTitle">Blocked camera snapshot</h3><button class="button secondary" type="button" onclick="closeImageModal()">Close</button></div><img id="modalImage" class="image" alt="Blocked camera snapshot"><div id="modalInfo" class="image-info"></div></div></div>
+    <script src="/static/kiosk-dialog.js"></script>
+    <script>
+        let auditEvents = [];
+        function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character])); }
+        function snapshotLink(details) {
+            const text = String(details || '');
+            const dateMatch = text.match(/(?:^|;)snapshot_date=([^;]+)/);
+            const idMatch = text.match(/(?:^|;)snapshot_id=([^;]+)/);
+            if (!dateMatch || !idMatch || !idMatch[1]) return '';
+            return `<button class="snapshot-link" type="button" onclick="openSnapshot('${encodeURIComponent(dateMatch[1])}','${encodeURIComponent(idMatch[1])}')">View snapshot</button>`;
+        }
+        function renderAuditEvents() {
+            const query = document.getElementById('auditSearch').value.trim().toLowerCase();
+            const rows = auditEvents.filter(row => row.some(value => String(value ?? '').toLowerCase().includes(query)));
+            const body = document.getElementById('auditEventsBody');
+            document.getElementById('auditStatus').textContent = `${rows.length} of ${auditEvents.length} events`;
+            body.innerHTML = rows.length ? rows.slice().reverse().map(row => `<tr><td>${escapeHtml(row[0])}</td><td class="event-type">${escapeHtml(row[1])}</td><td>${escapeHtml(row[2])}</td><td>${escapeHtml(row[3])}</td><td>${escapeHtml(row[4])} ${snapshotLink(row[4])}</td></tr>`).join('') : '<tr><td class="empty" colspan="5">No matching audit events.</td></tr>';
+        }
+        async function loadAuditEvents() {
+            const pin = await appPrompt('Enter the security passcode to view audit events.', { title: 'Security passcode', passcode: true });
+            if (pin === null || !pin.trim()) return;
+            try {
+                const response = await fetch('/api/audit/events', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ pin }) });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Could not load audit events.');
+                auditEvents = result;
+                renderAuditEvents();
+            } catch (error) {
+                await appAlert(error.message || 'Could not load audit events.');
+            }
+        }
+        async function openSnapshot(encodedDate, encodedId) {
+            const date = decodeURIComponent(encodedDate);
+            const imageId = decodeURIComponent(encodedId);
+            const modal = document.getElementById('imageModal');
+            const image = document.getElementById('modalImage');
+            modal.style.display = 'grid';
+            image.src = `/api/logs/snapshot?date=${encodeURIComponent(date)}&id=${encodeURIComponent(imageId)}`;
+            document.getElementById('modalInfo').textContent = `${date} - ${imageId}`;
+        }
+        function closeImageModal() { document.getElementById('imageModal').style.display = 'none'; document.getElementById('modalImage').src = ''; }
+        function updateClock() { const value = new Intl.DateTimeFormat('en-US', { timeZone:'Asia/Manila', dateStyle:'medium', timeStyle:'medium' }).format(new Date()); document.getElementById('clock').textContent = `PHT ${value}`; document.getElementById('pageTitle').textContent = `CVA - AUDIT MANAGER | ${value}`; }
+        setInterval(updateClock, 1000); updateClock();
+        window.addEventListener('DOMContentLoaded', loadAuditEvents);
+    </script>
+</body>
+</html>

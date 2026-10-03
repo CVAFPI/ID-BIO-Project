@@ -224,6 +224,10 @@ def scanner():
 def logs_manager():
     return render_template('logs-manager.html')
 
+@app.route('/audit-manager.html')
+def audit_manager():
+    return render_template('audit-manager.html')
+
 @app.route('/migration.html')
 def migration():
     return render_template('migration.html')
@@ -314,10 +318,13 @@ def upload_branding_logo():
 def camera_blocked_api():
     data = request.json or {}
     image_data = data.get('image', '').strip()
+    snapshot_details = ''
 
     if image_data:
         try:
-            folder = get_today_folder()
+            snapshot_date = datetime.now().strftime('%Y-%m-%d')
+            folder = os.path.join(DB_DIR, f'logs_{snapshot_date}')
+            os.makedirs(folder, exist_ok=True)
             import string, random
             chars = string.ascii_letters + string.digits
             rand_id = ''.join(random.choices(chars, k=6))
@@ -332,8 +339,14 @@ def camera_blocked_api():
             image_bytes = base64.b64decode(encoded)
             with open(file_path, 'wb') as fh:
                 fh.write(image_bytes)
+            snapshot_details = f'snapshot_date={snapshot_date};snapshot_id={filename}'
         except Exception as e:
             print(f"[Blocked Camera Photo Save Error]: {e}")
+
+    logger.record_event(
+        'camera_blocked', 'Scanner camera is blocked or appears unavailable.',
+        details=snapshot_details
+    )
 
     settings = load_system_settings()
     if settings.get('office_alerts_enabled') and settings.get('blocked_camera_alerts_enabled'):
@@ -516,7 +529,7 @@ def scan_api():
             logger.record_event('invalid_scan', res.get('message', 'Unknown barcode.'), barcode)
             return jsonify({**res, 'message': f"Scan error: {res.get('message', 'Unknown barcode.')}"}), 404
         if res.get('status') == 'duplicate':
-            logger.record_event('duplicate_scan', res.get('message', 'Duplicate scan ignored.'), barcode)
+            logger.record_event('dual_scan', res.get('message', 'Dual scan detected; attendance not logged.'), barcode)
 
         if res.get('status') == 'success':
             timestamp = datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')
@@ -606,4 +619,11 @@ def system_command_api():
     return jsonify({'status': 'error', 'message': 'Unknown system command.'}), 400
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    from waitress import serve
+
+    serve(
+        app,
+        host='127.0.0.1',
+        port=int(os.environ.get('CVAFPI_PORT', '5000')),
+        threads=4
+    )

@@ -7,6 +7,7 @@
 .kiosk-dialog-body { padding:20px; line-height:1.5; }
 .kiosk-dialog-message { margin:0; color:var(--muted,#91a0b5); white-space:pre-wrap; }
 .kiosk-dialog-input-wrap { display:flex; align-items:center; gap:8px; margin-top:14px; }
+.kiosk-dialog [hidden] { display:none !important; }
 .kiosk-dialog-input { width:100%; padding:12px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--ink,var(--text,#e8eef7)); background:var(--canvas,var(--bg,#10161f)); font:inherit; outline:none; }
 .kiosk-dialog-input:focus { border-color:var(--blue,var(--accent,#4da3ff)); }
 .kiosk-dialog-toggle { padding:10px; border:1px solid var(--line,var(--border,#334155)); border-radius:7px; color:var(--muted,#91a0b5); background:transparent; cursor:pointer; white-space:nowrap; }

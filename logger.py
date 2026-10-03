@@ -16,9 +16,8 @@ BASE_DIR = os.environ.get(
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 DATABASE_FILE = os.path.join(DB_DIR, 'cva.sqlite3')
 DATABASE_BACKUP_FILE = os.path.join(DB_DIR, 'cva.sqlite3.backup')
-DOUBLE_SCAN_WINDOW_SECONDS = 2
-_last_scan_barcode = None
-_last_scan_deadline = 0.0
+DOUBLE_SCAN_WINDOW_SECONDS = 3
+_last_scan_deadlines = {}
 _scan_lock = threading.Lock()
 _backup_lock = threading.Lock()
 database_startup_error = None
@@ -343,8 +342,6 @@ def get_logs_by_filename_raw(filename):
     return get_logs_by_date(base_name.removeprefix('logs_'))
 
 def log_attendance(barcode):
-    global _last_scan_barcode, _last_scan_deadline
-
     with _scan_lock:
         with get_connection() as connection:
             row = connection.execute(
@@ -354,8 +351,15 @@ def log_attendance(barcode):
             return {'status': 'error', 'message': 'Student not found'}
 
         now_monotonic = time.monotonic()
-        if barcode == _last_scan_barcode and now_monotonic < _last_scan_deadline:
-            return {'status': 'duplicate', 'message': 'Duplicate scan ignored'}
+        expired_barcodes = [
+            scanned_barcode for scanned_barcode, deadline in _last_scan_deadlines.items()
+            if now_monotonic >= deadline
+        ]
+        for scanned_barcode in expired_barcodes:
+            del _last_scan_deadlines[scanned_barcode]
+
+        if now_monotonic < _last_scan_deadlines.get(barcode, 0.0):
+            return {'status': 'duplicate', 'message': 'Dual scan detected. Same ID scanned within 3 seconds.'}
 
         student = dict(row)
         with get_connection() as connection:
@@ -380,8 +384,7 @@ def log_attendance(barcode):
 
         backup_database()
 
-        _last_scan_barcode = barcode
-        _last_scan_deadline = now_monotonic + DOUBLE_SCAN_WINDOW_SECONDS
+        _last_scan_deadlines[barcode] = now_monotonic + DOUBLE_SCAN_WINDOW_SECONDS
 
         return {
             'status': 'success',

@@ -16,7 +16,7 @@ The application runs as a local web service. The Flask application provides the 
 1. The application starts the local web service and initializes the SQLite database if it does not already exist.
 2. The scanner page receives a barcode from a USB scanner or manual input and submits it to the local API.
 3. The API looks up the barcode in the student database. For a recognized student, it records the attendance timestamp and optional image snapshot.
-4. Repeated scans of the same barcode within two seconds are ignored. A different barcode is logged immediately and becomes the active debounce barcode.
+4. Each barcode has its own three-second duplicate window. A repeated scan of that ID during the window is recorded in Audit Manager and is not added to attendance; different IDs are handled independently.
 5. An unknown barcode is never added to attendance. The scanner displays the error in the last-scanned card so staff can add the student without an interrupting dialog.
 6. If parent notifications are enabled and the student has a configured topic, the application sends a background notification through NTFY.
 7. Authorized staff can manage student records, review logs, import student lists, configure branding, themes, and passcode-protected kiosk controls.
@@ -39,12 +39,12 @@ The packaged application does not require Python. The browser is required becaus
 Complete this checklist on a Windows 11 test computer before creating the final executable:
 
 - Confirm the computer has 64-bit Python 3.11 or newer, Edge or Chrome, and network access if NTFY will be used.
-- Run the server-only test described below and open every page: launchpad, scanner, manager, logs manager, migration, and settings.
+- Run the server-only test described below and open every page: launchpad, scanner, manager, logs manager, Audit Manager, migration, and settings.
 - Add one test student with a unique barcode and an NTFY topic. Scan the barcode and verify the attendance row, timestamp, saved snapshot if the camera is enabled, and the parent notification.
 - Test a student without a topic, with parent notifications disabled, and with an unknown barcode. None of these should send a parent notification.
 - Test CSV preview/import, log viewing/export, logo upload, passcode setup/recovery, and the configured system barcodes.
 - Test an unknown barcode. Confirm that it is not added to attendance, appears as a scan error in the scanner card, and is visible in Audit Events.
-- Test two rapid scans of the same barcode and confirm that only one attendance row is created. Test two different barcodes and confirm that both are logged.
+- Scan barcode A, then B, then A again within three seconds. Confirm A and B each have one attendance row and the second A appears as a `dual_scan` event in Audit Manager. Confirm another A is accepted after its three-second window expires.
 - Test an application restart with a valid database backup, then verify the database opens normally. Test recovery only on a disposable copy of the data.
 - Back up `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` before packaging.
 
@@ -83,13 +83,13 @@ python -m waitress --listen=127.0.0.1:5050 wsgi:app
 
 For a quick Python-only route check, run `python -m py_compile app.py logger.py windows_launcher.py wsgi.py`.
 
-For a direct development run with Flask, use:
+For a direct local run, use the application entry point:
 
 ```text
 python app.py
 ```
 
-The Flask development server listens on `http://127.0.0.1:5000`. Use Waitress for a production-like local run.
+This starts Waitress on `http://127.0.0.1:5000` (or the port set by `CVAFPI_PORT`). The server remains bound to the local computer. The WSGI callable is available as `wsgi:app` for Waitress commands and other WSGI tooling.
 
 ## Kiosk mode
 
@@ -142,7 +142,9 @@ Office alerts use the configured office topic for camera-blocked alerts. They ar
 
 An unrecognized barcode returns a scan error and is not inserted into the attendance table. The scanner keeps focus available and shows the barcode, error message, timestamp, and red `ERROR` badge in the last-scanned card. Staff can then add the missing student in Student Manager.
 
-The Logs Manager includes a passcode-protected **Audit Events** view. It records invalid scans, duplicate scans, successful scans, settings failures and saves, invalid passcode attempts, student changes, CSV imports, and database recovery events.
+The passcode-protected **Audit Manager** is available from Data administration. It records invalid scans, duplicate scans, successful scans, blocked-camera alerts, settings failures and saves, invalid passcode attempts, student changes, CSV imports, and database recovery events. When a blocked-camera request includes an image, the event links to its saved snapshot. The Logs Manager also retains its Audit Events view.
+
+A duplicate scan is recorded with event type `dual_scan` and its barcode. It does not create an attendance row or trigger a parent notification. The server enforces a separate three-second window for each barcode, so scanning another ID does not clear the first ID's window.
 
 Audit records are stored in SQLite and included in the automatic database backups.
 
@@ -182,6 +184,13 @@ The Windows restart and shutdown controls use the standard Windows `shutdown` co
 - `run-windows.bat` - Windows development launcher
 - `templates/` - application pages
 - `static/` - packaged interface assets
+- `templates/audit-manager.html` - passcode-protected audit event viewer
+- `dev_passcode_reset.sh` - Linux/Bash developer-only passcode recovery utility
+- `ARCHITECTURE.md` - technical components, data model, routes, security boundaries, and runtime flows
+
+## Developer passcode recovery
+
+For a source checkout on Linux with Bash and Python 3 installed, run `bash dev_passcode_reset.sh`. The numbered menu can set a passcode, set a passcode with recovery Q/A, clear passcode and recovery settings, or show the effective status. Reset changes are synchronized to both `settings.json` and the SQLite settings table, then the database backup is refreshed. Stop the application before recovery and keep this developer-only utility private; it is not part of the Windows executable.
 
 ## Troubleshooting
 

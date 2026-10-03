@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">CVA - LOG IN/OUT SYSTEM</title>
+    <title id="pageTitle">CVA - CLOCK IN/OUT SYSTEM</title>
     <!-- JsBarcode Library -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="/static/JsBarcode.all.min.js"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -101,7 +101,7 @@
                  alt="CVAFPI Logo"
                  class="logo-img"
                  onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
-            <h1>{{ institution_name }} - LOG IN/OUT SYSTEM</h1>
+            <h1>{{ institution_name }} - CLOCK IN/OUT SYSTEM</h1>
         </div>
         <div class="clock" id="clockDisplay">PHT: Loading...</div>
     </div>
@@ -377,6 +377,8 @@
                 } else if (result.status === 'success') {
                     updateActiveCard(result.data);
                     fetchLogs();
+                } else if (result.status === 'duplicate') {
+                    updateScanError(barcode, result.message || 'Dual scan detected. Same ID scanned within 3 seconds.', 'DUAL SCAN');
                 } else if (result.status === 'error' || !res.ok) {
                     updateScanError(barcode, result.message || 'Student not found. Add this student to the database.');
                 }
@@ -386,17 +388,18 @@
             }
         }
 
-        function updateScanError(barcode, message) {
-            document.getElementById('scanStatus').innerText = 'Scan Error';
+        function updateScanError(barcode, message, badgeText = 'ERROR') {
+            const isDuplicate = badgeText === 'DUAL SCAN';
+            document.getElementById('scanStatus').innerText = isDuplicate ? 'Dual Scan Blocked' : 'Scan Error';
             document.getElementById('cardName').innerText = message;
             document.getElementById('cardBarcode').innerText = `Barcode: ${barcode}`;
             document.getElementById('barcodeBox').style.display = 'none';
-            document.getElementById('cardMeta').innerText = 'Student record not found';
+            document.getElementById('cardMeta').innerText = isDuplicate ? 'Attendance was not logged' : 'Student record not found';
             document.getElementById('cardTime').innerText = `Time: ${new Date().toLocaleTimeString()}`;
 
             const badge = document.getElementById('cardBadge');
-            badge.innerText = 'ERROR';
-            badge.style.backgroundColor = '#dc2626';
+            badge.innerText = badgeText;
+            badge.style.backgroundColor = isDuplicate ? '#d97706' : '#dc2626';
         }
 
         function updateActiveCard(data) {

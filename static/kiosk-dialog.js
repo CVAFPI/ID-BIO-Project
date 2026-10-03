@@ -32,11 +32,13 @@
     }
 
     function open(options) {
+        const hasInput = !!options.input;
         title().textContent = options.title || 'System message';
         message().textContent = options.passcode
             ? `${options.message || ''}\nUse 4 to 12 letters, numbers, or symbols.`
             : options.message || '';
-        inputWrap().hidden = !options.input;
+        inputWrap().hidden = !hasInput;
+        input().disabled = !hasInput;
         keypad().hidden = true;
         toggle().hidden = !options.passcode;
         input().type = options.passcode ? 'password' : 'text';
@@ -48,7 +50,7 @@
         input().onkeydown = null;
         input().value = '';
         cancel().hidden = options.kind === 'alert';
-        forgot().hidden = !options.passcode || options.allowForgot === false;
+        forgot().hidden = true;
         cancel().textContent = options.cancelText || 'Cancel';
         overlay.querySelector('[data-action="ok"]').textContent = options.okText || 'OK';
         keypad().innerHTML = '';
@@ -64,8 +66,8 @@
     }
 
     window.appAlert = message => open({ message, kind: 'alert' });
-    window.appConfirm = message => open({ message, kind: 'confirm' });
-    window.appPrompt = (message, options = {}) => open({ message, input: true, passcode: !!options.passcode || !!options.pin, allowForgot: options.allowForgot, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
+    window.appConfirm = message => open({ message, kind: 'confirm', input: false });
+    window.appPrompt = (message, options = {}) => open({ message, input: true, passcode: !!options.passcode || !!options.pin, title: options.title || 'Enter value', okText: options.okText || 'Continue' });
 
     async function recoverPassword() {
         try {
