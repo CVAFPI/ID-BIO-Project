@@ -18,7 +18,7 @@ The application runs as a local web service. The Flask application provides the 
 3. The API looks up the barcode in the student database. For a recognized student, it records the attendance timestamp and optional image snapshot.
 4. Repeated scans of the same barcode within two seconds are ignored. A different barcode is logged immediately and becomes the active debounce barcode.
 5. An unknown barcode is never added to attendance. The scanner displays the error in the last-scanned card so staff can add the student without an interrupting dialog.
-6. If parent notifications are enabled and the student has a configured topic, the application sends a background notification through NTFY.
+6. If parent notifications are enabled and the student has a configured topic, the application sends a background notification through [NTFY](https://github.com/binwiederhier/ntfy).
 7. Authorized staff can manage student records, review logs, import student lists, configure branding, themes, and passcode-protected kiosk controls.
 8. Restart, shutdown, kiosk exit, logo upload, student changes, CSV imports, audit events, and security settings require the configured passcode. Passcodes are stored as salted PBKDF2-SHA256 hashes; the original passcode is never stored.
 
