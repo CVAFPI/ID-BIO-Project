@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">CVA - DATABASE</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - DATABASE</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -86,12 +86,12 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-<body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+<body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
 
     <div class="header">
         <div class="header-left">
             <img src="{{ logo_url }}"
-                 alt="CVAFPI Logo"
+                 alt="{{ institution_name }} Logo"
                  class="logo-img"
                  onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
             <h1>{{ institution_name }} - DATABASE</h1>
@@ -164,7 +164,7 @@
             <div class="form-group">
                 <label for="inputTopic">Notification Topic</label>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="inputTopic" class="form-input" style="flex: 1;" placeholder="e.g. CVA-8F3K2P9Q or empty">
+                    <input type="text" id="inputTopic" class="form-input" style="flex: 1;" placeholder="e.g. {{ notification_topic_prefix }}-8F3K2P9Q or empty">
                     <button type="button" class="preset-btn" style="background: var(--accent); color: white; padding: 0 10px; font-size: 0.75rem; white-space: nowrap; height: 38px; border-radius: 6px;" onclick="autoGenerateTopic()">⚡ Auto Gen</button>
                 </div>
             </div>
@@ -190,6 +190,7 @@
     <script src="/static/kiosk-dialog.js"></script>
     <script>
         let allStudents = [];
+        const notificationTopicPrefix = document.body.dataset.notificationTopicPrefix;
 
         // Clock Update
         function updateClock() {
@@ -197,7 +198,7 @@
             const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
             document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
-            document.getElementById('pageTitle').innerText = `CVA - DATABASE | ${phtString}`;
+            document.getElementById('pageTitle').innerText = `${notificationTopicPrefix} - DATABASE | ${phtString}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -225,7 +226,7 @@
             for (let i = 0; i < 8; i++) {
                 randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-            document.getElementById('inputTopic').value = `CVA-${randomCode}`;
+            document.getElementById('inputTopic').value = `${notificationTopicPrefix}-${randomCode}`;
         }
 
         async function fetchDatabase() {

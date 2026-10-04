@@ -7,7 +7,7 @@
 
 CVAIDSYS (Windows) is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
 
-The application is designed to keep student and attendance data on the kiosk computer. NTFY notifications are the exception: when enabled and configured, the application sends attendance messages to `https://ntfy.sh` over the internet.
+The application is designed to keep student and attendance data on the kiosk computer. External requests are limited to configured NTFY notifications and the launchpad's connectivity check to Cloudflare; the connectivity check sends no student or attendance data.
 
 ## How the system works
 
@@ -23,6 +23,8 @@ The application runs as a local web service. The Flask application provides the 
 8. Restart, shutdown, kiosk exit, logo upload, student changes, CSV imports, audit events, and security settings require the configured passcode. Passcodes are stored as salted PBKDF2-SHA256 hashes; the original passcode is never stored.
 
 The application listens only on the local computer by default. It is not intended to be exposed directly to a public network.
+
+The launchpad's Online/Offline indicator makes an HTTPS reachability check to `1.1.1.1` every five seconds while the launchpad is open. This is a browser-side check, not an ICMP ping, and Online only means Cloudflare's endpoint responded; it does not guarantee that every internet service is reachable. The request is stopped when navigating to another module.
 
 ## Windows requirements
 
@@ -140,7 +142,7 @@ Office alerts use the configured office topic for camera-blocked alerts. They ar
 
 ## Scanner errors and audit events
 
-An unrecognized barcode returns a scan error and is not inserted into the attendance table. The scanner keeps focus available and shows the barcode, error message, timestamp, and red `ERROR` badge in the last-scanned card. Staff can then add the missing student in Student Manager.
+An unrecognized barcode returns a scan error and is not inserted into the attendance table. The scanner keeps focus available and shows the barcode, error message, timestamp, and red `ERROR` badge in the last-scanned card. Staff can then add the missing student in Student Manager. When staff focus the log search field, the scanner shows a temporary search-mode notice; selecting the barcode field resumes scanning and dismisses the notice without requiring its button.
 
 The passcode-protected **Audit Manager** is available from Data administration. It records invalid scans, duplicate scans, successful scans, blocked-camera alerts, settings failures and saves, invalid passcode attempts, student changes, CSV imports, and database recovery events. When a blocked-camera request includes an image, the event links to its saved snapshot. The Logs Manager also retains its Audit Events view.
 
@@ -167,7 +169,7 @@ After database writes, the application creates a consistent SQLite backup and re
 
 ## Security controls
 
-The initial setup requires a 4 to 12 character passcode and a recovery question. Letters, numbers, and symbols are supported, but spaces are not. Once configured, an empty or incorrect current passcode cannot save settings. The passcode protects settings, logo uploads, student changes, CSV imports, audit events, kiosk exit, restart, shutdown, and system barcodes. The passcode is stored as a salted PBKDF2-SHA256 hash.
+Initial passcode setup requires a 4 to 12 character passcode, a security question, and a recovery answer. Letters, numbers, and symbols are supported, but spaces are not. Saving settings opens the shared passcode prompt; an empty or incorrect current passcode cannot save settings once a passcode is configured. Changing the passcode also requires a recovery question and answer. The passcode protects settings, logo uploads, student changes, CSV imports, audit events, kiosk exit, restart, shutdown, and system barcodes. The passcode is stored as a salted PBKDF2-SHA256 hash.
 
 Themes are selected in System Settings and apply to the launchpad, scanner, student manager, logs manager, and migration pages. Supported themes are Night, Light, Grassy, Ocean, and Sunset. Accent colors must be six-digit hexadecimal colors such as `#4da3ff`.
 
@@ -222,7 +224,7 @@ The barcode is not present in the student database. Add or update the student in
 
 ### Settings will not save
 
-Enter the current passcode. Changing the passcode also requires a complete security question and recovery answer. Leaving those fields blank is valid only when keeping the existing passcode and recovery details unchanged.
+Saving settings opens a passcode prompt. To change the passcode, provide a new passcode, security question, and recovery answer; leave all three blank to keep the existing passcode and recovery details unchanged.
 
 ### Parent notification did not arrive
 

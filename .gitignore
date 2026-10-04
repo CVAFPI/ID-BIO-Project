@@ -3,6 +3,7 @@ __pycache__/
 CVA_Database/cva.sqlite3
 CVA_Database/cva.sqlite3-wal
 CVA_Database/cva.sqlite3-shm
+CVA_Database/cva.sqlite3.backup
 launcher.log
 static/custom-logo.png
 .venv-windows/

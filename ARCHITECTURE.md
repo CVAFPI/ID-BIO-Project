@@ -33,6 +33,7 @@ flowchart TD
     App --> Pages[templates/]
     App --> Static[static/]
     Pages -->|API requests| App
+    Browser -->|HTTPS reachability check while launchpad is open| Cloudflare[Cloudflare 1.1.1.1]
     App --> Logger[logger.py]
     Logger --> DB[(CVA_Database/cva.sqlite3)]
     Logger --> Backup[(cva.sqlite3.backup)]
@@ -45,7 +46,7 @@ The key boundaries are:
 - **Browser UI:** Pages under `templates/` and shared assets under `static/`. Browser code handles input, display, dialogs, camera capture, and calls the local API.
 - **HTTP and WSGI:** Flask owns request routing and validation. Waitress serves the WSGI application in Windows kiosk startup, server-only runs, and direct `python app.py` startup.
 - **Persistence:** `logger.py` owns SQLite schema initialization and most student, attendance, audit, import, and backup operations. `app.py` owns filesystem operations for settings and image assets.
-- **External integration:** Parent and office notifications are optional outbound HTTPS requests to NTFY. They are not required for local attendance recording.
+- **External integration:** Parent and office notifications are optional outbound HTTPS requests to NTFY. The launchpad also makes a browser-side HTTPS reachability check to Cloudflare while it is open; this check does not pass through Flask and sends no student data.
 
 ### Repository connections
 
@@ -73,7 +74,7 @@ wsgi.py -> app.py -> logger.py -> SQLite database / database backup
                                     +-> optional NTFY HTTPS requests
 ```
 
-`app.py` is the connection point between HTTP requests and the rest of the application. Its page routes call `render_template()`, its API routes validate input and invoke `logger.py` or filesystem/network operations, and its context processor supplies the institution name, theme, accent color, and logo URL to rendered pages. The template/static roots are selected from the source tree or the PyInstaller resource directory; writable data paths are selected separately through `CVAFPI_DATA_DIR`.
+`app.py` is the connection point between HTTP requests and the rest of the application. Its page routes call `render_template()`, its API routes validate input and invoke `logger.py` or filesystem/network operations, and its context processor supplies the institution name, notification topic prefix, theme, accent color, and logo URL to rendered pages. The template/static roots are selected from the source tree or the PyInstaller resource directory; writable data paths are selected separately through `CVAFPI_DATA_DIR`.
 
 There is no shared template base file or JavaScript bundler. Each page owns its main HTML, page-specific CSS, and page-specific JavaScript. Reuse between pages is through HTTP endpoints, Jinja context values, and the shared static dialog files.
 
@@ -98,8 +99,8 @@ There is no shared template base file or JavaScript bundler. Each page owns its 
 
 | Page/file | Browser-side responsibilities | Connections to Flask/API | Shared/local assets |
 | --- | --- | --- | --- |
-| `templates/launchpad.html` | Main navigation, live clocks, settings modal, branding/theme controls, confirmations, and protected restart/shutdown/exit controls. It also handles the `?settings=1` link used by the settings command barcode. | Reads `GET /api/settings` and `GET /api/security/config`; writes `POST /api/settings`; uploads `POST /api/branding/logo`; uses `POST /api/security/recover`, `/api/system/reboot`, `/api/system/shutdown`, and `/api/exit`. | `kiosk-dialog.css` and `kiosk-dialog.js`; institution/theme/logo values come from the Flask context processor. |
-| `templates/scanner.html` | Receives keyboard-wedge/manual scans, manages the last-scan card and today's table, asks for camera permission when enabled, analyzes camera frames, and renders the student's barcode. | Reads `GET /api/settings` and `GET /api/logs/today`; posts scans to `POST /api/scan`; reports blocked-camera state to `POST /api/camera/blocked`; completes a returned command via `POST /api/system/command`. | `JsBarcode.all.min.js` is loaded locally and used for the card barcode. Shared dialog CSS/JS handles alerts and passcode prompts. |
+| `templates/launchpad.html` | Main navigation, live clocks, settings modal, branding/theme controls, confirmations, and protected restart/shutdown/exit controls. Saving settings requests the current passcode through the shared prompt. It also handles the `?settings=1` link used by the settings command barcode. | Reads `GET /api/settings` and `GET /api/security/config`; writes `POST /api/settings`; uploads `POST /api/branding/logo`; uses `POST /api/security/recover`, `/api/system/reboot`, `/api/system/shutdown`, and `/api/exit`. | Loads `static/ping.js` for its browser-side Cloudflare reachability check, plus `kiosk-dialog.css` and `kiosk-dialog.js`; institution/theme/logo values come from the Flask context processor. |
+| `templates/scanner.html` | Receives keyboard-wedge/manual scans, manages the last-scan card and today's table, asks for camera permission when enabled, analyzes camera frames, and renders the student's barcode. Focusing the barcode field exits search mode and dismisses its notice. | Reads `GET /api/settings` and `GET /api/logs/today`; posts scans to `POST /api/scan`; reports blocked-camera state to `POST /api/camera/blocked`; completes a returned command via `POST /api/system/command`. | `JsBarcode.all.min.js` is loaded locally and used for the card barcode. Shared dialog CSS/JS handles alerts and passcode prompts. |
 | `templates/manager.html` | Loads/filter students, edits the right-side form, asks for confirmation and passcode before delete/save, and refreshes the list after mutations. | Reads `GET /api/data`; writes `POST /api/save_student` and `POST /api/delete_student`. | Shared dialog CSS/JS provides confirmations, alerts, and passcode prompts. |
 | `templates/logs-manager.html` | Loads available dates and attendance rows, applies text/time filters, calculates KPIs, previews snapshots, exports the filtered data as CSV in the browser, and shows the legacy Audit Events modal. | Reads `GET /api/logs/list`, `/api/logs/today`, `/api/logs/view`, and `/api/logs/snapshot`; loads audit rows with `POST /api/audit/events`. | Shared dialog CSS/JS prompts for audit access. The export CSV is generated in browser memory, not a server-side log file. |
 | `templates/audit-manager.html` | Prompts on entry, searches audit rows locally, parses snapshot metadata from event details, and opens/closes the snapshot viewer. | Loads `POST /api/audit/events`; snapshot images are fetched from `GET /api/logs/snapshot`. | Shared dialog CSS/JS handles passcode and error dialogs. |
@@ -108,6 +109,7 @@ There is no shared template base file or JavaScript bundler. Each page owns its 
 ### Shared browser assets and reference files
 
 - Each of the six page templates links `/static/kiosk-dialog.css` and loads `/static/kiosk-dialog.js`. The JavaScript creates the shared modal and exports `appAlert()`, `appConfirm()`, and `appPrompt()` to page scripts. The CSS styles those controls and explicitly keeps elements with the HTML `hidden` attribute hidden.
+- `templates/launchpad.html` alone loads `/static/ping.js`. It makes a cache-bypassing, no-CORS HTTPS request to `https://1.1.1.1/cdn-cgi/trace` every five seconds, applies a four-second timeout, and shows Online when the request resolves or Offline when it fails. It stops polling on `pagehide` and restarts when restored from the browser back-forward cache. This is an endpoint reachability signal, not an ICMP ping or a guarantee that other services are reachable.
 - `templates/scanner.html` loads `/static/JsBarcode.all.min.js` before its inline application script. That library produces the visual barcode on the last-scanned student card; scanner input itself is supplied by the keyboard-wedge reader and does not depend on JsBarcode.
 - `static/CVAFPI-LOGO.png` is the default institution logo. A custom logo is written to `BASE_DIR/static/custom-logo.png`; the context processor selects the custom URL when it exists and each template falls back to the packaged logo if its image fails to load.
 - `ID-CODES FOR SYSTEM/` contains printable PNGs. The application does not enumerate these files. A scanned value is recognized as a system action only when it equals one of the configured barcode values in `app.py` settings; the PNG artwork is therefore an operator aid, not executable configuration.
@@ -310,7 +312,7 @@ The camera detector runs in the browser. It periodically analyzes a reduced vide
 
 ### 7.5 Settings, logo, and system controls
 
-System Settings exposes camera, notifications, institution branding, theme, accent, logo, security recovery data, and configurable command barcodes. Settings changes require the current passcode once a passcode is configured. Changing the passcode requires a valid new passcode plus a non-empty recovery question and answer.
+System Settings exposes camera, notifications, institution branding, theme, accent, logo, security recovery data, and configurable command barcodes. Saving settings opens the shared passcode prompt and requires the current passcode once one is configured. Changing the passcode requires a valid new passcode plus a non-empty recovery question and answer.
 
 Logo uploads require a passcode and are decoded/re-encoded as PNG using Pillow. A writable logo is stored under `BASE_DIR/static/custom-logo.png`. In a packaged run, the file is copied to the packaged static path when those paths differ so templates can serve it.
 
@@ -371,6 +373,8 @@ Passcodes must be 4 to 12 non-whitespace characters. Recovery answers are stripp
 `protected_response()` is the common passcode gate for protected APIs. It returns an error if no passcode has been configured or if the submitted passcode is invalid, and records a `security_error` event. Settings mutations have their own current-passcode and recovery-field validation. Recovery is intentionally possible without the current passcode, so its security depends on control of the recovery answer and the local-only deployment boundary.
 
 ## 10. Notifications and external services
+
+While the launchpad is open, `static/ping.js` checks reachability by making a direct browser HTTPS request to Cloudflare at `1.1.1.1/cdn-cgi/trace`. The response body is not read. A resolved request marks the indicator Online; a failed or timed-out request marks it Offline. The check is suspended when leaving the launchpad and resumed if the browser restores it from its back-forward cache. No Flask API route or attendance data is involved.
 
 Parent notifications require all of the following:
 

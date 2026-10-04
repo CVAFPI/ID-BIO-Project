@@ -38,6 +38,7 @@ DEFAULT_SETTINGS = {
     "office_ntfy_topic": "",
     "blocked_camera_alerts_enabled": True,
     "institution_name": "Christian Vision Academy Foundation Inc.",
+    "notification_topic_prefix": "",
     "theme": "night",
     "accent_color": "#4da3ff",
     "pin_hash": "",
@@ -130,6 +131,13 @@ def protected_response(action='perform this action'):
 def public_settings(settings):
     return {key: settings.get(key, DEFAULT_SETTINGS[key]) for key in PUBLIC_SETTINGS}
 
+def derive_notification_topic_prefix(institution_name):
+    words = re.findall(r"[A-Za-z0-9]+", str(institution_name or "").upper())
+    initials = ''.join(word[0] for word in words)
+    if len(words) == 1:
+        return words[0][:3] or 'CVA'
+    return initials[:3] or 'CVA'
+
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
     folder_name = f"logs_{date_str}"
@@ -168,6 +176,8 @@ def save_system_settings(data):
         data['accent_color'] = DEFAULT_SETTINGS['accent_color']
     if 'institution_name' in data:
         data['institution_name'] = str(data['institution_name']).strip()[:100]
+    if 'notification_topic_prefix' in data:
+        data['notification_topic_prefix'] = str(data['notification_topic_prefix']).strip()[:32]
     for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
         if key in data:
             data[key] = str(data[key]).strip()[:100]
@@ -185,6 +195,7 @@ def inject_branding():
     settings = load_system_settings()
     return {
         'institution_name': settings.get('institution_name', DEFAULT_SETTINGS['institution_name']),
+        'notification_topic_prefix': settings.get('notification_topic_prefix') or derive_notification_topic_prefix(settings.get('institution_name')),
         'theme': settings.get('theme', DEFAULT_SETTINGS['theme']),
         'accent_color': settings.get('accent_color', DEFAULT_SETTINGS['accent_color']),
         'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'

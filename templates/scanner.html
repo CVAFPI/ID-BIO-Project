@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">CVA - CLOCK IN/OUT SYSTEM</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - CLOCK IN/OUT SYSTEM</title>
     <!-- JsBarcode Library -->
     <script src="/static/JsBarcode.all.min.js"></script>
     <style>
@@ -92,13 +92,13 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-    <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+    <body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
 
     <!-- Header containing ONLY CVAFPI Logo & System Title -->
     <div class="header">
         <div class="header-left">
             <img src="{{ logo_url }}"
-                 alt="CVAFPI Logo"
+                 alt="{{ notification_topic_prefix }} Logo"
                  class="logo-img"
                  onerror="this.onerror=null; this.src='/static/CVAFPI-LOGO.png';">
             <h1>{{ institution_name }} - CLOCK IN/OUT SYSTEM</h1>
@@ -198,7 +198,7 @@
             const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
             document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
-            document.getElementById('pageTitle').innerText = `CVA - LOG IN/OUT SYSTEM | ${phtString}`;
+            document.getElementById('pageTitle').innerText = `${document.body.dataset.notificationTopicPrefix} - LOG IN/OUT SYSTEM | ${phtString}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -298,6 +298,12 @@
         document.addEventListener('click', (e) => {
             if (document.activeElement !== searchInput && !searchInput.value.trim()) {
                 barcodeInput.focus();
+            }
+        });
+
+        barcodeInput.addEventListener('focus', () => {
+            if (document.getElementById('searchNoticeContent').style.display === 'flex') {
+                exitSearchMode();
             }
         });
 

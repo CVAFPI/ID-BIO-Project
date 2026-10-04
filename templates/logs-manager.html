@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title id="pageTitle">CVA - LOGS MANAGER</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - LOGS MANAGER</title>
 
     <style>
         :root {
@@ -86,7 +86,7 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-<body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+<body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
 
     <div class="header">
         <div class="header-left">
@@ -257,7 +257,7 @@
             const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
             document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
-            document.getElementById('pageTitle').innerText = `CVA - LOGS MANAGER | ${phtString}`;
+            document.getElementById('pageTitle').innerText = `${document.body.dataset.notificationTopicPrefix} - LOGS MANAGER | ${phtString}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
