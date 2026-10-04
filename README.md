@@ -187,12 +187,7 @@ The Windows restart and shutdown controls use the standard Windows `shutdown` co
 - `templates/` - application pages
 - `static/` - packaged interface assets
 - `templates/audit-manager.html` - passcode-protected audit event viewer
-- `dev_passcode_reset.sh` - Linux/Bash developer-only passcode recovery utility
 - `ARCHITECTURE.md` - technical components, data model, routes, security boundaries, and runtime flows
-
-## Developer passcode recovery
-
-For a source checkout on Linux with Bash and Python 3 installed, run `bash dev_passcode_reset.sh`. The numbered menu can set a passcode, set a passcode with recovery Q/A, clear passcode and recovery settings, or show the effective status. Reset changes are synchronized to both `settings.json` and the SQLite settings table, then the database backup is refreshed. Stop the application before recovery and keep this developer-only utility private; it is not part of the Windows executable.
 
 ## Troubleshooting
 
