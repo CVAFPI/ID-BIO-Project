@@ -262,20 +262,22 @@ sequenceDiagram
             Logger-->>Flask: error
             Flask->>DB: Record invalid_scan audit event
             Flask-->>Scanner: 404 scan error
-        else repeat within three seconds
-            Logger-->>Flask: duplicate
-            Flask->>DB: Record dual_scan audit event
-            Flask-->>Scanner: duplicate; no attendance row
-        else accepted scan
-            Logger->>DB: Insert attendance row
-            Flask->>DB: Record scan_logged audit event
-            opt configured parent topic and notifications enabled
-                Flask-)NTFY: Send asynchronous notification
+        else known student
+            alt repeat within three seconds
+                Logger-->>Flask: duplicate
+                Flask->>DB: Record dual_scan audit event
+                Flask-->>Scanner: duplicate; no attendance row
+            else accepted scan
+                Logger->>DB: Insert attendance row
+                Flask->>DB: Record scan_logged audit event
+                opt configured parent topic and notifications enabled
+                    Flask-)NTFY: Send asynchronous notification
+                end
+                opt webcam image supplied
+                    Flask->>Files: Save JPEG under date folder
+                end
+                Flask-->>Scanner: success and student data
             end
-            opt webcam image supplied
-                Flask->>Files: Save JPEG under date folder
-            end
-            Flask-->>Scanner: success and student data
         end
     end
 ```
