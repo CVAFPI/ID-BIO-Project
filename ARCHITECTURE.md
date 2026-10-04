@@ -240,7 +240,6 @@ Audit history is stored in SQLite and copied into the normal database backup. Th
 
 The scanner page accepts keyboard-wedge USB scanner input. A scan is submitted to `POST /api/scan` with a barcode and an optional base64 webcam image.
 
-```mermaid
 sequenceDiagram
     participant Scanner as Scanner page
     participant Flask as Flask API
@@ -277,7 +276,7 @@ sequenceDiagram
             Flask-->>Scanner: success and student data
         end
     end
-```
+
 
 Duplicate protection is server-side and keyed by barcode. Each accepted barcode receives its own monotonic three-second deadline. A scan of another barcode does not clear the previous barcode's deadline. The scan lock serializes this decision among Waitress request threads in the current single-process server. A duplicate is recorded in `audit_events` and never inserted into `attendance` or sent as a parent notification. The in-memory deadlines reset when the process restarts.
 
