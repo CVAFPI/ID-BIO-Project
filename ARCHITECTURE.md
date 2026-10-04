@@ -266,7 +266,7 @@ sequenceDiagram
             alt repeat within three seconds
                 Logger-->>Flask: duplicate
                 Flask->>DB: Record dual_scan audit event
-                Flask-->>Scanner: duplicate; no attendance row
+                Flask-->>Scanner: duplicate, no attendance row
             else accepted scan
                 Logger->>DB: Insert attendance row
                 Flask->>DB: Record scan_logged audit event
