@@ -114,6 +114,7 @@ There is no shared template base file or JavaScript bundler. Each page owns its 
 - `static/CVAFPI-LOGO.png` is the default institution logo. A custom logo is written to `BASE_DIR/static/custom-logo.png`; the context processor selects the custom URL when it exists and each template falls back to the packaged logo if its image fails to load.
 - `ID-CODES FOR SYSTEM/` contains printable PNGs. The application does not enumerate these files. A scanned value is recognized as a system action only when it equals one of the configured barcode values in `app.py` settings; the PNG artwork is therefore an operator aid, not executable configuration.
 - `LICENSES/jsbarcode_MIT_LICENSE.txt` applies to the locally bundled JsBarcode distribution. PyInstaller includes `static/` but does not include the separate `ID-CODES FOR SYSTEM/` folder or the mutable database directory through the `datas` list in the current spec.
+- `LICENSES/Python-PSF-2.0.txt` contains the PSF License Version 2 for the Python runtime installed by the Windows build setup.
 - `.gitignore` excludes writable databases, SQLite WAL sidecars, uploaded custom logos, virtual environments, build outputs, and kiosk browser profiles so runtime state is not treated as source code.
 
 The system-code artwork currently present is:
@@ -421,7 +422,7 @@ The application logs operational errors to the server console rather than mainta
 
 ## 13. Windows packaging
 
-`build-windows.bat` creates or reuses `.venv-windows`, installs the requirements, and runs PyInstaller against `ID-BIO-Project.spec`. The PyInstaller specification starts from `windows_launcher.py`, collects Pillow submodules, and bundles `templates/` and `static/` as application resources.
+`build-windows.bat` reuses an available 64-bit Python 3.11+ runtime or installs `python-manager-26.3.msix` and Python 3.11, then creates or reuses a compatible `.venv-windows`, installs the requirements, and runs PyInstaller against `ID-BIO-Project.spec`. Keep the MSIX beside the batch file for machines without Python. The PyInstaller specification starts from `windows_launcher.py`, collects Pillow submodules, and bundles `templates/` and `static/` as application resources.
 
 The executable still needs writable data beside itself. At runtime `windows_launcher.py` sets the data directory to the executable folder, while the bundled resources can live in PyInstaller's extraction directory. Keep backups and writable data separate from the build output when preparing a deployment image.
 

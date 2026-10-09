@@ -29,7 +29,7 @@ The launchpad's Online/Offline indicator makes an HTTPS reachability check to `1
 ## Windows requirements
 
 - Windows 11 64-bit
-- Python 3.11 or newer for building or development
+- Python 3.11 or newer for development. The Windows build script can install Python automatically.
 - Microsoft Edge or Google Chrome
 - A USB barcode scanner that behaves as a keyboard
 - A webcam if scan photos are enabled
@@ -40,7 +40,7 @@ The packaged application does not require Python. The browser is required becaus
 
 Complete this checklist on a Windows 11 test computer before creating the final executable:
 
-- Confirm the computer has 64-bit Python 3.11 or newer, Edge or Chrome, and network access if NTFY will be used.
+- Confirm the computer has Edge or Chrome and network access for build dependencies (and NTFY if used). If Python 3.11 or newer is not installed, the build script installs it from the included Python Install Manager MSIX.
 - Run the server-only test described below and open every page: launchpad, scanner, manager, logs manager, Audit Manager, migration, and settings.
 - Add one test student with a unique barcode and an NTFY topic. Scan the barcode and verify the attendance row, timestamp, saved snapshot if the camera is enabled, and the parent notification.
 - Test a student without a topic, with parent notifications disabled, and with an unknown barcode. None of these should send a parent notification.
@@ -54,12 +54,11 @@ The Linux development environment can check Python code and server routes, but i
 
 ## Build one executable
 
-Build on Windows 11. PyInstaller creates Windows executables and cannot cross-compile a Windows binary from Debian or Linux.
+Build on Windows 11. PyInstaller creates Windows executables and cannot cross-compile a Windows binary from Debian or Linux. Keep `python-manager-26.3.msix` beside `build-windows.bat`; if a compatible 64-bit Python is not already installed, the script installs the Python Install Manager MSIX and Python 3.11 automatically. Network access is needed to download Python and build dependencies.
 
-1. Install 64-bit Python 3.11 or newer from python.org.
-2. Copy or clone this repository to the Windows computer.
-3. Double-click `build-windows.bat`.
-4. Run `dist\CVAFPI-IDSYS.exe`.
+1. Copy or clone this repository, including `python-manager-26.3.msix`, to the Windows computer.
+2. Double-click `build-windows.bat`.
+3. Run `dist\CVAFPI-IDSYS.exe`.
 
 The build script creates a temporary `.venv-windows` environment, installs the Windows dependencies, and builds a single file. The final executable is:
 
@@ -193,7 +192,7 @@ The Windows restart and shutdown controls use the standard Windows `shutdown` co
 
 ### The build does not start
 
-Run `build-windows.bat` from a Windows command prompt and confirm that 64-bit Python is available with:
+If the automatic Python setup fails, run `build-windows.bat` from a Windows command prompt and confirm that the Python launcher is available with:
 
 ```text
 py --version
