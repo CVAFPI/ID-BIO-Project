@@ -37,7 +37,7 @@ flowchart TD
     App --> Logger[logger.py]
     Logger --> DB[(CVA_Database/cva.sqlite3)]
     Logger --> Backup[(cva.sqlite3.backup)]
-    App --> RuntimeFiles[settings.json and snapshot/logo files]
+    App --> RuntimeFiles[snapshot and logo files]
     App -->|Optional async HTTPS| NTFY[ntfy.sh]
 ```
 
@@ -45,7 +45,7 @@ The key boundaries are:
 
 - **Browser UI:** Pages under `templates/` and shared assets under `static/`. Browser code handles input, display, dialogs, camera capture, and calls the local API.
 - **HTTP and WSGI:** Flask owns request routing and validation. Waitress serves the WSGI application in Windows kiosk startup, server-only runs, and direct `python app.py` startup.
-- **Persistence:** `logger.py` owns SQLite schema initialization and most student, attendance, audit, import, and backup operations. `app.py` owns filesystem operations for settings and image assets.
+- **Persistence:** `logger.py` owns SQLite schema initialization and student, attendance, audit, settings, import, and backup operations. `app.py` validates settings requests and owns image asset operations.
 - **External integration:** Parent and office notifications are optional outbound HTTPS requests to NTFY. The launchpad also makes a browser-side HTTPS reachability check to Cloudflare while it is open; this check does not pass through Flask and sends no student data.
 
 ### Repository connections
@@ -70,7 +70,7 @@ windows_launcher.py
 
 wsgi.py -> app.py -> logger.py -> SQLite database / database backup
                                     +-> templates/ and static/ -> browser API requests to app.py
-                                    +-> settings.json / snapshot files / uploaded logo
+                                    +-> snapshot files / uploaded logo
                                     +-> optional NTFY HTTPS requests
 ```
 
@@ -88,7 +88,7 @@ There is no shared template base file or JavaScript bundler. Each page owns its 
 | `logger.py` | Initializes SQLite, persists students/attendance/audit/settings, imports CSVs, applies the scan duplicate window, creates backups, and prunes old snapshot directories. |
 | `templates/` | Launchpad, attendance scanner, student manager, logs manager, Audit Manager, and CSV migration pages. |
 | `static/` | Shared browser JavaScript and CSS, local barcode generation library, and optional custom logo. |
-| `settings.json` | Human-readable settings and passcode/recovery hashes. Values are also stored in the SQLite `app_settings` table. |
+| `app_settings` | System settings and passcode/recovery hashes stored in SQLite. |
 | `CVA_Database/cva.sqlite3` | Primary student, attendance, settings, and audit database. |
 | `CVA_Database/cva.sqlite3.backup` | Latest consistent SQLite backup, replaced atomically after database writes. |
 | `CVA_Database/logs_YYYY-MM-DD/` | Scan photos and blocked-camera snapshots, grouped by local date. |
@@ -125,7 +125,7 @@ The system-code artwork currently present is:
 | `CD=EMERSHUTDOWNSYSSU62#9CVAFPI.png` | Matches the default `shutdown_barcode`. |
 | `CD=BARCODESYS2#2736#CVAFPI.png` | Has no matching command setting in the current defaults; it is not interpreted specially unless an administrator configures a matching value. |
 
-The other default command values (return to launchpad, open Student Manager, open Logs Manager, and open Settings) are configured in `app.py`/`settings.json` but have no corresponding PNG in this directory. These values can be changed from the launchpad's System Settings modal. The form submits the close/shutdown/launchpad values directly; a page-level `fetch` wrapper adds the database-manager, logs-manager, and settings values before the request reaches `POST /api/settings`.
+The other default command values (return to launchpad, open Student Manager, open Logs Manager, and open Settings) are configured by defaults in `app.py` and persisted in SQLite; they have no corresponding PNG in this directory. These values can be changed from the launchpad's System Settings modal. The form submits the close/shutdown/launchpad values directly; a page-level `fetch` wrapper adds the database-manager, logs-manager, and settings values before the request reaches `POST /api/settings`.
 
 `logs/` at the data root is created as an auxiliary directory. Scanner and blocked-camera images are actually written under `CVA_Database/logs_YYYY-MM-DD/`; the two locations are not interchangeable. `logger.py` currently emits diagnostics with `print()` rather than writing application diagnostics into the root `logs/` directory.
 
@@ -183,13 +183,7 @@ The main path variables are computed at process startup:
 
 In the packaged application, immutable templates and static resources can be inside the PyInstaller bundle, while writable data is kept beside the executable. The launcher sets `CVAFPI_DATA_DIR` to that executable directory unless explicitly configured otherwise.
 
-The settings load order is significant:
-
-1. Built-in defaults are loaded.
-2. `settings.json` values override the defaults.
-3. Values in SQLite `app_settings` override the JSON values.
-
-Settings updates write the merged configuration to `settings.json` and save safe setting keys to SQLite. Since SQLite values take precedence, any out-of-band settings change must keep both stores consistent or the database value will win on the next load.
+Settings are loaded from built-in defaults and then overridden by recognized values in SQLite `app_settings`. Settings updates write to SQLite only; a legacy root `settings.json` file is not read or written. The SQLite database and its backup therefore contain the authoritative settings, including passcode and recovery hashes.
 
 ## 6. Data model
 
@@ -457,7 +451,7 @@ app.py                         Flask routes, settings, security, notifications, 
 wsgi.py                        WSGI callable export
 windows_launcher.py            Waitress service and Windows kiosk browser lifecycle
 logger.py                      SQLite schema, data operations, duplicate policy, backup and retention
-settings.json                  Persisted system settings and salted hashes
+tests/                         Standard-library regression tests
 CVA_Database/                  Primary DB, backup, and dated snapshot folders
 static/                        CSS, browser JavaScript, local JsBarcode library, optional logo
 templates/                      Jinja pages for operations and administration

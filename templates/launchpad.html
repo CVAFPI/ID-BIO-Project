@@ -133,11 +133,40 @@
         function deriveNotificationPrefix(name) { const words=(name.toUpperCase().match(/[A-Z0-9]+/g)||[]); return words.length===1?words[0].slice(0,3)||'CVA':words.map(word=>word[0]).join('').slice(0,3)||'CVA'; }
         document.getElementById('settingInstitution').addEventListener('input',event=>{ if(!notificationPrefixEdited) document.getElementById('settingNotificationPrefix').value=deriveNotificationPrefix(event.target.value); });
         document.getElementById('settingNotificationPrefix').addEventListener('input',()=>{ notificationPrefixEdited=true; });
-        async function openSettingsModal() { document.getElementById('settingsModal').style.display='grid'; try { const response=await fetch('/api/settings'); const data=await response.json(); const security=await (await fetch('/api/security/config')).json(); document.getElementById('settingCamera').checked=!!data.camera_enabled; document.getElementById('settingParents').checked=!!data.parent_notifications_enabled; document.getElementById('settingOfficeAlerts').checked=!!data.office_alerts_enabled; document.getElementById('settingOfficeTopic').value=data.office_ntfy_topic||''; document.getElementById('settingBlockedCamera').checked=!!data.blocked_camera_alerts_enabled; document.getElementById('settingInstitution').value=data.institution_name||''; notificationPrefixEdited=false; document.getElementById('settingNotificationPrefix').value=data.notification_topic_prefix||deriveNotificationPrefix(data.institution_name||''); document.getElementById('settingTheme').value=data.theme||'night'; document.getElementById('settingAccent').value=data.accent_color||'#4da3ff'; document.getElementById('settingSecurityQuestion').value=security.security_question||''; document.getElementById('settingCloseBarcode').value=data.close_kiosk_barcode||''; document.getElementById('settingShutdownBarcode').value=data.shutdown_barcode||''; document.getElementById('settingLaunchpadBarcode').value=data.launchpad_barcode||''; document.getElementById('settingDatabaseManagerBarcode').value=data.database_manager_barcode||''; document.getElementById('settingLogManagerBarcode').value=data.log_manager_barcode||''; document.getElementById('settingSettingsBarcode').value=data.settings_barcode||''; toggleOfficeTextbox(document.getElementById('settingOfficeAlerts')); } catch (error) { await appAlert('Could not load settings.'); } }
+        // Parse API responses safely: Flask can return an HTML error page on HTTP 500.
+        // Show a useful error instead of throwing "Unexpected token '<'".
+        async function readApiResponse(response, fallbackMessage) {
+            const contentType = response.headers.get('content-type') || '';
+            const raw = await response.text();
+            let data = {};
+            if (raw) {
+                if (contentType.includes('application/json')) {
+                    try { data = JSON.parse(raw); }
+                    catch (_) { throw new Error(`${fallbackMessage} The server returned invalid JSON (HTTP ${response.status}).`); }
+                } else {
+                    const detail = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+                    throw new Error(`${fallbackMessage} The server returned a non-JSON response (HTTP ${response.status}).${detail ? ' ' + detail : ''}`);
+                }
+            }
+            if (!response.ok) {
+                throw new Error(data.message || data.error || `${fallbackMessage} (HTTP ${response.status}).`);
+            }
+            return data;
+        }
+
+        async function openSettingsModal() { document.getElementById('settingsModal').style.display='grid'; try { const response=await fetch('/api/settings'); const data=await readApiResponse(response,'Could not load settings.');
+            const securityResponse=await fetch('/api/security/config'); const security=await readApiResponse(securityResponse,'Could not load security settings.'); document.getElementById('settingCamera').checked=!!data.camera_enabled; document.getElementById('settingParents').checked=!!data.parent_notifications_enabled; document.getElementById('settingOfficeAlerts').checked=!!data.office_alerts_enabled; document.getElementById('settingOfficeTopic').value=data.office_ntfy_topic||''; document.getElementById('settingBlockedCamera').checked=!!data.blocked_camera_alerts_enabled; document.getElementById('settingInstitution').value=data.institution_name||''; notificationPrefixEdited=false; document.getElementById('settingNotificationPrefix').value=data.notification_topic_prefix||deriveNotificationPrefix(data.institution_name||''); document.getElementById('settingTheme').value=data.theme||'night'; document.getElementById('settingAccent').value=data.accent_color||'#4da3ff'; document.getElementById('settingSecurityQuestion').value=security.security_question||''; document.getElementById('settingCloseBarcode').value=data.close_kiosk_barcode||''; document.getElementById('settingShutdownBarcode').value=data.shutdown_barcode||''; document.getElementById('settingLaunchpadBarcode').value=data.launchpad_barcode||''; document.getElementById('settingDatabaseManagerBarcode').value=data.database_manager_barcode||''; document.getElementById('settingLogManagerBarcode').value=data.log_manager_barcode||''; document.getElementById('settingSettingsBarcode').value=data.settings_barcode||''; toggleOfficeTextbox(document.getElementById('settingOfficeAlerts')); } catch (error) { await appAlert('Could not load settings.'); } }
         function closeSettingsModal() { document.getElementById('settingsModal').style.display='none'; }
         async function handleParentToggle(input) { if (!input.checked && !(await appConfirm('Turn off parent notifications?'))) input.checked=true; }
         function toggleOfficeTextbox(input) { document.getElementById('officeTopicGroup').classList.toggle('active',input.checked); }
-        function requestSettingsPin() { return requestSystemPin(); }
+        async function requestSettingsPin() {
+            const response = await fetch('/api/security/config');
+            const security = await readApiResponse(
+                response,
+                'Could not load security settings.'
+            );
+            return security.pin_configured ? requestSystemPin() : '';
+        }
         const nativeFetch = window.fetch.bind(window);
         window.fetch = (url, options = {}) => {
             if (url === '/api/settings' && options.method === 'POST' && options.body) {
@@ -149,12 +178,59 @@
             }
             return nativeFetch(url, options);
         };
-        async function saveSettings() { let pin; try { pin=await requestSettingsPin(); } catch (error) { await appAlert('Could not verify the security passcode.'); return; } if(pin===null) return; const newPin=document.getElementById('settingNewPin').value.trim(); const answer=document.getElementById('settingSecurityAnswer').value.trim(); const payload={camera_enabled:document.getElementById('settingCamera').checked,parent_notifications_enabled:document.getElementById('settingParents').checked,office_alerts_enabled:document.getElementById('settingOfficeAlerts').checked,office_ntfy_topic:document.getElementById('settingOfficeTopic').value.trim(),blocked_camera_alerts_enabled:document.getElementById('settingBlockedCamera').checked,institution_name:document.getElementById('settingInstitution').value.trim(),notification_topic_prefix:document.getElementById('settingNotificationPrefix').value.trim(),theme:document.getElementById('settingTheme').value,accent_color:document.getElementById('settingAccent').value,current_pin:pin,new_pin:newPin,security_question:document.getElementById('settingSecurityQuestion').value.trim(),security_answer:answer,close_kiosk_barcode:document.getElementById('settingCloseBarcode').value.trim(),shutdown_barcode:document.getElementById('settingShutdownBarcode').value.trim(),launchpad_barcode:document.getElementById('settingLaunchpadBarcode').value.trim()}; try { const response=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const result=await response.json(); if(!response.ok) throw new Error(result.message||'Could not save settings.'); const logo=document.getElementById('settingLogo').files[0]; if(logo){const form=new FormData(); form.append('logo',logo); form.append('pin',pin||newPin); const logoResponse=await fetch('/api/branding/logo',{method:'POST',body:form}); if(!logoResponse.ok) throw new Error((await logoResponse.json()).message||'Logo upload failed'); document.getElementById('brandLogo').src=`/static/custom-logo.png?${Date.now()}`;} applyTheme(payload.theme,payload.accent_color); document.getElementById('institutionName').textContent=payload.institution_name; document.getElementById('footerInstitution').textContent=payload.institution_name; closeSettingsModal(); await appAlert('Settings saved.'); } catch (error) { await appAlert(error.message||'Could not save settings.'); } }
-        async function recoverPin() { try { const config=await (await fetch('/api/security/config')).json(); if(!config.security_question) { await appAlert('Set a security question during initial setup first.'); return; } const answer=await appPrompt(config.security_question,{title:'Password recovery answer'}); const newPin=await appPrompt('Enter a new passcode:',{title:'New passcode',passcode:true,allowForgot:false}); if(answer===null||newPin===null) return; const response=await fetch('/api/security/recover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({security_answer:answer,new_pin:newPin})}); const result=await response.json(); if(!response.ok) throw new Error(result.message); await appAlert('Password reset. Use the new password when saving settings.'); } catch(error) { await appAlert(error.message||'Could not reset password.'); } }
+        async function saveSettings() { let pin; try { pin=await requestSettingsPin(); } catch (error) { await appAlert('Could not verify the security passcode.'); return; } if(pin===null) return; const newPin=document.getElementById('settingNewPin').value.trim(); const answer=document.getElementById('settingSecurityAnswer').value.trim(); const payload={camera_enabled:document.getElementById('settingCamera').checked,parent_notifications_enabled:document.getElementById('settingParents').checked,office_alerts_enabled:document.getElementById('settingOfficeAlerts').checked,office_ntfy_topic:document.getElementById('settingOfficeTopic').value.trim(),blocked_camera_alerts_enabled:document.getElementById('settingBlockedCamera').checked,institution_name:document.getElementById('settingInstitution').value.trim(),notification_topic_prefix:document.getElementById('settingNotificationPrefix').value.trim(),theme:document.getElementById('settingTheme').value,accent_color:document.getElementById('settingAccent').value,current_pin:pin,new_pin:newPin,security_question:document.getElementById('settingSecurityQuestion').value.trim(),security_answer:answer,close_kiosk_barcode:document.getElementById('settingCloseBarcode').value.trim(),shutdown_barcode:document.getElementById('settingShutdownBarcode').value.trim(),launchpad_barcode:document.getElementById('settingLaunchpadBarcode').value.trim()}; try { const response=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const result=await readApiResponse(response,'Could not save settings.'); const logo=document.getElementById('settingLogo').files[0]; if(logo){const form=new FormData(); form.append('logo',logo); form.append('pin',pin||newPin); const logoResponse=await fetch('/api/branding/logo',{method:'POST',body:form}); await readApiResponse(logoResponse,'Logo upload failed.'); document.getElementById('brandLogo').src=`/static/custom-logo.png?${Date.now()}`;} applyTheme(payload.theme,payload.accent_color); document.getElementById('institutionName').textContent=payload.institution_name; document.getElementById('footerInstitution').textContent=payload.institution_name; closeSettingsModal(); await appAlert('Settings saved.'); } catch (error) { await appAlert(error.message||'Could not save settings.'); } }
+        async function recoverPin() {
+            try {
+                const configResponse = await fetch('/api/security/config');
+                const config = await readApiResponse(
+                    configResponse,
+                    'Could not load security settings.'
+                );
+
+                if (!config.security_question) {
+                    await appAlert(
+                        'Set a security question during initial setup first.'
+                    );
+                    return;
+                }
+
+                const answer = await appPrompt(
+                    config.security_question,
+                    { title: 'Password recovery answer' }
+                );
+                const newPin = await appPrompt(
+                    'Enter a new passcode:',
+                    {
+                        title: 'New passcode',
+                        passcode: true,
+                        allowForgot: false
+                    }
+                );
+
+                if (answer === null || newPin === null) return;
+
+                const response = await fetch('/api/security/recover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        security_answer: answer,
+                        new_pin: newPin
+                    })
+                });
+                await readApiResponse(response, 'Could not reset password.');
+                await appAlert(
+                    'Password reset. Use the new password when saving settings.'
+                );
+            } catch (error) {
+                await appAlert(
+                    error.message || 'Could not reset password.'
+                );
+            }
+        }
         async function requestSystemPin() { const pin=await appPrompt('Enter the security passcode:',{title:'Security passcode',passcode:true}); return pin===null?null:pin.trim(); }
-        async function rebootSystem() { if(await appConfirm('Restart the kiosk computer now?')) { const pin=await requestSystemPin(); if(pin) await fetch('/api/system/reboot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}); } }
-        async function shutdownSystem() { if(await appConfirm('Shut down the kiosk computer now?')) { const pin=await requestSystemPin(); if(pin) await fetch('/api/system/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}); } }
-        async function exitKiosk() { if(await appConfirm('Exit kiosk mode and return to the desktop?')) { const pin=await requestSystemPin(); if(pin) { await fetch('/api/exit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}); window.close(); } } }
+        async function rebootSystem() { if(await appConfirm('Restart the kiosk computer now?')) { const pin=await requestSystemPin(); if(pin) { try { await readApiResponse(await fetch('/api/system/reboot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}),'Could not restart the kiosk computer.'); } catch(error) { await appAlert(error.message||'Could not restart the kiosk computer.'); } } } }
+        async function shutdownSystem() { if(await appConfirm('Shut down the kiosk computer now?')) { const pin=await requestSystemPin(); if(pin) { try { await readApiResponse(await fetch('/api/system/shutdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}),'Could not shut down the kiosk computer.'); } catch(error) { await appAlert(error.message||'Could not shut down the kiosk computer.'); } } } }
+        async function exitKiosk() { if(await appConfirm('Exit kiosk mode and return to the desktop?')) { const pin=await requestSystemPin(); if(pin) { try { await readApiResponse(await fetch('/api/exit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}),'Could not exit kiosk mode.'); window.close(); } catch(error) { await appAlert(error.message||'Could not exit kiosk mode.'); } } } }
         document.getElementById('settingsModal').addEventListener('click',event=>{ if(event.target.id==='settingsModal') closeSettingsModal(); });
         if (new URLSearchParams(window.location.search).get('settings') === '1') openSettingsModal();
     </script>

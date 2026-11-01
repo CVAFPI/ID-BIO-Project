@@ -48,7 +48,7 @@ Complete this checklist on a Windows 11 test computer before creating the final 
 - Test an unknown barcode. Confirm that it is not added to attendance, appears as a scan error in the scanner card, and is visible in Audit Events.
 - Scan barcode A, then B, then A again within three seconds. Confirm A and B each have one attendance row and the second A appears as a `dual_scan` event in Audit Manager. Confirm another A is accepted after its three-second window expires.
 - Test an application restart with a valid database backup, then verify the database opens normally. Test recovery only on a disposable copy of the data.
-- Back up `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` before packaging.
+- Back up `CVA_Database`, `logs`, and `static\custom-logo.png` before packaging.
 
 The Linux development environment can check Python code and server routes, but it cannot produce a Windows executable. The final build must run on Windows 11.
 
@@ -67,6 +67,16 @@ dist\CVAFPI-IDSYS.exe
 ```
 
 No Python installation is needed on the deployment computer after the executable has been built.
+
+## Build the installer
+
+Install Inno Setup 6, build `dist\CVAFPI-IDSYS.exe` with `build-windows.bat`, then compile the installer script from the repository root:
+
+```text
+ISCC.exe CVAFPI-IDSYS.iss
+```
+
+The installer is written to `installer-output\CVAFPI-IDSYS-Setup.exe`. It installs the kiosk executable under Program Files and adds Start Menu shortcuts, including a Licenses submenu with the combined notices and individual license files. Per-user database, settings, and logs are stored under `%LOCALAPPDATA%\CVAFPI` and are not removed by uninstall.
 
 ## Server-only development run
 
@@ -158,9 +168,10 @@ CVA_Database\cva.sqlite3             Student, attendance, audit, and settings da
 CVA_Database\cva.sqlite3.backup      Latest automatic SQLite backup
 CVA_Database\logs_*                  Daily logs and captured snapshots
 logs\                                Auxiliary application logs
-settings.json                        Application settings
 static\custom-logo.png              Uploaded school logo
 ```
+
+Settings are stored in the SQLite `app_settings` table and included in the database backup. Any legacy root `settings.json` file is ignored.
 
 Stop the kiosk before copying the database. Back up the complete application data directories, not only the executable. Do not edit the SQLite database while the application is running.
 
@@ -208,7 +219,7 @@ Close the other local service using port 5000, then restart the executable. The 
 
 ### Existing records are missing
 
-Copy the previous `CVA_Database`, `logs`, `settings.json`, and `static\custom-logo.png` files beside the new executable before starting it.
+Copy the previous `CVA_Database`, `logs`, and `static\custom-logo.png` files beside the new executable before starting it.
 
 If the primary database is damaged, stop the application and preserve a copy of `CVA_Database\cva.sqlite3` before restarting. The application will attempt automatic recovery from `CVA_Database\cva.sqlite3.backup`. Review Audit Events after recovery and create a fresh external backup.
 

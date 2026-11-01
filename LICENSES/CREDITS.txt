@@ -1,0 +1,19 @@
+CVAFPI IDENTIFICATION SYSTEM CREDITS
+
+Project origin
+Originally created for Christian Vision Academy Foundation Inc. in Pampanga, Philippines, based on the Foundation's inspiration and idea.
+
+Original author
+Lance Gabriel E. Juaban is named as the copyright holder in the project MIT License.
+
+Project source and branch
+https://github.com/CVAFPI/ID-BIO-Project/tree/SQL-IDBIOSYS-VERWIN
+
+Organization
+Christian Vision Academy Foundation Inc.
+https://github.com/CVAFPI
+
+Third-party components
+JsBarcode is distributed under the MIT License. Copyright (c) 2016 Johan Lindell.
+Python is distributed under the Python Software Foundation License Version 2. Copyright (c) 2001 Python Software Foundation.
+See the accompanying individual license files and ALL-LICENSES.txt for the complete license texts.

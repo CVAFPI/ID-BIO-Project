@@ -65,7 +65,7 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-python -m PyInstaller --clean --noconfirm ID-BIO-Project.spec
+python -m PyInstaller --clean --noconfirm --icon=CVAIDSYSLOGO.ico ID-BIO-Project.spec
 if errorlevel 1 (
     echo ERROR: PyInstaller failed to build the application.
     pause
