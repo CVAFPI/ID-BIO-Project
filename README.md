@@ -1,30 +1,40 @@
-<img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
+<img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="CVAFPI Identification System logo">
 
 
-# CVAFPI Identification System SQL for Windows 11
+# CVAFPI Identification System
 
 <br clear="left"/>
 
-CVAIDSYS (Windows) is a local school identification and attendance system for Windows 11. It uses a USB barcode scanner to identify students, stores attendance records in a local SQLite database, and can capture scan snapshots with a webcam. The system also supports student-specific NTFY parent notifications, office alerts, CSV import, audit logs, school branding, themes, and passcode-protected kiosk controls.
+CVAIDSYS is a local-first school identification and attendance kiosk for Windows 11 (64-bit). A USB barcode scanner sends student IDs to the local web app; Flask and Waitress process scans, and SQLite stores student, attendance, settings, and audit records. Optional features include webcam snapshots, NTFY notifications, CSV import, school branding, themes, and passcode-protected controls.
 
-The application is designed to keep student and attendance data on the kiosk computer. External requests are limited to configured NTFY notifications and the launchpad's connectivity check to Cloudflare; the connectivity check sends no student or attendance data.
+The supported kiosk launch listens on `127.0.0.1`; it is designed for one computer, not as a public website or shared network service. Student and attendance data stay local unless an operator enables a notification. When the launchpad is open, its separate connectivity indicator checks Cloudflare's `1.1.1.1` endpoint every five seconds and sends no student data.
 
-## How the system works
+## At a glance
 
-The application runs as a local web service. The Flask application provides the user interface and API routes, Waitress serves the application in production and development runs, and the browser displays the scanner, database, migration, log-management, and settings pages.
+| Area | Current behavior |
+| --- | --- |
+| Interface | Launchpad, scanner, student manager, logs, audit viewer, and CSV migration pages |
+| Runtime | Flask application served by Waitress; Edge is preferred, Chrome is the fallback |
+| Storage | SQLite database and backup, plus local snapshot and logo files |
+| Scanner | USB keyboard-wedge scanner or manual barcode entry |
+| Network | Optional outbound HTTPS for NTFY; launchpad reachability check to Cloudflare |
+| Windows package | Single-file PyInstaller executable; optional Inno Setup installer |
 
-1. The application starts the local web service and initializes the SQLite database if it does not already exist.
-2. The scanner page receives a barcode from a USB scanner or manual input and submits it to the local API.
-3. The API looks up the barcode in the student database. For a recognized student, it records the attendance timestamp and optional image snapshot.
-4. Each barcode has its own three-second duplicate window. A repeated scan of that ID during the window is recorded in Audit Manager and is not added to attendance; different IDs are handled independently.
-5. An unknown barcode is never added to attendance. The scanner displays the error in the last-scanned card so staff can add the student without an interrupting dialog.
-6. If parent notifications are enabled and the student has a configured topic, the application sends a background notification through [NTFY](https://github.com/binwiederhier/ntfy).
-7. Authorized staff can manage student records, review logs, import student lists, configure branding, themes, and passcode-protected kiosk controls.
-8. Restart, shutdown, kiosk exit, logo upload, student changes, CSV imports, audit events, and security settings require the configured passcode. Passcodes are stored as salted PBKDF2-SHA256 hashes; the original passcode is never stored.
+```mermaid
+flowchart LR
+	Scanner[USB barcode scanner] --> Browser[Edge or Chrome kiosk]
+	Browser -->|HTTP on loopback| Server[Waitress + Flask]
+	Server --> Database[(SQLite database)]
+	Server --> Files[Snapshots and school logo]
+	Server -. optional HTTPS .-> NTFY[NTFY notifications]
+	Browser -. launchpad status check .-> Cloudflare[Cloudflare 1.1.1.1]
+```
 
-The application listens only on the local computer by default. It is not intended to be exposed directly to a public network.
+## Scan flow
 
-The launchpad's Online/Offline indicator makes an HTTPS reachability check to `1.1.1.1` every five seconds while the launchpad is open. This is a browser-side check, not an ICMP ping, and Online only means Cloudflare's endpoint responded; it does not guarantee that every internet service is reachable. The request is stopped when navigating to another module.
+The scanner page submits each barcode to the local API. A known student is recorded with the scan time; if camera capture is enabled, an optional snapshot is saved locally. The API applies a separate three-second duplicate window to each barcode. A duplicate creates an audit event, not another attendance row. An unknown barcode is rejected, shown in the scanner, and recorded in Audit Events.
+
+If parent notifications are enabled and the student has a topic, the app sends the student's name and scan time to that topic on `ntfy.sh` in the background. Camera-blocked office alerts are a separate optional notification. Anyone who knows a public NTFY topic can subscribe to it; use private topic names and consider the data shared with the notification service.
 
 ## Windows requirements
 
@@ -78,9 +88,42 @@ ISCC.exe CVAFPI-IDSYS.iss
 
 The installer is written to `installer-output\CVAFPI-IDSYS-Setup.exe`. It installs the kiosk executable under Program Files and adds Start Menu shortcuts, including a Licenses submenu with the combined notices and individual license files. Per-user database, settings, and logs are stored under `%LOCALAPPDATA%\CVAFPI` and are not removed by uninstall.
 
+### Set the shortcut icon in Windows 11
+
+The installer includes [CVAIDSYSLOGO.ico](CVAIDSYSLOGO.ico) in the installation folder, normally `C:\Program Files\CVAFPI Identification System\CVAIDSYSLOGO.ico`. Program Files is a protected folder, so copy the icon rather than moving it. To keep it easy to find, save a copy under your user profile, for example:
+
+```text
+%USERPROFILE%\Pictures\CVAFPI\CVAIDSYSLOGO.ico
+```
+
+Create the `CVAFPI` folder if needed. If you do not have the installer files available, download `CVAIDSYSLOGO.ico` from this repository and save it to that same folder.
+
+To set the icon on the Start Menu shortcut:
+
+1. Open Start and search for `CVAFPI Identification System`.
+2. Right-click the result and select **Open file location**.
+3. In File Explorer, right-click the CVAFPI shortcut and select **Properties**. If the compact Windows 11 menu is shown, select **Show more options** first.
+4. On the **Shortcut** tab, select **Change Icon**, then **Browse**.
+5. Open the copy of `CVAIDSYSLOGO.ico` in your user Pictures folder, select it, and confirm with **OK**.
+6. Select **Apply**, then **OK**.
+
+To make a desktop shortcut, copy the Start Menu shortcut and paste it onto the desktop; set its icon using the same steps. This changes the shortcut icon, not the Edge or Chrome window used while the kiosk is running. If the app is already pinned to Start or the taskbar, unpin and pin the updated shortcut again to refresh the pinned icon.
+
 ## Server-only development run
 
-To inspect the application in a normal browser without opening kiosk mode, activate the project environment and run:
+Use Python 3.11 or newer. From the repository root, create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it with `.venv\Scripts\Activate.ps1` in Windows PowerShell or `source .venv/bin/activate` on Linux/macOS, then install the project dependencies:
+
+```bash
+python -m pip install -r requirements-windows.txt
+```
+
+To inspect the application in a normal browser without opening kiosk mode, run:
 
 ```text
 python -m waitress --listen=127.0.0.1:8080 wsgi:app
@@ -93,6 +136,12 @@ python -m waitress --listen=127.0.0.1:5050 wsgi:app
 ```
 
 For a quick Python-only route check, run `python -m py_compile app.py logger.py windows_launcher.py wsgi.py`.
+
+Run the existing tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 For a direct local run, use the application entry point:
 
@@ -127,7 +176,7 @@ For the strongest Windows lockdown, configure Windows Assigned Access or Shell L
 
 ## Development run
 
-To run without building the executable, install Python 3.11 or newer and run:
+On Windows, `run-windows.bat` starts the server and kiosk browser using `.venv-windows`. The environment and dependencies are created by `build-windows.bat`; if you do not want to build the executable, create `.venv-windows` and install `requirements-windows.txt` first.
 
 ```text
 run-windows.bat
@@ -159,23 +208,38 @@ A duplicate scan is recorded with event type `dual_scan` and its barcode. It doe
 
 Audit records are stored in SQLite and included in the automatic database backups.
 
+## Student CSV imports
+
+The migration page previews a CSV before import. Column names are case-insensitive; `BARCODE` and `NAME` are required. The other fields are optional:
+
+| Column | Default when omitted | Validation |
+| --- | --- | --- |
+| `GRADE`, `SECTION` | Blank | Up to 100 characters |
+| `ACCESS` | `REGULAR` | Up to 100 characters |
+| `COLOR` | `#059669` | Six-digit hex color, such as `#059669` |
+| `TOPIC` | `None` | Up to 100 characters; blank/`None` suppresses parent notifications |
+
+Barcode and name are required for every row and are limited to 100 characters. Invalid rows prevent the import from being applied; a failed import does not leave a partial student list. Existing barcodes are updated unless the replace-existing option is selected.
+
 ## Data and backup
 
-The executable stores writable data beside itself:
+The following paths are relative to the app's writable data directory:
 
 ```text
-CVA_Database\cva.sqlite3             Student, attendance, audit, and settings database
-CVA_Database\cva.sqlite3.backup      Latest automatic SQLite backup
-CVA_Database\logs_*                  Daily logs and captured snapshots
-logs\                                Auxiliary application logs
-static\custom-logo.png              Uploaded school logo
+CVA_Database\cva.sqlite3              Students, attendance, audit, and settings
+CVA_Database\cva.sqlite3.backup       Latest SQLite backup
+CVA_Database\logs_YYYY-MM-DD\         Scan and blocked-camera snapshots
+logs\                                 Auxiliary directory; diagnostics print to the console
+static\custom-logo.png               Uploaded school logo
 ```
 
-Settings are stored in the SQLite `app_settings` table and included in the database backup. Any legacy root `settings.json` file is ignored.
+The data directory depends on how the app is launched. The installer shortcut sets `CVAFPI_DATA_DIR` to `%LOCALAPPDATA%\CVAFPI`; uninstalling the app does not remove that per-user data. A direct executable run defaults to the executable's directory, while a source run defaults to the repository directory. `CVAFPI_DATA_DIR` can override these defaults.
 
-Stop the kiosk before copying the database. Back up the complete application data directories, not only the executable. Do not edit the SQLite database while the application is running.
+Settings are stored in the SQLite `app_settings` table and included in the database backup. Any root `settings.json` file is ignored. The SQLite backup does not include snapshots or the uploaded logo.
 
-After database writes, the application creates a consistent SQLite backup and replaces the previous backup atomically. On startup, if the primary database is corrupt or cannot be opened, the application attempts to restore `CVA_Database\cva.sqlite3.backup`. If recovery fails, the application stops serving normal pages and displays a database error message instead of silently losing data.
+Stop the kiosk before copying its data. Back up the complete data directory, including the database, snapshots, and custom logo; copying only the executable is not a data backup. Do not edit the SQLite database while the application is running.
+
+The application creates a consistent SQLite backup with SQLite's backup API and replaces the previous backup atomically. On startup, if the primary database cannot be initialized and a backup exists, the app attempts recovery and preserves the original database as `cva.sqlite3.damaged`. If recovery also fails, normal pages are not served and a database error is reported.
 
 ## Security controls
 
@@ -196,7 +260,8 @@ The Windows restart and shutdown controls use the standard Windows `shutdown` co
 - `run-windows.bat` - Windows development launcher
 - `templates/` - application pages
 - `static/` - packaged interface assets
-- `templates/audit-manager.html` - passcode-protected audit event viewer
+- `tests/` - database backup and CSV validation tests
+- `LICENSE` and `LICENSES/` - project and third-party license notices
 - `ARCHITECTURE.md` - technical components, data model, routes, security boundaries, and runtime flows
 
 ## Troubleshooting
