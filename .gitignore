@@ -16,3 +16,4 @@ dist/
 *.py[cod]
 CVA_Database/cva.sqlite3.*.backup
 server.log
+.vscode/
