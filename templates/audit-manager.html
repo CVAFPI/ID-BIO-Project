@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">CVA - AUDIT MANAGER</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - AUDIT MANAGER</title>
     <style>
         :root { --bg:#10161f; --panel:#18212c; --panel-2:#202c3a; --text:#e8eef7; --muted:#91a0b5; --border:#2d3b4b; --accent:#4da3ff; --red:#f27676; }
         * { box-sizing:border-box; }
@@ -49,7 +49,7 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-<body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+<body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
     <main class="shell">
         <header class="topbar">
             <div class="brand"><img src="{{ logo_url }}" alt="{{ institution_name }} logo"><div><div class="eyebrow">Data administration</div><h1>{{ institution_name }} - Audit Manager</h1></div></div>
@@ -103,7 +103,7 @@
             document.getElementById('modalInfo').textContent = `${date} - ${imageId}`;
         }
         function closeImageModal() { document.getElementById('imageModal').style.display = 'none'; document.getElementById('modalImage').src = ''; }
-        function updateClock() { const value = new Intl.DateTimeFormat('en-US', { timeZone:'Asia/Manila', dateStyle:'medium', timeStyle:'medium' }).format(new Date()); document.getElementById('clock').textContent = `PHT ${value}`; document.getElementById('pageTitle').textContent = `CVA - AUDIT MANAGER | ${value}`; }
+        function updateClock() { const value = new Intl.DateTimeFormat('en-US', { timeZone:'Asia/Manila', dateStyle:'medium', timeStyle:'medium' }).format(new Date()); document.getElementById('clock').textContent = `PHT ${value}`; document.getElementById('pageTitle').textContent = `${document.body.dataset.notificationTopicPrefix} - AUDIT MANAGER | ${value}`; }
         setInterval(updateClock, 1000); updateClock();
         window.addEventListener('DOMContentLoaded', loadAuditEvents);
     </script>

@@ -1,6 +1,6 @@
 {
   "name": "id-bio-html-project",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "A dedicated Linux kiosk solution and Flask REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, and database management.",
   "main": "jsbarcode.js",
   "scripts": {

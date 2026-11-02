@@ -10,7 +10,6 @@ import re
 import hashlib
 import hmac
 import secrets
-import shutil
 from datetime import datetime
 import sys
 from urllib.parse import quote
@@ -27,9 +26,6 @@ SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 CUSTOM_LOGO = os.path.join(BASE_DIR, 'static', 'custom-logo.png')
 os.makedirs(os.path.dirname(CUSTOM_LOGO), exist_ok=True)
-PACKAGED_LOGO = os.path.join(app.static_folder, 'custom-logo.png')
-if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO) and os.path.exists(CUSTOM_LOGO):
-    shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
 
 DEFAULT_SETTINGS = {
     "camera_enabled": False,
@@ -38,6 +34,7 @@ DEFAULT_SETTINGS = {
     "office_ntfy_topic": "",
     "blocked_camera_alerts_enabled": True,
     "institution_name": "Christian Vision Academy Foundation Inc.",
+    "notification_topic_prefix": "",
     "theme": "night",
     "accent_color": "#4da3ff",
     "pin_hash": "",
@@ -131,6 +128,13 @@ def protected_response(action='perform this action'):
 def public_settings(settings):
     return {key: settings.get(key, DEFAULT_SETTINGS[key]) for key in PUBLIC_SETTINGS}
 
+
+def derive_notification_topic_prefix(institution_name):
+    words = re.findall(r'[A-Za-z0-9]+', str(institution_name or '').upper())
+    initials = ''.join(word[0] for word in words)
+    return (words[0][:3] if len(words) == 1 else initials[:3]) or 'CVA'
+
+
 def get_today_folder():
     date_str = datetime.now().strftime('%Y-%m-%d')
     folder_name = f"logs_{date_str}"
@@ -165,6 +169,8 @@ def save_system_settings(data):
         data['accent_color'] = DEFAULT_SETTINGS['accent_color']
     if 'institution_name' in data:
         data['institution_name'] = str(data['institution_name']).strip()[:100]
+    if 'notification_topic_prefix' in data:
+        data['notification_topic_prefix'] = str(data['notification_topic_prefix']).strip()[:32]
     for key in ('close_kiosk_barcode', 'shutdown_barcode', 'launchpad_barcode', 'database_manager_barcode', 'log_manager_barcode', 'settings_barcode'):
         if key in data:
             data[key] = str(data[key]).strip()[:100]
@@ -182,9 +188,10 @@ def inject_branding():
     settings = load_system_settings()
     return {
         'institution_name': settings.get('institution_name', DEFAULT_SETTINGS['institution_name']),
+        'notification_topic_prefix': settings.get('notification_topic_prefix') or derive_notification_topic_prefix(settings.get('institution_name')),
         'theme': settings.get('theme', DEFAULT_SETTINGS['theme']),
         'accent_color': settings.get('accent_color', DEFAULT_SETTINGS['accent_color']),
-        'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'
+        'logo_url': '/branding/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png'
     }
 
 
@@ -217,6 +224,19 @@ def migration():
 @app.route('/audit-manager.html')
 def audit_manager():
     return render_template('audit-manager.html')
+
+@app.route('/jsbarcode.js')
+def jsbarcode_library():
+    return send_file(
+        os.path.join(SOURCE_DIR, 'jsbarcode.js'),
+        mimetype='application/javascript'
+    )
+
+@app.route('/branding/custom-logo.png')
+def custom_branding_logo():
+    if not os.path.isfile(CUSTOM_LOGO):
+        return jsonify({'status': 'error', 'message': 'Custom logo not found.'}), 404
+    return send_file(CUSTOM_LOGO, mimetype='image/png')
 
 
 # --- API ROUTES ---
@@ -298,9 +318,7 @@ def upload_branding_logo():
         from PIL import Image
         image = Image.open(uploaded_file.stream)
         image.convert('RGBA').save(CUSTOM_LOGO, 'PNG', optimize=True)
-        if os.path.abspath(CUSTOM_LOGO) != os.path.abspath(PACKAGED_LOGO):
-            shutil.copyfile(CUSTOM_LOGO, PACKAGED_LOGO)
-        return jsonify({'status': 'success', 'logo_url': '/static/custom-logo.png'})
+        return jsonify({'status': 'success', 'logo_url': '/branding/custom-logo.png'})
     except Exception as error:
         return jsonify({'status': 'error', 'message': f'Logo conversion failed: {error}'}), 400
 

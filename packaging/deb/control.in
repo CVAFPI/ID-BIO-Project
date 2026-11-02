@@ -1,0 +1,11 @@
+Package: idbiosys
+Version: @VERSION@
+Section: misc
+Priority: optional
+Architecture: all
+Maintainer: Linux-Philippines-Found <hoyoverse.edit@gmail.com>
+Depends: python3, python3-flask (>= 3.0), python3-pil, gunicorn, xdg-utils
+Recommends: chromium | chromium-browser
+Description: CVAFPI ID-BIO attendance and identification system
+ Linux kiosk application for barcode-based attendance, student management,
+ CSV imports, audit review, and optional camera snapshots.

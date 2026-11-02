@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title id="pageTitle">CVA - LOGS MANAGER</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - LOGS MANAGER</title>
 
     <style>
         :root {
@@ -86,7 +86,7 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-<body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+<body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
 
     <div class="header">
         <div class="header-left">
@@ -167,6 +167,7 @@
                         </label>
                     </div>
                     <button class="btn-action secondary" onclick="loadSelectedLogFile()">🔄 Refresh</button>
+                    <button class="btn-action secondary" onclick="showAuditEvents()">🛡 Audit Events</button>
                     <button class="btn-action" onclick="exportCSV()">📥 Export CSV</button>
                 </div>
             </div>
@@ -207,9 +208,20 @@
         </div>
     </div>
 
+    <div id="auditModal" style="display:none; position:fixed; z-index:1001; inset:0; background:rgba(0,0,0,.8); justify-content:center; align-items:center; padding:18px;">
+        <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; width:min(900px,100%); max-height:90vh; overflow:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                <h3 style="color:var(--text);">Audit Events</h3>
+                <button class="btn-action secondary" onclick="closeAuditEvents()">Close</button>
+            </div>
+            <table><thead><tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Barcode</th><th>Details</th></tr></thead><tbody id="auditEventsBody"></tbody></table>
+        </div>
+    </div>
+
     <script src="/static/kiosk-dialog.js"></script>
     <script>
         let currentLogsData = [];
+        let filteredLogsData = [];
         let snapshotPreviewEnabled = false;
 
         // Clock Update
@@ -218,7 +230,7 @@
             const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
             document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
-            document.getElementById('pageTitle').innerText = `CVA - LOGS MANAGER | ${phtString}`;
+            document.getElementById('pageTitle').innerText = `${document.body.dataset.notificationTopicPrefix} - LOGS MANAGER | ${phtString}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -363,8 +375,39 @@
                 return true;
             });
 
+            filteredLogsData = filtered;
             updateKPIs(filtered);
             renderTable(filtered.slice().reverse());
+        }
+
+        function escapeAuditValue(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        }
+
+        async function showAuditEvents() {
+            const pin = await appPrompt('Enter the security passcode to view audit events.', { title: 'Security passcode', passcode: true });
+            if (pin === null) return;
+
+            try {
+                const response = await fetch('/api/audit/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Could not load audit events.');
+
+                document.getElementById('auditEventsBody').innerHTML = result.length
+                    ? result.map(row => `<tr><td>${escapeAuditValue(row[0])}</td><td>${escapeAuditValue(row[1])}</td><td>${escapeAuditValue(row[2])}</td><td>${escapeAuditValue(row[3])}</td><td>${escapeAuditValue(row[4])}</td></tr>`).join('')
+                    : '<tr><td colspan="5">No audit events recorded.</td></tr>';
+                document.getElementById('auditModal').style.display = 'flex';
+            } catch (error) {
+                await appAlert(error.message || 'Could not load audit events.');
+            }
+        }
+
+        function closeAuditEvents() {
+            document.getElementById('auditModal').style.display = 'none';
         }
 
         function updateKPIs(filteredData) {
@@ -469,25 +512,30 @@
         }
 
         async function exportCSV() {
-            if (currentLogsData.length === 0) {
+            if (filteredLogsData.length === 0) {
                 await appAlert("No logs to export!");
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Barcode,Name,Grade,Section,Access,Color,ID-MATCHER\n";
-            currentLogsData.forEach(row => {
-                csvContent += row.map(field => `"${field}"`).join(",") + "\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
+            const csvRows = [
+                ['Timestamp', 'Barcode', 'Name', 'Grade', 'Section', 'Access', 'Color', 'ID-MATCHER'],
+                ...filteredLogsData
+            ];
+            const csvContent = csvRows.map(row =>
+                row.map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')
+            ).join('\r\n');
+            const downloadUrl = URL.createObjectURL(
+                new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
+            );
             const link = document.createElement("a");
             const activeFile = document.getElementById('kpiActiveFile').innerText;
 
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", downloadUrl);
             link.setAttribute("download", `CVA_Logs_${activeFile}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
         }
 
         // Init

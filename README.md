@@ -1,6 +1,6 @@
 <img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
 
-# 🛡️ CVAFPI Identification System v2.1.2 — "The Audit and Security Update"
+# 🛡️ CVAFPI Identification System v2.1.3 — "Stability and Debian Packaging"
 
 <br clear="left"/>
 
@@ -16,12 +16,13 @@ Built specifically for educational institutions under **Department of Education 
 
 ## 📋 Table of Contents
 
-- [What's New in v2.1.2](#-whats-new-in-version-212)
+- [What's New in v2.1.3](#-whats-new-in-version-213)
 - [System Requirements](#-system-requirements--hardware-specifications)
 - [Hardware Compatibility Guidelines](#️-strict-hardware-compatibility-guidelines)
 - [Crucial Warnings](#️-crucial-system-warnings-what-not-to-do)
 - [Debian & KDE Plasma Setup](#-debian--kde-plasma-environment-notes)
 - [Master Installer](#-master-installer-setup)
+- [Debian Package Install](#-debian-package-install)
 - [Passwordless Sudo Configuration](#-configured-passwordless-sudo-required)
 - [Deployment Guide](#-step-by-step-deployment-guide)
 - [Project Structure](#-project-directory-structure)
@@ -33,7 +34,7 @@ Built specifically for educational institutions under **Department of Education 
 
 ---
 
-## 🚀 What's New in Version 2.1.2
+## 🚀 What's New in Version 2.1.3
 
 | Feature | Description |
 |---|---|
@@ -44,6 +45,13 @@ Built specifically for educational institutions under **Department of Education 
 | **Operations Console UI** | A responsive operations console with shared themes, custom branding, CSV migration tools, and consistent controls across every page. |
 | **Dedicated Audit Manager** | Protected audit review now has its own page, with direct access to blocked-camera snapshots. |
 | **Protected Settings Flow** | Settings saves use a dedicated passcode prompt, while passcode changes and recovery stay in the settings page. |
+| **Duplicate Scan Protection** | Repeated scans of the same barcode within three seconds are rejected and recorded as audit events instead of creating duplicate attendance rows. |
+| **Safer CSV Imports** | Preview validates required values, field lengths, and badge colors; invalid or empty files cannot replace the existing student list. |
+| **Notification Topic Prefix** | Configure a school prefix for generated student notification topics; otherwise, the prefix is derived from the institution name. |
+| **Improved Log Review** | Open protected audit events from the log manager and export only filtered rows with CSV-safe escaping. |
+| **Connectivity Status** | The launchpad shows external internet reachability. This is not a health check for the local Flask service. |
+| **Scanner and Dialog Reliability** | The scanner reports blocked duplicate scans, returns to scan mode when its input regains focus, and serves the bundled JsBarcode library through Flask. Shared dialogs validate passcodes and handle malformed server responses. |
+| **Apt-Installable Debian Package** | Build an architecture-independent `idbiosys` package with `build-deb.sh` and install it with apt. Apt resolves runtime dependencies; user records and settings remain outside the package. |
 
 ---
 
@@ -127,6 +135,41 @@ To start the production server manually inside the virtual environment:
 gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 wsgi:app
 ```
 
+## 📦 Debian Package Install
+
+Build an architecture-independent `.deb` from the repository on Debian 13 or a
+compatible Debian-based system with `dpkg-deb` installed:
+
+```bash
+./build-deb.sh
+```
+
+Install the generated package with apt. Apt resolves the Python and desktop
+dependencies from the system's configured repositories; the application and
+its web assets are contained in the `.deb`:
+
+```bash
+sudo apt install ./dist/idbiosys_2.1.3_all.deb
+```
+
+Open **CVAFPI ID-BIO System** from the desktop application menu, or run
+`idbiosys-kiosk`. The launcher starts Gunicorn for the signed-in user on
+`127.0.0.1:5000` and opens Chromium in kiosk mode when installed. If Chromium
+is unavailable, it opens the default browser. The server runs only for that
+launcher session; this package does not install a system-wide service.
+
+Student records, settings, audit events, attendance logs, and custom branding
+are stored under `~/.local/share/idbiosys` by default, with the server log under
+`~/.local/state/idbiosys`. These files are not included in the package and are
+left in place when the package is removed:
+
+```bash
+sudo apt remove idbiosys
+```
+
+The package does not configure passwordless sudo. Reboot and shutdown controls
+continue to depend on the signed-in user's existing sudo policy.
+
 ---
 
 ## 🔑 Configured Passwordless Sudo (Required)
@@ -189,9 +232,14 @@ ID-BIO-Project/
 ├── logs/                             # Real-time daily scan auxiliary paths
 ├── venv/                             # Python virtual environment (architecture-specific)
 ├── static/                           # Image assets (school logo & OS logos)
+│   ├── kiosk-dialog.js                # Shared protected dialogs and API error handling
+│   ├── notification-prefix.js         # Configurable topic-prefix settings behavior
+│   └── ping.js                        # Launchpad external-connectivity indicator
 ├── app.py                            # Core Flask REST API backend server
 ├── logger.py                         # Internal log processing & 7-day privacy cleanup utility
 ├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
+├── build-deb.sh                      # Build the local Debian package
+├── packaging/deb/                    # Debian control metadata and kiosk launcher
 ├── id_bio.desktop                    # KDE desktop shortcut entry
 ├── Startup                           # Autostart boot script trigger
 ├── data.csv                          # Primary user database (Barcode, Name, Grade, Section, Access, Color, NTFY_TOPIC)
@@ -201,8 +249,11 @@ ID-BIO-Project/
 ├── scanner.html                      # Live attendance registry scanner interface
 ├── manager.html                      # Database manager interface
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
+├── audit-manager.html                # Protected audit event and snapshot review
 ├── migration.html                    # CSV preview and student-list migration interface
+├── tests/test_csv_import_stability.py # CSV import and duplicate-scan regression tests
 ├── README.md                         # Instructions and specifications
+├── dist/idbiosys_2.1.3_all.deb        # Generated installable Debian package
 ├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
 └── server.log                        # Auto-generated Flask server log
 ```

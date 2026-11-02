@@ -1,0 +1,78 @@
+#!/bin/sh
+set -eu
+
+APP_DIR=/usr/share/idbiosys
+DATA_DIR="${XDG_DATA_HOME:-${HOME:?}/.local/share}/idbiosys"
+STATE_DIR="${XDG_STATE_HOME:-${HOME:?}/.local/state}/idbiosys"
+PORT="${IDBIOSYS_PORT:-5000}"
+URL="http://127.0.0.1:${PORT}"
+LOG_FILE="${STATE_DIR}/server.log"
+server_pid=
+started_server=0
+
+mkdir -p "$DATA_DIR" "$STATE_DIR"
+export CVAFPI_DATA_DIR="$DATA_DIR"
+
+server_is_ready() {
+    python3 - "$URL" <<'PY'
+import sys
+import urllib.request
+
+try:
+    with urllib.request.urlopen(sys.argv[1] + '/api/settings', timeout=1) as response:
+        raise SystemExit(0 if response.status == 200 else 1)
+except Exception:
+    raise SystemExit(1)
+PY
+}
+
+if ! server_is_ready; then
+    (
+        cd "$APP_DIR"
+        exec gunicorn --bind "127.0.0.1:${PORT}" --workers 1 --threads 4 --timeout 120 wsgi:app
+    ) >"$LOG_FILE" 2>&1 &
+    server_pid=$!
+    started_server=1
+
+    ready=0
+    attempt=0
+    while [ "$attempt" -lt 50 ]; do
+        if server_is_ready; then
+            ready=1
+            break
+        fi
+        if ! kill -0 "$server_pid" 2>/dev/null; then
+            break
+        fi
+        attempt=$((attempt + 1))
+        sleep 0.2
+    done
+
+    if [ "$ready" -ne 1 ]; then
+        cat "$LOG_FILE" >&2
+        kill "$server_pid" 2>/dev/null || true
+        wait "$server_pid" 2>/dev/null || true
+        exit 1
+    fi
+fi
+
+cleanup() {
+    if [ "$started_server" -eq 1 ] && [ -n "$server_pid" ] && kill -0 "$server_pid" 2>/dev/null; then
+        kill "$server_pid" 2>/dev/null || true
+        wait "$server_pid" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT HUP INT TERM
+
+for browser in chromium chromium-browser google-chrome; do
+    if command -v "$browser" >/dev/null 2>&1; then
+        "$browser" --kiosk --no-first-run \
+            --user-data-dir="${DATA_DIR}/cva_kiosk_profile" "$URL"
+        exit 0
+    fi
+done
+
+xdg-open "$URL"
+if [ "$started_server" -eq 1 ]; then
+    wait "$server_pid"
+fi

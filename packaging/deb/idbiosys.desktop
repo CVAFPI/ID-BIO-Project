@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=CVAFPI ID-BIO System
+Comment=Open the CVAFPI attendance and identification kiosk
+Exec=/usr/bin/idbiosys-kiosk
+Terminal=false
+Type=Application
+Categories=Education;Utility;
+StartupNotify=true

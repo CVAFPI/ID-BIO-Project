@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">CVA - CLOCK IN/OUT SYSTEM</title>
+    <title id="pageTitle">{{ notification_topic_prefix }} - CLOCK IN/OUT SYSTEM</title>
     <!-- JsBarcode Library -->
     <script src="../jsbarcode.js"></script>
     <style>
@@ -92,7 +92,7 @@
     </style>
     <link rel="stylesheet" href="/static/kiosk-dialog.css">
 </head>
-    <body data-theme="{{ theme }}" style="--accent: {{ accent_color }};">
+    <body data-theme="{{ theme }}" data-notification-topic-prefix="{{ notification_topic_prefix }}" style="--accent: {{ accent_color }};">
 
     <!-- Header containing ONLY CVAFPI Logo & System Title -->
     <div class="header">
@@ -198,7 +198,7 @@
             const options = { timeZone: 'Asia/Manila', hour12: true, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             const phtString = new Intl.DateTimeFormat('en-US', options).format(now);
             document.getElementById('clockDisplay').innerText = `PHT: ${phtString}`;
-            document.getElementById('pageTitle').innerText = `CVA - CLOCK IN/OUT SYSTEM | ${phtString}`;
+            document.getElementById('pageTitle').innerText = `${document.body.dataset.notificationTopicPrefix} - CLOCK IN/OUT SYSTEM | ${phtString}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -301,6 +301,12 @@
             }
         });
 
+        barcodeInput.addEventListener('focus', () => {
+            if (document.getElementById('searchNoticeContent').style.display === 'flex') {
+                exitSearchMode();
+            }
+        });
+
         barcodeInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const code = this.value.trim();
@@ -377,6 +383,8 @@
                 } else if (result.status === 'success') {
                     updateActiveCard(result.data);
                     fetchLogs();
+                } else if (result.status === 'duplicate') {
+                    updateScanError(barcode, result.message || 'Dual scan detected. Same ID scanned within 3 seconds.', 'DUAL SCAN');
                 } else if (result.status === 'error' || !res.ok) {
                     updateScanError(barcode, result.message || 'Student not found. Add this student to the database.');
                 }
@@ -386,17 +394,18 @@
             }
         }
 
-        function updateScanError(barcode, message) {
-            document.getElementById('scanStatus').innerText = 'Scan Error';
+        function updateScanError(barcode, message, badgeText = 'ERROR') {
+            const isDuplicate = badgeText === 'DUAL SCAN';
+            document.getElementById('scanStatus').innerText = isDuplicate ? 'Dual Scan Blocked' : 'Scan Error';
             document.getElementById('cardName').innerText = message;
             document.getElementById('cardBarcode').innerText = `Barcode: ${barcode}`;
             document.getElementById('barcodeBox').style.display = 'none';
-            document.getElementById('cardMeta').innerText = 'Student record not found';
+            document.getElementById('cardMeta').innerText = isDuplicate ? 'Attendance was not logged' : 'Student record not found';
             document.getElementById('cardTime').innerText = `Time: ${new Date().toLocaleTimeString()}`;
 
             const badge = document.getElementById('cardBadge');
-            badge.innerText = 'ERROR';
-            badge.style.backgroundColor = '#dc2626';
+            badge.innerText = badgeText;
+            badge.style.backgroundColor = isDuplicate ? '#d97706' : '#dc2626';
         }
 
         function updateActiveCard(data) {
