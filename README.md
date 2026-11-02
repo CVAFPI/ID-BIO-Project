@@ -5,9 +5,19 @@
 
 <br clear="left"/>
 
-CVAIDSYS is a local-first school identification and attendance kiosk for Windows 11 (64-bit). A USB barcode scanner sends student IDs to the local web app; Flask and Waitress process scans, and SQLite stores student, attendance, settings, and audit records. Optional features include webcam snapshots, NTFY notifications, CSV import, school branding, themes, and passcode-protected controls.
+CVAIDSYS is a local-first school identification and attendance kiosk for Windows 11 (64-bit). It uses a USB barcode scanner to record attendance locally, with optional webcam snapshots, notifications, CSV import, school branding, and passcode-protected controls.
 
 The supported kiosk launch listens on `127.0.0.1`; it is designed for one computer, not as a public website or shared network service. Student and attendance data stay local unless an operator enables a notification. When the launchpad is open, its separate connectivity indicator checks Cloudflare's `1.1.1.1` endpoint every five seconds and sends no student data.
+
+## Install on Windows
+
+The easiest way to get started is to download and run the ready-to-use installer. You do not need to use a terminal, install Python, download the source code, or build the application.
+
+1. [Download CVAFPI-IDSYS-Setup.exe](installer-output/CVAFPI-IDSYS-Setup.exe) from this repository's `installer-output` folder.
+2. Open the downloaded file and follow the setup wizard. Administrator permission is required to install under Program Files.
+3. When setup finishes, launch **CVAFPI Identification System** from the Start Menu. You can also choose to create a desktop shortcut during setup.
+
+The installer is for 64-bit Windows 11 and requires Microsoft Edge or Google Chrome to display the kiosk. Your database and settings are stored under `%LOCALAPPDATA%\CVAFPI` and are kept when the application is uninstalled.
 
 ## At a glance
 
@@ -18,7 +28,7 @@ The supported kiosk launch listens on `127.0.0.1`; it is designed for one comput
 | Storage | SQLite database and backup, plus local snapshot and logo files |
 | Scanner | USB keyboard-wedge scanner or manual barcode entry |
 | Network | Optional outbound HTTPS for NTFY; launchpad reachability check to Cloudflare |
-| Windows package | Single-file PyInstaller executable; optional Inno Setup installer |
+| Windows package | Ready-to-run installer in `installer-output`; manual build instructions below |
 
 ```mermaid
 flowchart LR
@@ -36,7 +46,11 @@ The scanner page submits each barcode to the local API. A known student is recor
 
 If parent notifications are enabled and the student has a topic, the app sends the student's name and scan time to that topic on `ntfy.sh` in the background. Camera-blocked office alerts are a separate optional notification. Anyone who knows a public NTFY topic can subscribe to it; use private topic names and consider the data shared with the notification service.
 
-## Windows requirements
+## Optional: build the Windows installer yourself
+
+Most users should use the installer above. The following instructions are for developers or maintainers who need to build the Windows application themselves.
+
+### Build requirements
 
 - Windows 11 64-bit
 - Python 3.11 or newer for development. The Windows build script can install Python automatically.
@@ -46,7 +60,7 @@ If parent notifications are enabled and the student has a topic, the app sends t
 
 The packaged application does not require Python. The browser is required because the interface runs in locked browser kiosk mode.
 
-## Before building
+### Before building
 
 Complete this checklist on a Windows 11 test computer before creating the final executable:
 
@@ -62,7 +76,7 @@ Complete this checklist on a Windows 11 test computer before creating the final 
 
 The Linux development environment can check Python code and server routes, but it cannot produce a Windows executable. The final build must run on Windows 11.
 
-## Build one executable
+### Build one executable
 
 Build on Windows 11. PyInstaller creates Windows executables and cannot cross-compile a Windows binary from Debian or Linux. Keep `python-manager-26.3.msix` beside `build-windows.bat`; if a compatible 64-bit Python is not already installed, the script installs the Python Install Manager MSIX and Python 3.11 automatically. Network access is needed to download Python and build dependencies.
 
@@ -78,7 +92,7 @@ dist\CVAFPI-IDSYS.exe
 
 No Python installation is needed on the deployment computer after the executable has been built.
 
-## Build the installer
+### Build the installer
 
 Install Inno Setup 6, build `dist\CVAFPI-IDSYS.exe` with `build-windows.bat`, then compile the installer script from the repository root:
 
@@ -88,7 +102,7 @@ ISCC.exe CVAFPI-IDSYS.iss
 
 The installer is written to `installer-output\CVAFPI-IDSYS-Setup.exe`. It installs the kiosk executable under Program Files and adds Start Menu shortcuts, including a Licenses submenu with the combined notices and individual license files. Per-user database, settings, and logs are stored under `%LOCALAPPDATA%\CVAFPI` and are not removed by uninstall.
 
-### Set the shortcut icon in Windows 11
+#### Set the shortcut icon in Windows 11
 
 The installer includes [CVAIDSYSLOGO.ico](CVAIDSYSLOGO.ico) in the installation folder, normally `C:\Program Files\CVAFPI Identification System\CVAIDSYSLOGO.ico`. Program Files is a protected folder, so copy the icon rather than moving it. To keep it easy to find, save a copy under your user profile, for example:
 
@@ -153,7 +167,7 @@ This starts Waitress on `http://127.0.0.1:5000` (or the port set by `CVAFPI_PORT
 
 ## Kiosk mode
 
-Starting `CVAFPI-IDSYS.exe` will:
+Start the application from its Start Menu shortcut, or run `CVAFPI-IDSYS.exe` directly. It will:
 
 1. Start the local Waitress WSGI server on `127.0.0.1:5000`.
 2. Open Microsoft Edge or Chrome using fullscreen kiosk mode.
@@ -284,7 +298,7 @@ Close the other local service using port 5000, then restart the executable. The 
 
 ### Existing records are missing
 
-Copy the previous `CVA_Database`, `logs`, and `static\custom-logo.png` files beside the new executable before starting it.
+The installer stores its data under `%LOCALAPPDATA%\CVAFPI`. If you are moving data from a previous installation, stop the kiosk and copy the previous data into that folder. A directly run executable uses a different data directory; see [Data and backup](#data-and-backup) for details.
 
 If the primary database is damaged, stop the application and preserve a copy of `CVA_Database\cva.sqlite3` before restarting. The application will attempt automatic recovery from `CVA_Database\cva.sqlite3.backup`. Review Audit Events after recovery and create a fresh external backup.
 
@@ -299,3 +313,9 @@ Saving settings opens a passcode prompt. To change the passcode, provide a new p
 ### Parent notification did not arrive
 
 Check that parent notifications are enabled, the student topic is not blank or `None`, the kiosk has internet access, and the topic is spelled exactly the same in the NTFY subscriber and student record. Check the server console for `[ntfy Parent Error]` messages.
+
+## Developer contact
+
+For developer inquiries, email [Linux-Content@proton.me](mailto:Linux-Content@proton.me).
+
+The IDBIOSYS website [Click Me](https://cvasnet.dpdns.org/Apps/Github/IDBIOSYS)

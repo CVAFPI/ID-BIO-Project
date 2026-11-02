@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^test -f installer-output/CVAFPI-IDSYS-Setup\\.exe && printf 'Installer exists: ' && stat -c '%n \\(%s bytes\\)' installer-output/CVAFPI-IDSYS-Setup\\.exe$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
