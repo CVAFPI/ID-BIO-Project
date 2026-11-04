@@ -381,7 +381,7 @@ Free setup assistance and customization are available if you need help modifying
 - **Customization offered:** Official school logo/seal replacement, header text updates, custom accent color matching, and grade/section schema modifications.
 - **Email assistance:** [Linux-Content@proton.me](mailto:Linux-Content@proton.me) — please attach your school logo (PNG/JPEG) and requested modifications.
 - **GitHub Issues:** Open a ticket directly on the [GitHub Issues page](https://github.com/CVAFPI/ID-BIO-Project/issues).
-- **Website:** [cvasnet.dpdns.org](cvasnet.dpdns.org/Apps/Github/IDBIOSYS)
+- **Website:** [cvasnet.dpdns.org](https://cvasnet.dpdns.org/Apps/Github/IDBIOSYS)
 
 (Note) In future update there will be a fork for schools for easy customizability, easy uploads and many more
 ---
