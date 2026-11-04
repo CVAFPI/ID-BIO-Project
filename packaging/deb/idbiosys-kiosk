@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+
+APP_ROOT=/usr/share/idbiosys
+DATA_ROOT="${XDG_DATA_HOME:-${HOME:?}/.local/share}/idbiosys"
+USER_APP_ROOT="$DATA_ROOT/app"
+SERVER_URL=http://127.0.0.1:5000
+
+mkdir -p "$USER_APP_ROOT" "$DATA_ROOT/CVA_Database" "$DATA_ROOT/logs" \
+    "$DATA_ROOT/static"
+cp -a -u "$APP_ROOT/." "$USER_APP_ROOT/"
+
+export CVAFPI_DATA_DIR="$DATA_ROOT"
+cd "$USER_APP_ROOT"
+
+gunicorn --bind 127.0.0.1:5000 --workers 2 --timeout 120 \
+    --access-logfile - --error-logfile - app:app \
+    >>"$DATA_ROOT/server.log" 2>&1 &
+SERVER_PID=$!
+
+cleanup() {
+    kill "$SERVER_PID" 2>/dev/null || true
+    wait "$SERVER_PID" 2>/dev/null || true
+}
+trap cleanup EXIT HUP INT TERM
+
+attempt=0
+until curl --fail --silent "$SERVER_URL/" >/dev/null; do
+    if ! kill -0 "$SERVER_PID" 2>/dev/null || [ "$attempt" -ge 30 ]; then
+        printf 'ID Bio System failed to start. See %s/server.log\n' "$DATA_ROOT" >&2
+        exit 1
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+done
+
+if command -v chromium >/dev/null 2>&1; then
+    chromium --kiosk "$SERVER_URL" &
+    wait "$!"
+elif command -v chromium-browser >/dev/null 2>&1; then
+    chromium-browser --kiosk "$SERVER_URL" &
+    wait "$!"
+elif command -v google-chrome >/dev/null 2>&1; then
+    google-chrome --kiosk "$SERVER_URL" &
+    wait "$!"
+else
+    xdg-open "$SERVER_URL"
+    wait "$SERVER_PID"
+fi

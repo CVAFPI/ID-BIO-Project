@@ -1,8 +1,8 @@
 {
   "name": "id-bio-html-project",
-  "version": "2.1.1",
-  "description": "CVAFPI Identification System v2.1.1 — GUI update 1 and WSGI/Gunicorn production server patch 1 for kiosk operations, barcode verification, attendance logging, and database management.",
-  "main": "jsbarcode.js",
+  "version": "2.1.2",
+  "description": "CVAFPI Identification System v2.1.2 — barcode asset and Debian package installation update.",
+  "main": "static/JsBarcode.all.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"

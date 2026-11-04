@@ -1,0 +1,10 @@
+Package: idbiosys-kiosk
+Version: @VERSION@
+Section: education
+Priority: optional
+Architecture: all
+Depends: python3, python3-flask, python3-gunicorn, python3-pil, curl, xdg-utils
+Maintainer: CVAFPI
+Description: CVAFPI identification and attendance kiosk system
+ Local SQLite-backed identification, attendance, and student management
+ application for a school kiosk.

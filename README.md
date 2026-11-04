@@ -1,12 +1,12 @@
 <img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
 
-# 🛡️ CVAFPI Identification System v2.1.1 — "The Setting Update"
+# 🛡️ CVAFPI Identification System v2.1.2 — "Barcode and Debian Package Update"
 
 height="100" alt="Project Logo">
 
 A production-ready Linux kiosk solution and Flask-based REST API backend engineered for real-time barcode access verification, student attendance logging, badge color customization, automated 7-day privacy cleanup, visual snapshot audits, and remote security push notifications.
 
-> Release note: Version 2.1.1 includes the GUI update 1 and the WSGI/Gunicorn production server replacement patch 1.
+> Release note: Version 2.1.2 includes the barcode library asset-path fix and a Debian package build and installation option. It includes the GUI update 1 and WSGI/Gunicorn production server replacement from version 2.1.1.
 
 Built specifically for educational institutions under **Department of Education (DepEd)** standards.
 
@@ -18,7 +18,8 @@ Built specifically for educational institutions under **Department of Education 
 
 ## 📋 Table of Contents
 
-- [What's New in v2.1.1](#-whats-new-in-version-211)
+- [What's New in v2.1.2](#-whats-new-in-version-212)
+- [Architecture](ARCHITECTURE.md)
 - [Security and Kiosk Controls](#-security-and-kiosk-controls)
 - [SQL Branch & Database](#-sql-branch--database)
 - [System Requirements](#-system-requirements--hardware-specifications)
@@ -37,17 +38,22 @@ Built specifically for educational institutions under **Department of Education 
 
 ---
 
-## 🚀 What's New in Version 2.1.1
+## 🚀 What's New in Version 2.1.2
 
 | Feature | Description |
 |---|---|
+| **Offline Barcode Rendering** | The JsBarcode library is served from `static/JsBarcode.all.min.js`, so the scanner can render barcodes without an external network dependency. |
+| **Debian Package** | Build and install the application as a Debian `.deb` package, or continue using the repository launcher. |
 | **Automated 7-Day Privacy Cleanup** | A built-in startup routine (`cleanup_old_logs`) automatically scans the database directory and permanently purges log folders and webcam snapshots older than one week, ensuring ongoing data privacy compliance. |
 | **Visual Snapshot Audit Trail** | Instantly captures a webcam frame upon every successful ID scan, binding visual proof to the timestamped record for review in the logs manager. |
 | **Hardware Watchdog & Remote Push Alerts (ntfy.sh)** | Continuously monitors camera status and dispatches high-priority security notifications to mobile or desktop devices if the scanner camera is blocked or fails to initialize. |
 | **Local SQLite Database** | Student records and attendance data are stored in `CVA_Database/cva.sqlite3`, giving the single-machine kiosk transactional writes without requiring a separate database server. |
-| **GUI CSV Migration Tool** | IT can open **CSV to SQLite** from the launchpad, preview a CSV, and import it without using a terminal or database commands. |
-| **PIN-Protected Administration** | Reboot, shutdown, kiosk exit, settings changes, logo uploads, and system barcode commands require a configurable security PIN. |
-| **Touch-Friendly Security Dialogs** | In-page modal dialogs replace browser alerts and prompts, preserving kiosk focus and providing masked PIN entry with an on-screen numeric keypad. |
+| **GUI CSV Migration Tool** | IT can preview and validate a CSV before importing it. Invalid records and empty replacement files are rejected without partially changing the student list. |
+| **Audit Manager** | Review security, settings, student-record, import, and scan events after PIN authorization. |
+| **Automatic Database Backup** | Successful database updates refresh `CVA_Database/cva.sqlite3.backup`; startup attempts recovery from it if the primary database cannot be opened. |
+| **PIN-Protected Administration** | Reboot, shutdown, kiosk exit, settings changes, student changes, CSV imports, audit access, logo uploads, and system barcode commands require a configurable security PIN. |
+| **Duplicate Scan Protection** | Repeated scans of the same barcode within three seconds are rejected rather than recorded as separate attendance events. |
+| **Touch-Friendly Security Dialogs** | In-page modal dialogs replace browser alerts and prompts, preserving kiosk focus and providing masked passcode entry with a show/mask toggle. |
 
 ---
 
@@ -65,7 +71,7 @@ The `SQL-IDBIOSYS` branch uses a local SQLite database as the system of record. 
 
 ### Startup and Migration Behavior
 
-On startup, the application automatically creates the SQLite database and tables when they do not exist. SQLite is the system of record for students, attendance, and application settings. The old root-level student CSV files have been retired; use the **CSV to SQLite** page for an intentional, reviewed import when receiving a new CSV file.
+On startup, the application automatically creates the SQLite database and tables when they do not exist. SQLite is the system of record for students, attendance, and application settings. Any settings still present in the legacy `settings.json` are imported only for keys not already stored in SQLite; the migration is recorded in the audit log. The old root-level student CSV files have been retired; use the **CSV to SQLite** page for an intentional, reviewed import when receiving a new CSV file.
 
 After migration, use the Database Manager or the **CSV to SQLite** page for changes. Do not edit CSV files or the SQLite database while the server is running.
 
@@ -75,21 +81,22 @@ After migration, use the Database Manager or the **CSV to SQLite** page for chan
 
 Open **System settings** from the launchpad to configure the kiosk security controls:
 
-- Set an initial 4 to 12 digit security PIN.
+- Set an initial 4 to 12 character passcode with no spaces.
 - Change the PIN only after entering the current PIN.
 - Configure a security question and answer for PIN recovery.
 - Change the close kiosk, shutdown, and return-to-launchpad barcodes.
 - Upload a custom school logo only after PIN authorization.
+- Authorize student changes, CSV imports, and audit-log access with the same PIN.
 
 The PIN is stored as a salted PBKDF2 hash. It is never returned by the settings API or displayed in the interface. If the PIN is forgotten, use **Forgot PIN** in System settings and answer the configured recovery question. A recovery question must be configured during initial setup.
 
-System actions use custom in-page dialogs rather than native browser alerts, confirmations, or prompts. PIN fields are masked by default and include a **Show PIN / Mask PIN** toggle and touchscreen numeric keypad where appropriate. The dialogs keep the kiosk browser focused and inherit the active application theme.
+System actions use custom in-page dialogs rather than native browser alerts, confirmations, or prompts. Passcode fields are masked by default and include a **Show Passcode / Mask Passcode** toggle. The dialogs keep the kiosk browser focused and inherit the active application theme.
 
 > **Important:** The PIN protects the application actions, but the kiosk account still requires carefully restricted physical and SSH access. Passwordless `sudo` is required for operating-system reboot and shutdown commands; follow the hardening guidance below.
 
 ### Backup and Restore
 
-Stop the kiosk before copying the database so its WAL files are included consistently:
+The application refreshes `CVA_Database/cva.sqlite3.backup` after successful database updates and attempts to restore from it if the primary database cannot be opened. For an additional off-device copy, stop the kiosk first so its WAL files are included consistently:
 
 ```bash
 cp CVA_Database/cva.sqlite3 CVA_Database/cva.sqlite3.backup
@@ -153,6 +160,33 @@ sudo apt update && sudo apt install -y task-kde-desktop
 ```
 
 KDE Plasma is strongly recommended for its display scaling support, reliable power-state handling, and smooth kiosk window management out of the box.
+
+### Build and Install the Debian Package
+
+You can install a supplied `.deb` directly, or build one from the repository. To
+build the current version from the repository root:
+
+```bash
+./build-deb.sh
+```
+
+The script writes `dist/idbiosys_2.1.2_all.deb`. Install the locally built
+package with:
+
+```bash
+sudo apt install ./dist/idbiosys_2.1.2_all.deb
+```
+
+For a downloaded package in the current directory, run:
+
+```bash
+sudo apt install ./idbiosys_2.1.2_all.deb
+```
+
+The package installs an **ID Bio System** desktop launcher. It stores the
+database and user-specific files under `~/.local/share/idbiosys` by default.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the application layout and runtime
+data flow.
 
 ---
 
@@ -236,20 +270,23 @@ ID-BIO-Project/
 ├── ID-CODES FOR SYSTEM/              # Reference command barcodes for admin control
 ├── logs/                             # Real-time daily scan auxiliary paths
 ├── venv/                             # Python virtual environment (architecture-specific)
-├── static/                           # Image assets (school logo & OS logos)
+├── static/                           # Image assets, barcode renderer, and UI scripts
 ├── app.py                            # Core Flask WSGI application backend
-├── logger.py                         # Internal log processing & 7-day privacy cleanup utility
+├── wsgi.py                           # Gunicorn/WSGI application entry point
+├── logger.py                         # SQLite, backups, audit events, CSV validation, and log cleanup
+├── ARCHITECTURE.md                   # Application components, runtime, and data flow
 ├── CVAFPI IDENTIFICATION SYSTEM.sh   # Master kiosk auto-launcher script
 ├── id_bio.desktop                    # KDE desktop shortcut entry
 ├── Startup                           # Autostart boot script trigger
 ├── CVA_Database/cva.sqlite3          # Local SQLite student, attendance, and settings database
-├── jsbarcode.js                      # Offline JavaScript barcode SVG rendering engine
+├── static/JsBarcode.all.min.js       # Offline JavaScript barcode SVG rendering engine
 ├── static/kiosk-dialog.css           # Theme-aware in-page security dialog styles
-├── static/kiosk-dialog.js            # Alert, confirmation, PIN prompt, and keypad behavior
+├── static/kiosk-dialog.js            # Alert, confirmation, and passcode dialog behavior
 ├── launchpad.html                    # Main dashboard launcher interface
 ├── scanner.html                      # Live attendance registry scanner interface
 ├── manager.html                      # Database manager interface
 ├── logs-manager.html                 # Log manager & visual snapshot viewer interface
+├── templates/audit-manager.html      # PIN-protected audit event viewer
 ├── README.md                         # Instructions and specifications
 ├── LICENSE                           # it's the official MIT open source license of CVAIDSYS
 └── server.log                        # Auto-generated Gunicorn server log
