@@ -84,5 +84,5 @@ if defined ISCC (
 
 echo.
 echo Build complete:
-echo   Portable app: dist\CVAFPI-IDSYS.exe
+echo   Portable app: dist\portable\CVAFPI-IDSYS.exe
 echo   Installer:    installer\CVAFPI-IDSYS-Setup.exe

@@ -1,5 +1,5 @@
 #define AppName "CVAFPI Identification System"
-#define AppVersion "2.1.1"
+#define AppVersion "2.2.0"
 #define AppPublisher "Christian Vision Academy Pampanga Foundation Inc."
 #define AppURL "https://github.com/CVAFPI/ID-BIO-Project"
 
@@ -21,7 +21,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.22000
-LicenseFile=dist\portable\LICENSE
+LicenseFile=dist\portable\LICENSES\ALL-LICENSES.txt
 SetupIconFile=dist\portable\CVAIDSYSLOGO.ico
 OutputDir=installer
 OutputBaseFilename=CVAFPI-IDSYS-Setup
@@ -31,7 +31,7 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no
-VersionInfoVersion=2.1.1.0
+VersionInfoVersion=2.2.0.0
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription={#AppName} Setup
 VersionInfoProductName={#AppName}

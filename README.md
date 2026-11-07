@@ -1,16 +1,16 @@
 <img src="https://github.com/Linux-now/Image-Assets-Lance-Debian13/blob/main/CVAIDSYS%20LOGO.png?raw=true" align="left" width="100" height="100" alt="Project Logo">
 
 
-# CVAFPI Identification System v2.1.1
+# CVAFPI Identification System v2.2.0
 
 <br clear="left"/>
 
 
 Windows 11 kiosk application for barcode attendance, camera snapshots, CSV student records, audit logs, and optional ntfy notifications.
 
-This is the CSV edition. Student records remain in `data.csv` and `backup-data.csv`; attendance history remains in `CVA_Database` as dated CSV files with snapshot images. In an installed build, these writable files are stored under `%LOCALAPPDATA%\CVAFPI-IDSYS`, not beside the application in Program Files.
+This release keeps student records in `data.csv` and `backup-data.csv`, and attendance history in `CVA_Database` as dated CSV files with snapshot images. Packaged Windows builds store writable data under `%LOCALAPPDATA%\CVAFPI-IDSYS`, not beside the application in Program Files. When running from source, data is stored in the project directory.
 
-Compatible Windows SQL-branch features are included where they do not require SQLite: administrator passcodes and recovery, a protected security audit manager, system-command barcodes, and optional ntfy attendance alerts. Student and attendance data continue to use CSV; this edition does not create or require a SQL database.
+Version 2.2.0 incorporates the updated Windows kiosk interface, administrator passcodes and recovery, a protected security audit manager, configurable system-command barcodes, and optional ntfy attendance alerts. Student and attendance data continue to use CSV.
 
 ## Requirements
 
@@ -86,7 +86,7 @@ It performs the following actions automatically:
 1. Creates a Windows Python 3.11+ 64-bit virtual environment named `.venv-windows`
 2. Installs the Windows build/runtime dependencies from `requirements-windows.txt`
 3. Runs PyInstaller using `ID-BIO-Project.spec` and embeds the CVAFPI app icon
-4. Produces the executable in `dist\CVAFPI-IDSYS.exe`
+4. Produces the executable in `dist\CVAFPI-IDSYS.exe` as an intermediate build artifact
 5. Stages a clean portable release in `dist\portable` with header-only CSV seeds, README, icon, and license notices (never workstation records or settings)
 6. Compiles `installer.iss` into `installer\CVAFPI-IDSYS-Setup.exe`
 
@@ -134,7 +134,7 @@ installer/
   CVAFPI-IDSYS-Setup.exe
 ```
 
-Distribute only `dist\portable` or the setup executable; the root `dist` directory may contain local build artifacts and is not a release folder. The portable executable needs its two CSV seed files beside it. The setup installer installs per-user, creates a Start Menu entry and offers an optional desktop shortcut, and includes the README and license notices. The running app copies its CSV seeds to `%LOCALAPPDATA%\CVAFPI-IDSYS` on first launch and leaves existing files untouched during upgrades and uninstall. Settings are created in the writable data folder as needed and are never included in the portable release or installer.
+Distribute only `dist\portable` or the setup executable; the root `dist` directory may contain local build artifacts and is not a release folder. The portable executable needs its two CSV seed files beside it. The setup installer displays the combined project and third-party licenses during setup, installs per-user, creates a Start Menu entry, and offers an optional desktop shortcut. It also installs the individual license notices and credits. Packaged builds copy their CSV seeds to `%LOCALAPPDATA%\CVAFPI-IDSYS` on first launch and leave existing files untouched during upgrades and uninstall. Settings are created in the writable data folder as needed and are never included in the portable release or installer.
 
 To compile the setup manually, install Inno Setup 6.3 or newer, run `build-windows.bat` once, then run `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss` from the project directory (adjust the path if installed elsewhere).
 
@@ -205,12 +205,12 @@ These header-only seed files let the application initialize its writable student
 - Keep `data.csv` and `backup-data.csv` synchronized.
 - Record daily attendance in `CVA_Database\logs_YYYY-MM-DD\logs_YYYY-MM-DD.csv`.
 - Save scanner snapshots beside the daily attendance CSV.
-- Automatically remove attendance folders older than seven days.
+- Automatically remove attendance folders older than seven days; audit history is retained separately.
 - Export attendance logs from the logs manager.
 - Protect student changes, CSV imports, settings, and system controls with an administrator passcode.
 - Review scan, security, settings, student, import, and system events in the passcode-protected audit manager (`audit.csv`).
 - Optionally send attendance notifications to each student's configured ntfy topic.
-- Use the printed system-control barcodes to navigate the kiosk or request an authorized system action.
+- Use configurable system-control barcodes to navigate the kiosk or request an administrator-authorized system action.
 
 Set the administrator passcode and recovery question/answer in System Settings before using protected management functions. Passcodes and recovery answers are stored as salted PBKDF2 hashes in `settings.json`; the recovery answer is case-insensitive. Keep the recovery answer private. Audit events are stored separately from attendance logs and are not removed by the seven-day attendance cleanup.
 
@@ -223,7 +223,7 @@ BARCODE,NAME,GRADE,SECTION,ACCESS,COLOR,NTFY_TOPIC
 ## Project structure
 
 ```text
-app.py                       Flask routes, kiosk UI, and app logic
+app.py                       Flask routes, kiosk UI, and app version
 logger.py                    CSV persistence, attendance logging, and backups
 wsgi.py                      Production WSGI export
 windows_launcher.py          Waitress and kiosk browser launcher
@@ -236,7 +236,8 @@ LICENSES/                    Third-party license notices and credits
 templates/audit-manager.html Protected audit-event browser
 run-windows.bat              Windows launcher for the compiled app
 CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode launcher
-requirements.txt             Python dependencies
+requirements.txt             Source-mode runtime dependencies
+requirements-windows.txt     Windows build and runtime dependencies
 LICENSE                      Project license
 README.md                    Project documentation
 data.csv                     Local primary student records (not shipped with source)

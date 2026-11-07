@@ -19,7 +19,7 @@ from datetime import datetime
 from urllib.parse import quote
 from werkzeug.exceptions import RequestEntityTooLarge
 
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.2.0"
 MAX_REQUEST_SIZE = 10 * 1024 * 1024
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.environ.get('CVAFPI_DATA_DIR', SOURCE_DIR)
