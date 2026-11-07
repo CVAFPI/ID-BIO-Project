@@ -58,7 +58,42 @@
         previewButton.addEventListener('click', async () => { if (!selectedFile) return; const form = new FormData(); form.append('file', selectedFile); await request('/api/migration/preview', form, false); });
         importButton.addEventListener('click', async () => { if (!selectedFile || !(await appConfirm('Import these student records into the CSV database?'))) return; const form = new FormData(); form.append('file', selectedFile); form.append('replace_existing', document.getElementById('replaceExisting').checked); await request('/api/migration/import', form, true); });
         document.getElementById('clearButton').addEventListener('click', () => { fileInput.value = ''; selectedFile = null; fileName.textContent = 'No file selected'; picker.classList.remove('ready'); previewButton.disabled = true; importButton.disabled = true; result.className = 'result'; });
-        async function request(url, form, importing) { previewButton.disabled = true; importButton.disabled = true; try { const response = await fetch(url, { method:'POST', body:form }); const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Request failed.'); result.className = 'result visible'; document.getElementById('resultTitle').textContent = importing ? 'Import complete' : (data.invalid_rows ? 'Review needed' : 'CSV is ready'); document.getElementById('resultMessage').textContent = importing ? `Imported ${data.imported} records using ${data.mode} mode. The CSV database now contains ${data.students} students.` : (data.errors || []).join(' ') || 'The file is ready to import.'; document.getElementById('stats').innerHTML = importing ? '' : `<div class="stat"><strong>${data.total_rows}</strong><span>Total rows</span></div><div class="stat"><strong>${data.valid_rows}</strong><span>Valid</span></div><div class="stat"><strong>${data.new_records}</strong><span>New</span></div>`; importButton.disabled = !!data.invalid_rows || importing; } catch (error) { result.className = 'result visible error'; document.getElementById('resultTitle').textContent = 'Unable to continue'; document.getElementById('resultMessage').textContent = error.message; document.getElementById('stats').innerHTML = ''; } finally { previewButton.disabled = !selectedFile; } }
+        async function request(url, form, importing) {
+            previewButton.disabled = true;
+            importButton.disabled = true;
+            try {
+                if (importing) {
+                    const securityResponse = await fetch('/api/security/config');
+                    if (!securityResponse.ok) throw new Error('Could not check administrator security settings.');
+                    const security = await securityResponse.json();
+                    if (!security.pin_configured) throw new Error('Configure an administrator passcode in System Settings before importing records.');
+                    const pin = await appPrompt('Enter the administrator passcode to import student records.', { title: 'Administrator passcode', pin: true, keypad: true });
+                    if (pin === null) return;
+                    form.append('pin', pin.trim());
+                }
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CVAFPI-Control-Token': {{ control_token|tojson }} },
+                    body: form
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Request failed.');
+                result.className = 'result visible';
+                document.getElementById('resultTitle').textContent = importing ? 'Import complete' : (data.invalid_rows ? 'Review needed' : 'CSV is ready');
+                document.getElementById('resultMessage').textContent = importing
+                    ? `Imported ${data.imported} records using ${data.mode} mode. The CSV database now contains ${data.students} students.`
+                    : (data.errors || []).join(' ') || 'The file is ready to import.';
+                document.getElementById('stats').innerHTML = importing ? '' : `<div class="stat"><strong>${data.total_rows}</strong><span>Total rows</span></div><div class="stat"><strong>${data.valid_rows}</strong><span>Valid</span></div><div class="stat"><strong>${data.new_records}</strong><span>New</span></div>`;
+                importButton.disabled = !!data.invalid_rows || importing;
+            } catch (error) {
+                result.className = 'result visible error';
+                document.getElementById('resultTitle').textContent = 'Unable to continue';
+                document.getElementById('resultMessage').textContent = error.message;
+                document.getElementById('stats').innerHTML = '';
+            } finally {
+                previewButton.disabled = !selectedFile;
+            }
+        }
     </script>
 </body>
 </html>

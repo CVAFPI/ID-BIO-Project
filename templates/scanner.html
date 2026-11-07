@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">CVA - LOG IN/OUT SYSTEM</title>
     <!-- JsBarcode Library -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="/jsbarcode.js"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -288,7 +288,10 @@
 
                 await fetch('/api/camera/blocked', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
                     body: JSON.stringify({ status: 'blocked', image: imageBase64 })
                 });
             } catch (err) {
@@ -363,17 +366,67 @@
 
                 const res = await fetch('/api/scan', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
                     body: JSON.stringify({ barcode, image: imageBase64 })
                 });
                 const result = await res.json();
 
-                if (result.status === 'success') {
-                    updateActiveCard(result.data);
-                    fetchLogs();
+                if (result.status === 'system_command') {
+                    await runSystemCommand(result.command);
+                    return;
                 }
+                if (!res.ok || result.status !== 'success') {
+                    throw new Error(result.message || `Scan failed (${res.status})`);
+                }
+
+                updateActiveCard(result.data);
+                fetchLogs();
             } catch (err) {
                 console.error("Scan error:", err);
+                document.getElementById('scanStatus').innerText = 'Scan failed';
+                document.getElementById('cardName').innerText =
+                    err instanceof Error ? err.message : 'Please try again.';
+                document.getElementById('cardBarcode').innerText = `Barcode: ${barcode}`;
+                barcodeInput.focus();
+            }
+        }
+
+        async function runSystemCommand(command) {
+            const configResponse = await fetch('/api/security/config');
+            const security = await configResponse.json();
+            if (!security.pin_configured) {
+                await appAlert('Configure an administrator passcode in System Settings before using control barcodes.');
+                barcodeInput.focus();
+                return;
+            }
+            const pin = await appPrompt('Enter the administrator passcode for this system command.', { title: 'Administrator passcode', pin: true, keypad: true });
+            if (pin === null) {
+                barcodeInput.focus();
+                return;
+            }
+            try {
+                const response = await fetch('/api/system/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
+                    body: JSON.stringify({ command, pin: pin.trim() })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'System command failed.');
+                if (result.action.startsWith('/')) {
+                    window.location.href = result.action;
+                } else if (result.action === 'shutdown' || result.action === 'close_kiosk') {
+                    document.getElementById('scanStatus').innerText = 'System command accepted';
+                    document.getElementById('cardName').innerText = 'Please wait';
+                }
+            } catch (error) {
+                await appAlert(error.message || 'System command failed.');
+                barcodeInput.focus();
             }
         }
 
@@ -407,7 +460,7 @@
 
             const badge = document.getElementById('cardBadge');
             badge.innerText = data.access;
-            badge.style.backgroundColor = data.color || '#059669';
+            badge.style.backgroundColor = /^#[0-9a-f]{6}$/i.test(data.color) ? data.color : '#059669';
         }
 
         async function fetchLogs() {

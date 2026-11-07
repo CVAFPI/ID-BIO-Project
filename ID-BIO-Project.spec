@@ -5,7 +5,7 @@ a = Analysis(
     ['windows_launcher.py'],
     pathex=[],
     binaries=[],
-    datas=[('templates', 'templates'), ('static', 'static')],
+    datas=[('templates', 'templates'), ('static', 'static'), ('jsbarcode.js', '.')],
     hiddenimports=collect_submodules('PIL'),
     hookspath=[],
     hooksconfig={},
@@ -26,4 +26,5 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
+    icon='CVAIDSYSLOGO.ico',
 )

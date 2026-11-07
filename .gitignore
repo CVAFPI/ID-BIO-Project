@@ -1,2 +1,17 @@
 venv/
+.venv-windows/
 __pycache__/
+build/
+dist/
+installer/*.exe
+
+# Local student records, attendance, audit history, and machine settings
+/data.csv
+/backup-data.csv
+/audit.csv
+/CVA_Database/
+/logs/
+/settings.json
+
+# Generated or vendored dependencies
+/node_modules/

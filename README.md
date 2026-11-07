@@ -8,14 +8,17 @@
 
 Windows 11 kiosk application for barcode attendance, camera snapshots, CSV student records, audit logs, and optional ntfy notifications.
 
-This is the CSV edition. Student records remain in `data.csv` and `backup-data.csv`; attendance history remains in `CVA_Database` as dated CSV files with snapshot images.
+This is the CSV edition. Student records remain in `data.csv` and `backup-data.csv`; attendance history remains in `CVA_Database` as dated CSV files with snapshot images. In an installed build, these writable files are stored under `%LOCALAPPDATA%\CVAFPI-IDSYS`, not beside the application in Program Files.
+
+Compatible Windows SQL-branch features are included where they do not require SQLite: administrator passcodes and recovery, a protected security audit manager, system-command barcodes, and optional ntfy attendance alerts. Student and attendance data continue to use CSV; this edition does not create or require a SQL database.
 
 ## Requirements
 
 - Windows 11 64-bit
-- Python 3.11 or newer with the Python launcher enabled
+- Python 3.11 or newer, 64-bit, with the Python launcher enabled to build the executable
+- Inno Setup 6.3 or newer to compile the Windows setup installer
 - Microsoft Edge or Google Chrome
-- Internet access during the first setup for Python packages
+- Internet access when installing source-mode Python packages or sending optional ntfy notifications
 
 ## Run from source
 
@@ -24,7 +27,7 @@ Double-click `CVAFPI IDENTIFICATION SYSTEM.bat`. It creates `venv`, installs `re
 The production WSGI target is `wsgi:app`. To start it manually from the project directory:
 
 ```bat
-venv\Scripts\waitress-serve.exe --listen=0.0.0.0:5000 --threads=4 --url-scheme=http wsgi:app
+venv\Scripts\waitress-serve.exe --listen=127.0.0.1:5000 --threads=4 --url-scheme=http wsgi:app
 ```
 
 ## Build the executable on Windows 11
@@ -38,7 +41,8 @@ Use the steps below when creating the production kiosk build for distribution or
 
 Before you build anything, install the following on a Windows 11 machine:
 
-- Python 3.11 or newer from <https://www.python.org/downloads/windows/>
+- Python 3.11 or newer, 64-bit, from <https://www.python.org/downloads/windows/>
+- Inno Setup 6.3 or newer to produce the final setup executable
 - The Python launcher enabled during installation
 - Microsoft Edge or Google Chrome for the kiosk browser
 - Git if you are cloning the repository instead of using a local zip file
@@ -79,13 +83,16 @@ If those files are missing, the build will not run correctly.
 The script `build-windows.bat` should be treated as the official Windows build command.
 It performs the following actions automatically:
 
-1. Creates a Windows virtual environment named `.venv-windows`
-2. Installs the Python dependencies from `requirements.txt`
-3. Installs PyInstaller if it is not already present
-4. Runs PyInstaller using `ID-BIO-Project.spec`
-5. Produces the executable in `dist\CVAFPI-IDSYS.exe`
-6. Copies `data.csv`, `backup-data.csv`, and `settings.json` into the output folder
-7. Creates writable `CVA_Database` and `logs` directories beside the executable
+1. Creates a Windows Python 3.11+ 64-bit virtual environment named `.venv-windows`
+2. Installs the runtime dependencies from `requirements.txt` and PyInstaller
+3. Runs PyInstaller using `ID-BIO-Project.spec` and embeds the CVAFPI app icon
+4. Produces the portable executable in `dist\CVAFPI-IDSYS.exe`
+5. Stages the initial CSV records, settings, README, icon, and license notices in `dist`
+6. Compiles `installer.iss` into `installer\CVAFPI-IDSYS-Setup.exe`
+
+Inno Setup 6.3 or newer is required. The script reports an error if it cannot
+produce the setup installer; the portable executable is still available in
+`dist` for troubleshooting or separate use.
 
 This is the exact command you run:
 
@@ -119,18 +126,21 @@ dist/
   data.csv
   backup-data.csv
   settings.json
-  CVA_Database/
-  logs/
+  README.md
+  LICENSE
+  CVAIDSYSLOGO.ico
+  LICENSES/
+installer/
+  CVAFPI-IDSYS-Setup.exe
 ```
 
-This layout is intentional. The executable needs its data files and writable folders beside it.
+The portable executable needs its three seed files beside it. The setup installer installs per-user, creates a Start Menu entry and offers an optional desktop shortcut, and includes the README and license notices. The running app copies its seeds to `%LOCALAPPDATA%\CVAFPI-IDSYS` on first launch and leaves existing files untouched during upgrades and uninstall.
 
-Do not move only the `.exe` into another folder. Leave the CSV files, settings, logs,
-and database directory with it.
+To compile the setup manually, install Inno Setup 6.3 or newer, run `build-windows.bat` once, then run `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss` from the project directory (adjust the path if installed elsewhere).
 
 ### 6. Run the compiled application
 
-You can start the built app in either of these ways:
+You can start the built app in one of these ways:
 
 #### Option A: from the project folder
 
@@ -144,9 +154,11 @@ run-windows.bat
 dist\CVAFPI-IDSYS.exe
 ```
 
-The compiled startup code sets `CVAFPI_DATA_DIR` to the app's own output directory. That means
-CSV records, logs, snapshots, and settings remain writable next to the executable while the
-bundled Flask templates and static files remain packaged with the app.
+#### Option C: install with the setup program
+
+Run `installer\CVAFPI-IDSYS-Setup.exe` and launch the app from the Start Menu. The installer is per-user and does not require administrator privileges. The app copies its seed CSV and settings files into `%LOCALAPPDATA%\CVAFPI-IDSYS` on first run; data remains writable and is not overwritten by app upgrades or uninstall. The Start Menu also includes documentation and license links.
+
+The barcode library is bundled with the app. Internet access is only needed for optional ntfy notifications.
 
 ### 7. Rebuild after code changes
 
@@ -169,13 +181,14 @@ Only copy updated CSV or settings files into `dist` if you intentionally want to
   ```
 
 - **The browser does not open:** install Microsoft Edge or Google Chrome.
+- **The setup program was not created:** install Inno Setup 6.3 or newer, then rerun `build-windows.bat`. The script returns an error if setup compilation was skipped or failed.
 - **The port is busy:** close another instance of the app or stop the process using port `5000`.
-- **Student records are missing:** confirm that `data.csv` and `backup-data.csv` are located beside `CVAFPI-IDSYS.exe`.
+- **Student records are missing:** confirm the seed CSV files are beside the portable executable or check `%LOCALAPPDATA%\CVAFPI-IDSYS` for an installed build.
 - **The build stops unexpectedly:** make sure the project folder is not nested inside a protected folder such as OneDrive or a system-managed directory.
 
 ### Required output layout
 
-Keep these files beside the executable so the app can read and write the data safely:
+For the portable build, keep these seed files beside the executable. Installed builds copy them into the writable user-data folder on first launch:
 
 ```text
 dist/
@@ -183,11 +196,9 @@ dist/
   data.csv
   backup-data.csv
   settings.json
-  CVA_Database/
-  logs/
 ```
 
-This layout ensures the application can maintain daily attendance records, student CSV data, and runtime logs without breaking the packaged executable.
+This layout ensures the application can maintain daily attendance records, student CSV data, and runtime logs without requiring write access to its installation folder.
 
 ## CSV features
 
@@ -197,6 +208,12 @@ This layout ensures the application can maintain daily attendance records, stude
 - Save scanner snapshots beside the daily attendance CSV.
 - Automatically remove attendance folders older than seven days.
 - Export attendance logs from the logs manager.
+- Protect student changes, CSV imports, settings, and system controls with an administrator passcode.
+- Review scan, security, settings, student, import, and system events in the passcode-protected audit manager (`audit.csv`).
+- Optionally send attendance notifications to each student's configured ntfy topic.
+- Use the printed system-control barcodes to navigate the kiosk or request an authorized system action.
+
+Set the administrator passcode and recovery question/answer in System Settings before using protected management functions. Passcodes and recovery answers are stored as salted PBKDF2 hashes in `settings.json`; the recovery answer is case-insensitive. Keep the recovery answer private. Audit events are stored separately from attendance logs and are not removed by the seven-day attendance cleanup.
 
 Required student CSV columns:
 
@@ -212,9 +229,13 @@ logger.py                    CSV persistence, attendance logging, and backups
 wsgi.py                      Production WSGI export
 windows_launcher.py          Waitress and kiosk browser launcher
 jsbarcode.js                 Barcode rendering library used by the UI
+CVAIDSYSLOGO.ico             Application and installer icon
 settings.json                Runtime settings and branding configuration
 ID-BIO-Project.spec          PyInstaller build configuration
 build-windows.bat            Windows executable build script
+installer.iss                Inno Setup installer definition
+LICENSES/                    Third-party license notices and credits
+templates/audit-manager.html Protected audit-event browser
 run-windows.bat              Windows launcher for the compiled app
 CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode launcher
 requirements.txt             Python dependencies
@@ -223,6 +244,7 @@ README.md                    Project documentation
 data.csv                     Primary student records
 backup-data.csv              Backup student records
 CVA_Database/                Attendance logs and snapshot folders
+audit.csv                    Security and administration event history
 logs/                       Generated runtime logs
 templates/                   Flask HTML templates
 static/                     Frontend CSS, JS, and assets

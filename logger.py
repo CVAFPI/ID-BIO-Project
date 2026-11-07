@@ -2,16 +2,23 @@ import os
 import csv
 import io
 import random
+import re
 import string
 import shutil
+import tempfile
+import threading
+import logging
 from datetime import datetime, timedelta
 
+DATA_LOCK = threading.RLock()
 BASE_DIR = os.environ.get(
     'CVAFPI_DATA_DIR', os.path.dirname(os.path.abspath(__file__))
 )
 DB_DIR = os.path.join(BASE_DIR, 'CVA_Database')
 DATA_CSV = os.path.join(BASE_DIR, 'data.csv')
 BACKUP_CSV = os.path.join(BASE_DIR, 'backup-data.csv')
+AUDIT_CSV = os.path.join(BASE_DIR, 'audit.csv')
+LOGGER = logging.getLogger(__name__)
 
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
@@ -62,16 +69,18 @@ def get_todays_log_filepath():
 def get_all_students():
     """Reads all students from data.csv using exact header: BARCODE,NAME,GRADE,SECTION,ACCESS,COLOR,NTFY_TOPIC"""
     students = {}
-    if not os.path.exists(DATA_CSV):
-        return students
+    with DATA_LOCK:
+        source_file = DATA_CSV
+        if not os.path.isfile(source_file) or os.path.getsize(source_file) == 0:
+            source_file = BACKUP_CSV
+        if not os.path.exists(source_file):
+            return students
 
-    try:
-        with open(DATA_CSV, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(source_file, 'r', encoding='utf-8-sig', newline='') as f:
             reader = csv.reader(f)
             for row in reader:
                 if not row or len(row) < 1:
                     continue
-                # Skip header row safely
                 if row[0].strip().upper() == 'BARCODE':
                     continue
 
@@ -80,7 +89,7 @@ def get_all_students():
                 grade = row[2].strip() if len(row) > 2 else ''
                 section = row[3].strip() if len(row) > 3 else ''
                 access = row[4].strip() if len(row) > 4 else 'REGULAR'
-                color = row[5].strip() if len(row) > 5 else '#059669'
+                color = _safe_color(row[5].strip()) if len(row) > 5 else '#059669'
                 topic = row[6].strip() if len(row) > 6 else 'None'
 
                 if barcode:
@@ -93,10 +102,69 @@ def get_all_students():
                         'color': color,
                         'topic': topic
                     }
-    except Exception as e:
-        print(f"Error reading data.csv: {e}")
-
     return students
+
+
+def _write_csv_atomically(target_file, rows):
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            newline='',
+            encoding='utf-8',
+            dir=os.path.dirname(target_file),
+            delete=False
+        ) as f:
+            temp_path = f.name
+            csv.writer(f).writerows(rows)
+        os.replace(temp_path, target_file)
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def _safe_color(value):
+    return value if re.fullmatch(r'#[0-9a-fA-F]{6}', value) else '#059669'
+
+
+def record_event(event_type, message, barcode='', details=''):
+    row = [
+        datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'),
+        str(event_type)[:80],
+        str(message)[:500],
+        str(barcode)[:100],
+        str(details)[:1000],
+    ]
+    with DATA_LOCK:
+        try:
+            needs_header = not os.path.isfile(AUDIT_CSV) or os.path.getsize(AUDIT_CSV) == 0
+            with open(AUDIT_CSV, 'a', newline='', encoding='utf-8') as audit_file:
+                writer = csv.writer(audit_file)
+                if needs_header:
+                    writer.writerow(['Timestamp', 'Type', 'Message', 'Barcode', 'Details'])
+                writer.writerow(row)
+                audit_file.flush()
+                os.fsync(audit_file.fileno())
+        except OSError:
+            LOGGER.exception('Unable to append audit event to %s', AUDIT_CSV)
+
+
+def get_audit_events(limit=500):
+    try:
+        limit = max(1, min(int(limit), 2000))
+    except (TypeError, ValueError):
+        limit = 500
+
+    with DATA_LOCK:
+        if not os.path.isfile(AUDIT_CSV):
+            return []
+        with open(AUDIT_CSV, 'r', newline='', encoding='utf-8-sig') as audit_file:
+            rows = list(csv.reader(audit_file))
+
+    if rows and rows[0] and rows[0][0].strip().lower() == 'timestamp':
+        rows = rows[1:]
+    return [row for row in reversed(rows[-limit:]) if row]
+
 
 def save_all_students_to_csv(students_dict):
     """Writes dictionary to data.csv and backup-data.csv using the exact column format."""
@@ -112,13 +180,9 @@ def save_all_students_to_csv(students_dict):
             s.get('topic', 'None')
         ])
 
-    for target_file in [DATA_CSV, BACKUP_CSV]:
-        try:
-            with open(target_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerows(rows)
-        except Exception as e:
-            print(f"Error writing to {target_file}: {e}")
+    with DATA_LOCK:
+        for target_file in [DATA_CSV, BACKUP_CSV]:
+            _write_csv_atomically(target_file, rows)
 
 def _read_student_csv(uploaded_file):
     content = uploaded_file.read()
@@ -133,19 +197,24 @@ def _read_student_csv(uploaded_file):
 
     rows = []
     errors = []
+    seen_barcodes = set()
     for row_number, source in enumerate(reader, start=2):
         barcode = (source.get(headers['BARCODE']) or '').strip()
         name = (source.get(headers['NAME']) or '').strip()
         if not barcode or not name:
             errors.append(f'Row {row_number} is missing a barcode or name.')
             continue
+        if barcode in seen_barcodes:
+            errors.append(f'Row {row_number} duplicates barcode {barcode}.')
+            continue
+        seen_barcodes.add(barcode)
         rows.append({
             'barcode': barcode,
             'name': name,
             'grade': (source.get(headers.get('GRADE', '')) or '').strip(),
             'section': (source.get(headers.get('SECTION', '')) or '').strip(),
             'access': (source.get(headers.get('ACCESS', '')) or 'REGULAR').strip(),
-            'color': (source.get(headers.get('COLOR', '')) or '#059669').strip(),
+            'color': _safe_color((source.get(headers.get('COLOR', '')) or '#059669').strip()),
             'topic': (source.get(headers.get('NTFY_TOPIC', '')) or 'None').strip()
         })
     return rows, errors
@@ -168,33 +237,36 @@ def import_student_csv(uploaded_file, replace_existing=False):
     rows, errors = _read_student_csv(uploaded_file)
     if errors:
         raise ValueError(' '.join(errors[:10]))
-    students = {} if replace_existing else get_all_students()
-    for row in rows:
-        students[row['barcode']] = row
-    save_all_students_to_csv(students)
+    with DATA_LOCK:
+        students = {} if replace_existing else get_all_students()
+        for row in rows:
+            students[row['barcode']] = row
+        save_all_students_to_csv(students)
     return {
         'imported': len(rows),
         'mode': 'replace' if replace_existing else 'merge'
     }
 
 def save_student(b, n, g, s, a, c, t):
-    students = get_all_students()
-    students[b] = {
-        'barcode': b,
-        'name': n,
-        'grade': g,
-        'section': s,
-        'access': a,
-        'color': c,
-        'topic': t
-    }
-    save_all_students_to_csv(students)
+    with DATA_LOCK:
+        students = get_all_students()
+        students[b] = {
+            'barcode': b,
+            'name': n,
+            'grade': g,
+            'section': s,
+            'access': a,
+            'color': c,
+            'topic': t
+        }
+        save_all_students_to_csv(students)
 
 def delete_student(barcode):
-    students = get_all_students()
-    if barcode in students:
-        del students[barcode]
-        save_all_students_to_csv(students)
+    with DATA_LOCK:
+        students = get_all_students()
+        if barcode in students:
+            del students[barcode]
+            save_all_students_to_csv(students)
 
 def get_available_log_files():
     if not os.path.exists(DB_DIR):
@@ -222,7 +294,13 @@ def get_todays_logs_raw():
 def get_logs_by_filename_raw(filename):
     if not filename or filename.lower() == 'today':
         return get_todays_logs_raw()
-    base_name = filename.replace('.csv', '')
+    if not re.fullmatch(r'logs_\d{4}-\d{2}-\d{2}\.csv', filename):
+        raise ValueError('Invalid log file name.')
+    base_name = filename[:-4]
+    try:
+        datetime.strptime(base_name[5:], '%Y-%m-%d')
+    except ValueError as error:
+        raise ValueError('Invalid log file date.') from error
     file_path = os.path.join(DB_DIR, base_name, f"{base_name}.csv")
     rows = []
     if os.path.exists(file_path):
@@ -234,44 +312,44 @@ def get_logs_by_filename_raw(filename):
     return rows
 
 def log_attendance(barcode):
-    students = get_all_students()
-    if barcode not in students:
-        return {'status': 'error', 'message': 'Student not found'}
+    with DATA_LOCK:
+        students = get_all_students()
+        if barcode not in students:
+            return {'status': 'error', 'message': 'Student not found'}
 
-    student = students[barcode]
-    file_path = get_todays_log_filepath()
+        student = students[barcode]
+        file_path = get_todays_log_filepath()
 
-    existing_ids = set()
-    if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 7:
-                    existing_ids.add(row[7])
+        existing_ids = set()
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8-sig', newline='') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) > 7:
+                        existing_ids.add(row[7])
 
-    image_id = generate_unique_id(existing_ids)
-    filename_id = f"{image_id}.jpg"
+        image_id = generate_unique_id(existing_ids)
+        filename_id = f"{image_id}.jpg"
 
-    now = datetime.now()
-    timestamp_str = now.strftime('%m/%d/%Y %I:%M:%S %p')
+        now = datetime.now()
+        timestamp_str = now.strftime('%m/%d/%Y %I:%M:%S %p')
 
-    row_data = [
-        timestamp_str,
-        student.get('barcode', ''),
-        student.get('name', ''),
-        student.get('grade', ''),
-        student.get('section', ''),
-        student.get('access', 'REGULAR'),
-        student.get('color', '#059669'),
-        filename_id
-    ]
+        row_data = [
+            timestamp_str,
+            student.get('barcode', ''),
+            student.get('name', ''),
+            student.get('grade', ''),
+            student.get('section', ''),
+            student.get('access', 'REGULAR'),
+            student.get('color', '#059669'),
+            filename_id
+        ]
 
-    with open(file_path, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(row_data)
+        with open(file_path, 'a', newline='', encoding='utf-8') as f:
+            csv.writer(f).writerow(row_data)
 
     return {
         'status': 'success',
-        'data': student,
+        'data': {**student, 'timestamp': timestamp_str},
         'image_id': filename_id
     }

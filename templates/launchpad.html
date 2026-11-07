@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CVAFPI Identification System - Launchpad</title>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
     <style>
         :root {
             --bg: #0f172a;
@@ -548,6 +549,7 @@
             <a class="console-module" href="/scanner.html"><div class="console-module-top"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 9h10M7 12h10M7 15h6"/></svg></div><span class="console-arrow">↗</span></div><div><h4>Attendance scanner</h4><p>Scan IDs, record attendance, and handle camera capture.</p></div></a>
             <a class="console-module" href="/manager.html"><div class="console-module-top"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span class="console-arrow">↗</span></div><div><h4>Student manager</h4><p>Add, update, remove, and style CSV student records.</p></div></a>
             <a class="console-module" href="/logs-manager.html"><div class="console-module-top"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></div><span class="console-arrow">↗</span></div><div><h4>Logs & audit trail</h4><p>Review scans, snapshots, filters, and exportable records.</p></div></a>
+            <a class="console-module" href="/audit-manager.html"><div class="console-module-top"><div class="console-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div><span class="console-arrow">↗</span></div><div><h4>Security audit</h4><p>Review scan, student-record, settings, and system-control events.</p></div></a>
         </section>
         <div class="console-heading"><h3>Data administration</h3><span>CSV tools and branding</span></div>
         <section class="console-grid data-tools">
@@ -705,6 +707,17 @@
             </div>
 
             <div class="modal-body">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <span class="setting-title">Administrator security</span>
+                        <span class="setting-desc">Set a 4–12 character passcode to protect student edits, CSV imports, audit history, and system controls. Store the recovery answer safely.</span>
+                    </div>
+                    <input type="password" id="settingNewPin" class="setting-textbox" maxlength="12" autocomplete="new-password" placeholder="New passcode (leave blank to keep current)">
+                    <input type="text" id="settingSecurityQuestion" class="setting-textbox" maxlength="200" placeholder="Passcode recovery question">
+                    <input type="password" id="settingSecurityAnswer" class="setting-textbox" maxlength="200" autocomplete="off" placeholder="Recovery answer (required when setting/changing passcode)">
+                    <button class="btn-modal-action btn-modal-secondary" type="button" onclick="recoverPasscode()">Forgot passcode? Recover it</button>
+                </div>
+
                 <!-- 1. Photo on Scan -->
                 <div class="setting-item">
                     <div class="setting-row">
@@ -824,29 +837,33 @@
         updateClock();
 
         // Settings Modal Handlers
+        let securityConfig = { pin_configured: false, security_question: '' };
+
         async function openSettingsModal() {
             document.getElementById('settingsModal').style.display = 'flex';
             try {
-                const res = await fetch('/api/settings');
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('settingCamera').checked = !!data.camera_enabled;
-                    document.getElementById('settingParents').checked = !!data.parent_notifications_enabled;
-                    document.getElementById('settingOfficeAlerts').checked = !!data.office_alerts_enabled;
-                    document.getElementById('settingOfficeTopic').value = data.office_ntfy_topic || '';
-                    document.getElementById('settingBlockedCamera').checked = !!data.blocked_camera_alerts_enabled;
-                    document.getElementById('settingInstitution').value = data.institution_name || '';
-                    document.getElementById('settingTheme').value = data.theme || 'night';
-                    document.getElementById('settingAccent').value = data.accent_color || '#2563eb';
-
-                    if (data.office_alerts_enabled) {
-                        document.getElementById('officeTopicGroup').classList.add('active');
-                    } else {
-                        document.getElementById('officeTopicGroup').classList.remove('active');
-                    }
-                }
+                const [settingsResponse, securityResponse] = await Promise.all([
+                    fetch('/api/settings'),
+                    fetch('/api/security/config')
+                ]);
+                if (!settingsResponse.ok || !securityResponse.ok) throw new Error('Could not load system settings.');
+                const data = await settingsResponse.json();
+                securityConfig = await securityResponse.json();
+                document.getElementById('settingCamera').checked = !!data.camera_enabled;
+                document.getElementById('settingParents').checked = !!data.parent_notifications_enabled;
+                document.getElementById('settingOfficeAlerts').checked = !!data.office_alerts_enabled;
+                document.getElementById('settingOfficeTopic').value = data.office_ntfy_topic || '';
+                document.getElementById('settingBlockedCamera').checked = !!data.blocked_camera_alerts_enabled;
+                document.getElementById('settingInstitution').value = data.institution_name || '';
+                document.getElementById('settingTheme').value = data.theme || 'night';
+                document.getElementById('settingAccent').value = data.accent_color || '#2563eb';
+                document.getElementById('settingSecurityQuestion').value = data.security_question || '';
+                document.getElementById('settingNewPin').value = '';
+                document.getElementById('settingSecurityAnswer').value = '';
+                document.getElementById('officeTopicGroup').classList.toggle('active', !!data.office_alerts_enabled);
             } catch (err) {
-                console.error("Failed to load settings:", err);
+                console.error('Failed to load settings:', err);
+                await appAlert(err.message || 'Could not load system settings.');
             }
         }
 
@@ -873,6 +890,15 @@
         }
 
         async function saveSettings() {
+            let currentPin = '';
+            if (securityConfig.pin_configured) {
+                const enteredPin = await appPrompt('Enter the current administrator passcode to save settings.', { title: 'Administrator passcode', pin: true, keypad: true });
+                if (enteredPin === null) return;
+                currentPin = enteredPin.trim();
+            }
+            const newPin = document.getElementById('settingNewPin').value.trim();
+            const securityQuestion = document.getElementById('settingSecurityQuestion').value.trim();
+            const securityAnswer = document.getElementById('settingSecurityAnswer').value.trim();
             const payload = {
                 camera_enabled: document.getElementById('settingCamera').checked,
                 parent_notifications_enabled: document.getElementById('settingParents').checked,
@@ -881,66 +907,165 @@
                 blocked_camera_alerts_enabled: document.getElementById('settingBlockedCamera').checked,
                 institution_name: document.getElementById('settingInstitution').value.trim(),
                 theme: document.getElementById('settingTheme').value,
-                accent_color: document.getElementById('settingAccent').value
+                accent_color: document.getElementById('settingAccent').value,
+                current_pin: currentPin,
+                security_question: securityQuestion
             };
+            if (newPin) payload.new_pin = newPin;
+            if (securityAnswer) payload.security_answer = securityAnswer;
 
             try {
                 const res = await fetch('/api/settings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
                     body: JSON.stringify(payload)
                 });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.message || 'Failed to save settings.');
                 if (res.ok) {
                     const logo = document.getElementById('settingLogo').files[0];
                     if (logo) {
                         const form = new FormData();
                         form.append('logo', logo);
-                        await fetch('/api/branding/logo', { method: 'POST', body: form });
+                        form.append('pin', currentPin || newPin);
+                        const logoResponse = await fetch('/api/branding/logo', {
+                            method: 'POST',
+                            headers: { 'X-CVAFPI-Control-Token': {{ control_token|tojson }} },
+                            body: form
+                        });
+                        const logoResult = await logoResponse.json();
+                        if (!logoResponse.ok) throw new Error(logoResult.message || 'Could not save the institution logo.');
                     }
-                    alert("System settings saved successfully.");
+                    await appAlert('System settings saved successfully.');
                     window.location.reload();
-                } else {
-                    alert("Failed to save settings.");
                 }
             } catch (err) {
                 console.error("Save settings error:", err);
-                alert("An error occurred while saving settings.");
+                await appAlert(err.message || 'An error occurred while saving settings.');
             }
+        }
+
+        async function recoverPasscode() {
+            if (!securityConfig.security_question) {
+                await appAlert('Set a recovery question and answer when configuring the passcode.');
+                return;
+            }
+            const answer = await appPrompt(securityConfig.security_question, { title: 'Passcode recovery', pin: false });
+            if (answer === null || !answer.trim()) return;
+            const newPin = await appPrompt('Enter a new 4–12 character passcode.', { title: 'New passcode', pin: true, keypad: true });
+            if (newPin === null) return;
+            const confirmation = await appPrompt('Re-enter the new passcode to confirm.', { title: 'Confirm passcode', pin: true, keypad: true });
+            if (confirmation === null || confirmation !== newPin) {
+                await appAlert('The passcodes did not match.');
+                return;
+            }
+            try {
+                const response = await fetch('/api/security/recover', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
+                    body: JSON.stringify({ security_answer: answer, new_pin: newPin })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Passcode recovery failed.');
+                securityConfig.pin_configured = true;
+                document.getElementById('settingNewPin').value = '';
+                await appAlert('Passcode recovered. Use the new passcode for the next settings change.');
+            } catch (error) {
+                await appAlert(error.message || 'Passcode recovery failed.');
+            }
+        }
+
+        async function requestAdminPin(action) {
+            if (!securityConfig.pin_configured) {
+                const response = await fetch('/api/security/config');
+                if (response.ok) securityConfig = await response.json();
+            }
+            if (!securityConfig.pin_configured) {
+                await appAlert('Configure an administrator passcode in System Settings first.');
+                return null;
+            }
+            const pin = await appPrompt(`Enter the administrator passcode to ${action}.`, { title: 'Administrator passcode', pin: true, keypad: true });
+            return pin === null ? null : pin.trim();
         }
 
         // System Control API Handlers
         async function rebootSystem() {
-            if (confirm("Are you sure you want to REBOOT the kiosk system?")) {
+            if (await appConfirm("Are you sure you want to REBOOT the kiosk system?")) {
+                const pin = await requestAdminPin('restart the system');
+                if (pin === null) return;
                 try {
-                    await fetch('/api/system/reboot', { method: 'POST' });
-                    alert("System reboot command sent successfully.");
-                } catch (err) {
-                    alert("Failed to trigger reboot request.");
+                    const response = await fetch('/api/system/reboot', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                        },
+                        body: JSON.stringify({ pin })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Could not restart the system.');
+                    await appAlert('System restart command sent successfully.');
+                } catch (error) {
+                    await appAlert(error.message || 'Failed to trigger restart.');
                 }
             }
         }
 
         async function shutdownSystem() {
-            if (confirm("Are you sure you want to SHUT DOWN the kiosk hardware?")) {
+            if (await appConfirm("Are you sure you want to SHUT DOWN the kiosk hardware?")) {
+                const pin = await requestAdminPin('shut down the system');
+                if (pin === null) return;
                 try {
-                    await fetch('/api/system/shutdown', { method: 'POST' });
-                    alert("System shutdown sequence initiated.");
-                } catch (err) {
-                    alert("Failed to trigger shutdown request.");
+                    const response = await fetch('/api/system/shutdown', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                        },
+                        body: JSON.stringify({ pin })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Could not shut down the system.');
+                    await appAlert('System shutdown sequence initiated.');
+                } catch (error) {
+                    await appAlert(error.message || 'Failed to trigger shutdown.');
                 }
             }
         }
 
         async function exitKiosk() {
-            if (confirm("Are you sure you want to exit the CVA System view?")) {
+            if (await appConfirm("Are you sure you want to exit the CVA System view?")) {
+                const pin = await requestAdminPin('close the kiosk');
+                if (pin === null) return;
                 try {
-                    await fetch('/api/exit', { method: 'POST' });
-                } catch (err) {
-                    console.error("Exit request error:", err);
+                    const response = await fetch('/api/exit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                        },
+                        body: JSON.stringify({ pin })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Could not close the kiosk.');
+                } catch (error) {
+                    await appAlert(error.message || 'Exit request failed.');
+                    return;
                 }
                 window.close();
             }
         }
+
+        if (new URLSearchParams(window.location.search).get('openSettings') === '1') {
+            openSettingsModal();
+        }
     </script>
+    <script src="/static/kiosk-dialog.js"></script>
 </body>
 </html>

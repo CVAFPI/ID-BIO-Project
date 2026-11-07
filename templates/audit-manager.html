@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ notification_topic_prefix }} - Security Audit</title>
+    <style>
+        :root { --bg:#10161f; --panel:#18212c; --panel2:#202c3a; --text:#e8eef7; --muted:#91a0b5; --border:#2d3b4b; --accent:#4da3ff; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; color:var(--text); background:var(--bg); font-family:"Segoe UI",sans-serif; }
+        body[data-theme="light"] { --bg:#eef3f7; --panel:#fff; --panel2:#e7eef5; --text:#17202b; --muted:#5f6f82; --border:#cbd6e2; }
+        body[data-theme="grassy"] { --bg:#101b16; --panel:#17271f; --panel2:#20372a; --border:#345441; --accent:#71d39d; }
+        body[data-theme="ocean"] { --bg:#071923; --panel:#0e2633; --panel2:#153747; --border:#285369; --accent:#5cd3e8; }
+        body[data-theme="sunset"] { --bg:#21171a; --panel:#302126; --panel2:#412b2e; --border:#644247; --accent:#ffad72; }
+        main { width:min(1250px,calc(100% - 32px)); margin:auto; padding:24px 0; }
+        header,.intro,.toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+        header { padding-bottom:18px; border-bottom:1px solid var(--border); }
+        h1 { margin:0; font-size:1.2rem; }
+        h2 { margin:0 0 6px; font-size:1rem; }
+        p { margin:0; color:var(--muted); line-height:1.5; }
+        .eyebrow { margin-bottom:5px; color:var(--accent); font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+        a,button { font:inherit; }
+        .button { display:inline-block; padding:9px 13px; border:1px solid var(--border); border-radius:6px; color:var(--text); background:var(--panel2); text-decoration:none; cursor:pointer; }
+        .button.primary { border-color:var(--accent); color:#fff; background:var(--accent); }
+        .intro { align-items:flex-end; padding:24px 0 16px; }
+        .panel { overflow:hidden; border:1px solid var(--border); border-radius:10px; background:var(--panel); }
+        .toolbar { padding:12px; border-bottom:1px solid var(--border); }
+        input { width:min(440px,100%); padding:10px 12px; border:1px solid var(--border); border-radius:6px; color:var(--text); background:var(--bg); }
+        .count { color:var(--muted); font: .8rem monospace; }
+        .table-wrap { max-height:calc(100vh - 260px); overflow:auto; }
+        table { width:100%; border-collapse:collapse; text-align:left; font-size:.84rem; }
+        th,td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+        th { position:sticky; top:0; color:var(--muted); background:var(--panel2); font-size:.72rem; text-transform:uppercase; }
+        td.time,td.code { white-space:nowrap; font-family:monospace; }
+        td.type { color:var(--accent); font-weight:700; white-space:nowrap; }
+        .empty { padding:30px; color:var(--muted); text-align:center; }
+        .snapshot { margin-left:8px; padding:4px 7px; border:1px solid var(--accent); border-radius:4px; color:var(--accent); background:transparent; cursor:pointer; white-space:nowrap; }
+        dialog { width:min(900px,calc(100% - 24px)); max-height:90vh; padding:14px; border:1px solid var(--border); border-radius:10px; color:var(--text); background:var(--panel); }
+        dialog::backdrop { background:#000b; }
+        dialog img { display:block; max-width:100%; max-height:75vh; margin:12px auto; }
+        .dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        @media(max-width:700px) { main { width:calc(100% - 20px); padding:14px 0; } .intro,header { align-items:flex-start; flex-direction:column; } .table-wrap { max-height:calc(100vh - 300px); } table { min-width:850px; } }
+    </style>
+</head>
+<body data-theme="{{ theme }}" style="--accent:{{ accent_color }}">
+    <main>
+        <header>
+            <div><div class="eyebrow">Data administration</div><h1>{{ institution_name }} — Security Audit</h1></div>
+            <a class="button" href="/launchpad.html">Back to menu</a>
+        </header>
+        <section class="intro">
+            <div><h2>Audit events</h2><p>Review attendance scans, security checks, student changes, imports, and system actions.</p></div>
+            <button class="button primary" id="reloadButton" type="button">Load / reload events</button>
+        </section>
+        <section class="panel">
+            <div class="toolbar"><input id="search" type="search" placeholder="Search events..." disabled><span class="count" id="count">Not loaded</span></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Barcode</th><th>Details</th></tr></thead>
+                    <tbody id="events"><tr><td class="empty" colspan="5">Enter the administrator passcode to view audit events.</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <dialog id="snapshotDialog">
+        <div class="dialog-head"><strong id="snapshotTitle">Camera snapshot</strong><button class="button" id="closeSnapshot" type="button">Close</button></div>
+        <img id="snapshotImage" alt="Camera alert snapshot">
+    </dialog>
+    <link rel="stylesheet" href="/static/kiosk-dialog.css">
+    <script src="/static/kiosk-dialog.js"></script>
+    <script>
+        let auditRows = [];
+        const eventsBody = document.getElementById('events');
+        const searchInput = document.getElementById('search');
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+            }[char]));
+        }
+
+        function renderEvents() {
+            const query = searchInput.value.trim().toLowerCase();
+            const filtered = auditRows.filter(row =>
+                row.some(value => String(value ?? '').toLowerCase().includes(query))
+            );
+            document.getElementById('count').textContent = `${filtered.length} of ${auditRows.length} events`;
+            if (!filtered.length) {
+                eventsBody.innerHTML = '<tr><td class="empty" colspan="5">No matching audit events.</td></tr>';
+                return;
+            }
+            eventsBody.innerHTML = filtered.map(row => {
+                const details = String(row[4] || '');
+                const date = details.match(/(?:^|;)snapshot_date=([^;]+)/)?.[1];
+                const image = details.match(/(?:^|;)snapshot_id=([^;]+)/)?.[1];
+                const snapshot = date && image
+                    ? `<button class="snapshot" type="button" data-date="${escapeHtml(date)}" data-image="${escapeHtml(image)}">View snapshot</button>`
+                    : '';
+                return `<tr><td class="time">${escapeHtml(row[0])}</td><td class="type">${escapeHtml(row[1])}</td><td>${escapeHtml(row[2])}</td><td class="code">${escapeHtml(row[3])}</td><td>${escapeHtml(details)}${snapshot}</td></tr>`;
+            }).join('');
+        }
+
+        async function loadEvents() {
+            const pin = await appPrompt('Enter the administrator passcode to view audit events.', {
+                title:'Administrator passcode', pin:true, keypad:true
+            });
+            if (pin === null || !pin.trim()) return;
+            const button = document.getElementById('reloadButton');
+            button.disabled = true;
+            try {
+                const response = await fetch('/api/audit/events', {
+                    method:'POST',
+                    headers:{
+                        'Content-Type':'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
+                    body:JSON.stringify({ pin:pin.trim() })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Could not load audit events.');
+                auditRows = result;
+                searchInput.disabled = false;
+                renderEvents();
+            } catch (error) {
+                await appAlert(error.message || 'Could not load audit events.');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        eventsBody.addEventListener('click', event => {
+            const button = event.target.closest('button[data-date][data-image]');
+            if (!button) return;
+            const date = button.dataset.date;
+            const image = button.dataset.image;
+            document.getElementById('snapshotTitle').textContent = `${date} — ${image}`;
+            document.getElementById('snapshotImage').src =
+                `/api/logs/snapshot?date=${encodeURIComponent(date)}&id=${encodeURIComponent(image)}`;
+            document.getElementById('snapshotDialog').showModal();
+        });
+        document.getElementById('closeSnapshot').addEventListener('click', () =>
+            document.getElementById('snapshotDialog').close()
+        );
+        document.getElementById('reloadButton').addEventListener('click', loadEvents);
+        searchInput.addEventListener('input', renderEvents);
+        loadEvents();
+    </script>
+</body>
+</html>

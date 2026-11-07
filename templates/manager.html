@@ -54,7 +54,8 @@
         td { padding: 10px 14px; border-bottom: 1px solid #162238; }
         tr:hover { background: #253349; }
 
-        .action-icon { cursor: pointer; margin-right: 8px; font-size: 1rem; }
+        .action-icon { cursor: pointer; margin-right: 8px; font-size: 1rem; border: 0; padding: 0; background: none; color: inherit; }
+        .action-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         /* Right Column: Student Tools Form */
         .right-column { width: 360px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
@@ -251,6 +252,23 @@
             renderTable(filtered);
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+        }
+
+        document.getElementById('dbTableBody').addEventListener('click', event => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const row = button.closest('tr');
+            if (button.dataset.action === 'edit') {
+                editStudent(row.dataset.barcode, row.dataset.name, row.dataset.grade, row.dataset.section, row.dataset.access, row.dataset.color, row.dataset.topic);
+            } else if (button.dataset.action === 'delete') {
+                deleteStudent(row.dataset.barcode);
+            }
+        });
+
         function renderTable(data) {
             const tbody = document.getElementById('dbTableBody');
             tbody.innerHTML = '';
@@ -262,23 +280,23 @@
 
             data.forEach(row => {
                 const [barcode, name, grade, section, access = 'REGULAR', color = '#059669', topic = 'None'] = row;
-
+                const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#059669';
                 const isNone = !topic || topic.trim() === '' || topic.trim().toLowerCase() === 'none';
                 const topicDisplay = isNone
                     ? `<span style="color: var(--muted); font-style: italic;">None</span>`
-                    : `<code style="color: var(--accent); font-family: monospace; font-weight: 600; background: var(--bg); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--accent);">${topic}</code>`;
+                    : `<code style="color: var(--accent); font-family: monospace; font-weight: 600; background: var(--bg); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--accent);">${escapeHtml(topic)}</code>`;
 
                 tbody.innerHTML += `
-                    <tr>
-                        <td style="font-family: monospace;">${barcode || ''}</td>
-                        <td style="font-weight: 600; color: #fff;">${name || ''}</td>
-                        <td>${grade || ''}</td>
-                        <td>${section || ''}</td>
-                        <td><span class="badge" style="background-color: ${color}; color: #fff;">${access}</span></td>
+                    <tr data-barcode="${escapeHtml(barcode)}" data-name="${escapeHtml(name)}" data-grade="${escapeHtml(grade)}" data-section="${escapeHtml(section)}" data-access="${escapeHtml(access)}" data-color="${safeColor}" data-topic="${escapeHtml(topic)}">
+                        <td style="font-family: monospace;">${escapeHtml(barcode)}</td>
+                        <td style="font-weight: 600; color: #fff;">${escapeHtml(name)}</td>
+                        <td>${escapeHtml(grade)}</td>
+                        <td>${escapeHtml(section)}</td>
+                        <td><span class="badge" style="background-color: ${safeColor}; color: #fff;">${escapeHtml(access)}</span></td>
                         <td>${topicDisplay}</td>
                         <td>
-                            <span class="action-icon" title="Edit" onclick="editStudent('${barcode}', '${encodeURIComponent(name)}', '${encodeURIComponent(grade)}', '${encodeURIComponent(section)}', '${encodeURIComponent(access)}', '${color}', '${encodeURIComponent(topic)}')">✏️</span>
-                            <span class="action-icon" title="Delete" onclick="deleteStudent('${barcode}')">🗑️</span>
+                            <button class="action-icon" type="button" title="Edit" data-action="edit">✏️</button>
+                            <button class="action-icon" type="button" title="Delete" data-action="delete">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -287,13 +305,13 @@
 
         function editStudent(barcode, name, grade, section, access, color, topic) {
             document.getElementById('inputBarcode').value = barcode;
-            document.getElementById('inputName').value = decodeURIComponent(name);
-            document.getElementById('inputGrade').value = decodeURIComponent(grade);
-            document.getElementById('inputSection').value = decodeURIComponent(section);
-            document.getElementById('inputAccess').value = decodeURIComponent(access);
+            document.getElementById('inputName').value = name;
+            document.getElementById('inputGrade').value = grade;
+            document.getElementById('inputSection').value = section;
+            document.getElementById('inputAccess').value = access;
             document.getElementById('inputColor').value = color || '#059669';
 
-            const rawTopic = decodeURIComponent(topic || 'None');
+            const rawTopic = topic || 'None';
             document.getElementById('inputTopic').value = (rawTopic.toLowerCase() === 'none') ? '' : rawTopic;
         }
 
@@ -313,36 +331,56 @@
             }
 
             try {
+                const pin = await requestAdminPin('save this student record');
+                if (pin === null) return;
                 const res = await fetch('/api/save_student', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ b, n, g, s, a, c, t })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
+                    body: JSON.stringify({ b, n, g, s, a, c, t, pin })
                 });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    clearFields();
-                    fetchDatabase();
-                }
+                if (!res.ok) throw new Error(result.message || 'Could not save this student.');
+                clearFields();
+                fetchDatabase();
             } catch (err) {
-                console.error("Save error:", err);
+                await appAlert(err.message || 'Could not save this student.');
             }
         }
 
         async function deleteStudent(barcode) {
             if (!(await appConfirm(`Are you sure you want to delete barcode ${barcode}?`))) return;
             try {
+                const pin = await requestAdminPin('delete this student record');
+                if (pin === null) return;
                 const res = await fetch('/api/delete_student', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ barcode })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CVAFPI-Control-Token': {{ control_token|tojson }}
+                    },
+                    body: JSON.stringify({ barcode, pin })
                 });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    fetchDatabase();
-                }
+                if (!res.ok) throw new Error(result.message || 'Could not delete this student.');
+                fetchDatabase();
             } catch (err) {
-                console.error("Delete error:", err);
+                await appAlert(err.message || 'Could not delete this student.');
             }
+        }
+
+        async function requestAdminPin(action) {
+            const response = await fetch('/api/security/config');
+            if (!response.ok) throw new Error('Could not check administrator security settings.');
+            const security = await response.json();
+            if (!security.pin_configured) {
+                await appAlert('Configure an administrator passcode in System Settings first.');
+                return null;
+            }
+            const pin = await appPrompt(`Enter the administrator passcode to ${action}.`, { title: 'Administrator passcode', pin: true, keypad: true });
+            return pin === null ? null : pin.trim();
         }
 
         function clearFields() {
