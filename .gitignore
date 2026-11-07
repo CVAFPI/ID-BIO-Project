@@ -7,6 +7,22 @@ dist/
 installer/*.exe
 installer-output/
 
+# Test suites and generated test/development artifacts
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.log
+
 # Local student records, attendance, audit history, and machine settings
 /data.csv
 /backup-data.csv
