@@ -21,8 +21,8 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.22000
-LicenseFile=dist\LICENSE
-SetupIconFile=dist\CVAIDSYSLOGO.ico
+LicenseFile=dist\portable\LICENSE
+SetupIconFile=dist\portable\CVAIDSYSLOGO.ico
 OutputDir=installer
 OutputBaseFilename=CVAFPI-IDSYS-Setup
 SetupLogging=yes
@@ -45,13 +45,12 @@ ConfirmUninstall=Do you want to uninstall {#AppName}? Your CSV records, settings
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
-Source: "dist\CVAFPI-IDSYS.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\data.csv"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\backup-data.csv"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\settings.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\LICENSES\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion
+Source: "dist\portable\CVAFPI-IDSYS.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\portable\data.csv"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\portable\backup-data.csv"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\portable\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\portable\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\portable\LICENSES\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppName}\{#AppName}"; Filename: "{app}\CVAFPI-IDSYS.exe"; WorkingDir: "{app}"

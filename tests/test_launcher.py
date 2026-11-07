@@ -28,8 +28,11 @@ class DataDirectoryTests(unittest.TestCase):
                     windows_launcher.configure_data_directory()
 
                     self.assertEqual(os.environ['CVAFPI_DATA_DIR'], os.path.join(local_app_data, 'CVAFPI-IDSYS'))
-                    for name in ('data.csv', 'backup-data.csv', 'settings.json'):
+                    for name in ('data.csv', 'backup-data.csv'):
                         self.assertTrue(os.path.isfile(os.path.join(os.environ['CVAFPI_DATA_DIR'], name)))
+                    self.assertFalse(os.path.exists(
+                        os.path.join(os.environ['CVAFPI_DATA_DIR'], 'settings.json')
+                    ))
             finally:
                 os.environ.pop('CVAFPI_DATA_DIR', None)
                 if old_data_dir is not None:

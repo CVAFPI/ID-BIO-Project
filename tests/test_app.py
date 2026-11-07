@@ -33,9 +33,25 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertIn(CONTROL_TOKEN.encode(), response.data)
 
     def test_all_application_pages_render(self):
-        for path in ('/manager.html', '/scanner.html', '/logs-manager.html', '/audit-manager.html', '/migration.html'):
+        for path in (
+            '/launchpad.html',
+            '/manager.html',
+            '/scanner.html',
+            '/logs-manager.html',
+            '/audit-manager.html',
+            '/migration.html'
+        ):
             with self.subTest(path=path):
-                self.assertEqual(self.client.get(path).status_code, 200)
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b'cvafpi-control-token', response.data)
+                self.assertIn(b'/static/control-token.js', response.data)
+
+    def test_local_connectivity_check_has_no_external_dependency(self):
+        response = self.client.get('/api/ping')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {'status': 'ok'})
 
     def test_system_controls_require_per_run_token(self):
         response = self.client.post('/api/system/shutdown')
@@ -118,6 +134,31 @@ class AttendanceFlowTests(unittest.TestCase):
         self.assertEqual(logs[1][1:3], ['TEST-123', 'Test Student'])
         self.assertEqual(scan_result['data']['timestamp'], logs[1][0])
 
+    def test_duplicate_scan_within_cooldown_does_not_add_attendance(self):
+        headers = {'X-CVAFPI-Control-Token': CONTROL_TOKEN}
+        self.configure_passcode()
+        saved = self.client.post('/api/save_student', headers=headers, json={
+            'b': 'DOUBLE-SCAN-1',
+            'n': 'Test Student',
+            'pin': '2468'
+        })
+        self.assertEqual(saved.status_code, 200)
+
+        first = self.client.post(
+            '/api/scan',
+            headers=headers,
+            json={'barcode': 'DOUBLE-SCAN-1', 'image': None},
+        )
+        duplicate = self.client.post(
+            '/api/scan',
+            headers=headers,
+            json={'barcode': 'DOUBLE-SCAN-1', 'image': None},
+        )
+
+        self.assertEqual(first.get_json()['status'], 'success')
+        self.assertEqual(duplicate.get_json()['status'], 'duplicate')
+        self.assertEqual(len(self.client.get('/api/logs/today').get_json()), 2)
+
     def test_student_changes_require_administrator_passcode(self):
         headers = {'X-CVAFPI-Control-Token': CONTROL_TOKEN}
         payload = {'b': 'TEST-1', 'n': 'Student', 'pin': '2468'}
@@ -135,6 +176,23 @@ class AttendanceFlowTests(unittest.TestCase):
         self.assertNotIn('pin_salt', settings)
         self.assertNotIn('security_answer_hash', settings)
         self.assertEqual(settings['security_question'], 'What is the test word?')
+
+    def test_notification_topic_prefix_is_saved_and_validated(self):
+        headers = {'X-CVAFPI-Control-Token': CONTROL_TOKEN}
+        self.configure_passcode()
+        saved = self.client.post('/api/settings', headers=headers, json={
+            'current_pin': '2468',
+            'notification_topic_prefix': 'CVA-OPS'
+        })
+        self.assertEqual(saved.status_code, 200)
+        settings = self.client.get('/api/settings').get_json()
+        self.assertEqual(settings['notification_topic_prefix'], 'CVA-OPS')
+
+        rejected = self.client.post('/api/settings', headers=headers, json={
+            'current_pin': '2468',
+            'notification_topic_prefix': 'CVA!'
+        })
+        self.assertEqual(rejected.status_code, 400)
 
     def test_audit_history_requires_passcode_and_records_changes(self):
         headers = {'X-CVAFPI-Control-Token': CONTROL_TOKEN}

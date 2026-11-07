@@ -46,6 +46,7 @@ DEFAULT_SETTINGS = {
     "office_ntfy_topic": "",
     "blocked_camera_alerts_enabled": True,
     "institution_name": "Christian Vision Academy Foundation Inc.",
+    "notification_topic_prefix": "",
     "theme": "night",
     "accent_color": "#2563eb",
     "pin_hash": "",
@@ -194,12 +195,18 @@ def load_system_settings():
             settings[key] = DEFAULT_SETTINGS[key]
     for key, default in (
         ('institution_name', DEFAULT_SETTINGS['institution_name']),
-        ('office_ntfy_topic', DEFAULT_SETTINGS['office_ntfy_topic'])
+        ('office_ntfy_topic', DEFAULT_SETTINGS['office_ntfy_topic']),
+        ('notification_topic_prefix', DEFAULT_SETTINGS['notification_topic_prefix'])
     ):
         if not isinstance(settings.get(key), str):
             settings[key] = default
     settings['institution_name'] = settings['institution_name'].strip()[:100]
     settings['office_ntfy_topic'] = settings['office_ntfy_topic'].strip()[:256]
+    settings['notification_topic_prefix'] = settings['notification_topic_prefix'].strip().upper()
+    if settings['notification_topic_prefix'] and not re.fullmatch(
+        r'[A-Z0-9_-]{1,24}', settings['notification_topic_prefix']
+    ):
+        settings['notification_topic_prefix'] = ''
     for key in ('security_question', 'pin_hash', 'pin_salt', 'security_answer_hash', 'security_answer_salt'):
         if not isinstance(settings.get(key), str):
             settings[key] = ''
@@ -247,10 +254,9 @@ def save_system_settings(data):
 @app.context_processor
 def inject_customization():
     settings = load_system_settings()
-    words = re.findall(r'[A-Za-z0-9]+', settings['institution_name'].upper())
-    prefix = ''.join(word[0] for word in words)[:3] or 'CVA'
-    if len(words) == 1:
-        prefix = words[0][:3] or 'CVA'
+    prefix = settings['notification_topic_prefix'] or derive_notification_topic_prefix(
+        settings['institution_name']
+    )
     return {
         'institution_name': settings['institution_name'],
         'theme': settings['theme'],
@@ -258,6 +264,12 @@ def inject_customization():
         'logo_url': '/static/custom-logo.png' if os.path.exists(CUSTOM_LOGO) else '/static/CVAFPI-LOGO.png',
         'notification_topic_prefix': prefix
     }
+
+def derive_notification_topic_prefix(institution_name):
+    words = re.findall(r'[A-Za-z0-9]+', str(institution_name).upper())
+    if len(words) == 1:
+        return words[0][:3] or 'CVA'
+    return ''.join(word[0] for word in words)[:3] or 'CVA'
 
 # --- PAGE ROUTES ---
 
@@ -292,7 +304,10 @@ def migration():
 
 @app.route('/jsbarcode.js')
 def jsbarcode_library():
-    return send_file(os.path.join(RESOURCE_DIR, 'jsbarcode.js'), mimetype='application/javascript')
+    return send_file(
+        os.path.join(app.static_folder, 'JsBarcode.all.min.js'),
+        mimetype='application/javascript'
+    )
 
 
 # --- API ROUTES ---
@@ -301,6 +316,10 @@ def jsbarcode_library():
 def get_settings_api():
     settings = load_system_settings()
     return jsonify({key: settings[key] for key in PUBLIC_SETTINGS})
+
+@app.route('/api/ping', methods=['GET'])
+def api_ping():
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/settings', methods=['POST'])
 def save_settings_api():
@@ -315,6 +334,15 @@ def save_settings_api():
     new_pin = str(data.get('new_pin', '')).strip()
     question = str(data.get('security_question', current.get('security_question', ''))).strip()[:200]
     answer = str(data.get('security_answer', '')).strip().lower()
+    notification_prefix = str(data.get(
+        'notification_topic_prefix',
+        current.get('notification_topic_prefix', '')
+    )).strip().upper()
+    if notification_prefix and not re.fullmatch(r'[A-Z0-9_-]{1,24}', notification_prefix):
+        return jsonify({
+            'status': 'error',
+            'message': 'Notification topic prefix must contain 1–24 letters, numbers, underscores, or hyphens.'
+        }), 400
     security_changed = bool(new_pin) or question != current.get('security_question', '') or bool(answer)
 
     if not pin_is_configured(current) and not new_pin:
@@ -329,6 +357,7 @@ def save_settings_api():
         for key in PUBLIC_SETTINGS
         if key in data and key not in {'security_question'}
     })
+    current['notification_topic_prefix'] = notification_prefix
     if security_changed:
         current['security_question'] = question
         current['pin_salt'], current['pin_hash'] = hash_secret(new_pin)
@@ -583,8 +612,9 @@ def save_student_api():
         return jsonify({'status': 'error', 'message': 'Student fields must be text.'}), 400
     b, n, g, s, a, c, t = (values[key].strip() for key in ('b', 'n', 'g', 's', 'a', 'c', 't'))
 
-    if not b or not n:
-        return jsonify({'status': 'error', 'message': 'Barcode and Name are required'}), 400
+    identity_error = logger.validate_student_identity(b, n)
+    if identity_error:
+        return jsonify({'status': 'error', 'message': identity_error}), 400
     if not re.fullmatch(r'#[0-9a-fA-F]{6}', c):
         return jsonify({'status': 'error', 'message': 'Color must be a six-digit hex value.'}), 400
 

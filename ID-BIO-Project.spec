@@ -5,7 +5,7 @@ a = Analysis(
     ['windows_launcher.py'],
     pathex=[],
     binaries=[],
-    datas=[('templates', 'templates'), ('static', 'static'), ('jsbarcode.js', '.')],
+    datas=[('templates', 'templates'), ('static', 'static')],
     hiddenimports=collect_submodules('PIL'),
     hookspath=[],
     hooksconfig={},

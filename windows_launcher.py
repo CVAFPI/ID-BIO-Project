@@ -34,10 +34,6 @@ def configure_data_directory():
             seed_file = student_file if os.path.isfile(student_file) else os.path.join(APP_DIR, 'backup-data.csv')
             if os.path.isfile(seed_file):
                 shutil.copy2(seed_file, backup_file)
-        settings_file = os.path.join(data_dir, 'settings.json')
-        settings_seed = os.path.join(APP_DIR, 'settings.json')
-        if not os.path.exists(settings_file) and os.path.isfile(settings_seed):
-            shutil.copy2(settings_seed, settings_file)
     os.environ['CVAFPI_DATA_DIR'] = data_dir
 
 

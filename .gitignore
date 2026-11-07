@@ -1,9 +1,11 @@
 venv/
 .venv-windows/
 __pycache__/
+*.py[cod]
 build/
 dist/
 installer/*.exe
+installer-output/
 
 # Local student records, attendance, audit history, and machine settings
 /data.csv
@@ -13,5 +15,12 @@ installer/*.exe
 /logs/
 /settings.json
 
-# Generated or vendored dependencies
+# Generated files and local-only configuration
 /node_modules/
+/python-manager-*.msix
+/ID-BIO-Project-source.zip
+/launcher.log
+/server.log
+/.kiosk-profile/
+/static/custom-logo.png
+/.vscode/

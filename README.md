@@ -84,15 +84,15 @@ The script `build-windows.bat` should be treated as the official Windows build c
 It performs the following actions automatically:
 
 1. Creates a Windows Python 3.11+ 64-bit virtual environment named `.venv-windows`
-2. Installs the runtime dependencies from `requirements.txt` and PyInstaller
+2. Installs the Windows build/runtime dependencies from `requirements-windows.txt`
 3. Runs PyInstaller using `ID-BIO-Project.spec` and embeds the CVAFPI app icon
-4. Produces the portable executable in `dist\CVAFPI-IDSYS.exe`
-5. Stages the initial CSV records, settings, README, icon, and license notices in `dist`
+4. Produces the executable in `dist\CVAFPI-IDSYS.exe`
+5. Stages a clean portable release in `dist\portable` with header-only CSV seeds, README, icon, and license notices (never workstation records or settings)
 6. Compiles `installer.iss` into `installer\CVAFPI-IDSYS-Setup.exe`
 
 Inno Setup 6.3 or newer is required. The script reports an error if it cannot
-produce the setup installer; the portable executable is still available in
-`dist` for troubleshooting or separate use.
+produce the setup installer; the clean portable release is still available in
+`dist\portable` for troubleshooting or separate use.
 
 This is the exact command you run:
 
@@ -111,7 +111,7 @@ build-windows.bat
 Wait until the process finishes. The result should be a generated file similar to:
 
 ```text
-dist\CVAFPI-IDSYS.exe
+dist\portable\CVAFPI-IDSYS.exe
 ```
 
 If the build is successful, you should also see a `dist` folder with the supporting runtime files.
@@ -122,19 +122,19 @@ After the build completes, the output should look like this:
 
 ```text
 dist/
-  CVAFPI-IDSYS.exe
-  data.csv
-  backup-data.csv
-  settings.json
-  README.md
-  LICENSE
-  CVAIDSYSLOGO.ico
-  LICENSES/
+  portable/
+    CVAFPI-IDSYS.exe
+    data.csv
+    backup-data.csv
+    README.md
+    LICENSE
+    CVAIDSYSLOGO.ico
+    LICENSES/
 installer/
   CVAFPI-IDSYS-Setup.exe
 ```
 
-The portable executable needs its three seed files beside it. The setup installer installs per-user, creates a Start Menu entry and offers an optional desktop shortcut, and includes the README and license notices. The running app copies its seeds to `%LOCALAPPDATA%\CVAFPI-IDSYS` on first launch and leaves existing files untouched during upgrades and uninstall.
+Distribute only `dist\portable` or the setup executable; the root `dist` directory may contain local build artifacts and is not a release folder. The portable executable needs its two CSV seed files beside it. The setup installer installs per-user, creates a Start Menu entry and offers an optional desktop shortcut, and includes the README and license notices. The running app copies its CSV seeds to `%LOCALAPPDATA%\CVAFPI-IDSYS` on first launch and leaves existing files untouched during upgrades and uninstall. Settings are created in the writable data folder as needed and are never included in the portable release or installer.
 
 To compile the setup manually, install Inno Setup 6.3 or newer, run `build-windows.bat` once, then run `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss` from the project directory (adjust the path if installed elsewhere).
 
@@ -151,12 +151,12 @@ run-windows.bat
 #### Option B: run the built executable directly
 
 ```bat
-dist\CVAFPI-IDSYS.exe
+dist\portable\CVAFPI-IDSYS.exe
 ```
 
 #### Option C: install with the setup program
 
-Run `installer\CVAFPI-IDSYS-Setup.exe` and launch the app from the Start Menu. The installer is per-user and does not require administrator privileges. The app copies its seed CSV and settings files into `%LOCALAPPDATA%\CVAFPI-IDSYS` on first run; data remains writable and is not overwritten by app upgrades or uninstall. The Start Menu also includes documentation and license links.
+Run `installer\CVAFPI-IDSYS-Setup.exe` and launch the app from the Start Menu. The installer is per-user and does not require administrator privileges. The app copies its seed CSV files into `%LOCALAPPDATA%\CVAFPI-IDSYS` on first run; settings are generated there when needed. User data is not overwritten by app upgrades or uninstall. The Start Menu also includes documentation and license links.
 
 The barcode library is bundled with the app. Internet access is only needed for optional ntfy notifications.
 
@@ -168,9 +168,9 @@ Whenever you update the Python code, run the build again:
 build-windows.bat
 ```
 
-This rebuilds the app from scratch and refreshes the output in `dist`.
+This rebuilds the app from scratch and refreshes the clean release in `dist\portable`.
 
-Only copy updated CSV or settings files into `dist` if you intentionally want to replace the local app data.
+Keep the portable seed files header-only. Import the school roster after installation rather than placing student records or workstation settings in a release build.
 
 ### Common build problems
 
@@ -183,7 +183,7 @@ Only copy updated CSV or settings files into `dist` if you intentionally want to
 - **The browser does not open:** install Microsoft Edge or Google Chrome.
 - **The setup program was not created:** install Inno Setup 6.3 or newer, then rerun `build-windows.bat`. The script returns an error if setup compilation was skipped or failed.
 - **The port is busy:** close another instance of the app or stop the process using port `5000`.
-- **Student records are missing:** confirm the seed CSV files are beside the portable executable or check `%LOCALAPPDATA%\CVAFPI-IDSYS` for an installed build.
+- **Student records are missing:** import the school roster in Student Manager or CSV Migration. The packaged seed files intentionally contain only column headers; installed data is stored in `%LOCALAPPDATA%\CVAFPI-IDSYS`.
 - **The build stops unexpectedly:** make sure the project folder is not nested inside a protected folder such as OneDrive or a system-managed directory.
 
 ### Required output layout
@@ -191,14 +191,13 @@ Only copy updated CSV or settings files into `dist` if you intentionally want to
 For the portable build, keep these seed files beside the executable. Installed builds copy them into the writable user-data folder on first launch:
 
 ```text
-dist/
+dist\portable\
   CVAFPI-IDSYS.exe
   data.csv
   backup-data.csv
-  settings.json
 ```
 
-This layout ensures the application can maintain daily attendance records, student CSV data, and runtime logs without requiring write access to its installation folder.
+These header-only seed files let the application initialize its writable student records without requiring write access to its installation folder. Runtime settings, attendance records, audit history, and snapshots are created under `%LOCALAPPDATA%\CVAFPI-IDSYS` for installed builds.
 
 ## CSV features
 
@@ -228,9 +227,8 @@ app.py                       Flask routes, kiosk UI, and app logic
 logger.py                    CSV persistence, attendance logging, and backups
 wsgi.py                      Production WSGI export
 windows_launcher.py          Waitress and kiosk browser launcher
-jsbarcode.js                 Barcode rendering library used by the UI
+static/JsBarcode.all.min.js  Bundled barcode rendering library
 CVAIDSYSLOGO.ico             Application and installer icon
-settings.json                Runtime settings and branding configuration
 ID-BIO-Project.spec          PyInstaller build configuration
 build-windows.bat            Windows executable build script
 installer.iss                Inno Setup installer definition
@@ -241,11 +239,11 @@ CVAFPI IDENTIFICATION SYSTEM.bat  Source-mode launcher
 requirements.txt             Python dependencies
 LICENSE                      Project license
 README.md                    Project documentation
-data.csv                     Primary student records
-backup-data.csv              Backup student records
-CVA_Database/                Attendance logs and snapshot folders
-audit.csv                    Security and administration event history
-logs/                       Generated runtime logs
+data.csv                     Local primary student records (not shipped with source)
+backup-data.csv              Local backup student records (not shipped with source)
+CVA_Database/                Local attendance logs and snapshot folders
+audit.csv                    Local security and administration event history
+logs/                        Generated runtime logs
 templates/                   Flask HTML templates
 static/                     Frontend CSS, JS, and assets
 ID-CODES FOR SYSTEM/        Reference control barcode files

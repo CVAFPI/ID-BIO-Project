@@ -18,7 +18,7 @@ if errorlevel 1 (
     echo Recreate it with: py -3 -m venv .venv-windows
     exit /b 1
 )
-python -m pip install --timeout 120 --retries 3 -r requirements.txt pyinstaller
+python -m pip install --timeout 120 --retries 3 -r requirements-windows.txt
 if errorlevel 1 exit /b 1
 
 python -m PyInstaller --clean --noconfirm ID-BIO-Project.spec
@@ -28,20 +28,37 @@ if not exist "dist\CVAFPI-IDSYS.exe" (
     exit /b 1
 )
 
-copy /y data.csv dist\data.csv >nul
+if not exist "dist\portable" mkdir "dist\portable"
 if errorlevel 1 exit /b 1
-copy /y backup-data.csv dist\backup-data.csv >nul
+if exist "dist\portable\settings.json" (
+    echo ERROR: dist\portable contains a local settings.json file.
+    echo Move it to a safe location before preparing a distributable build.
+    exit /b 1
+)
+for %%F in ("dist\portable\data.csv" "dist\portable\backup-data.csv") do (
+    if exist "%%~F" (
+        fc /b data.example.csv "%%~F" >nul
+        if errorlevel 1 (
+            echo ERROR: %%~F is not the clean example CSV.
+            echo Preserve local student records and clear the portable staging folder manually.
+            exit /b 1
+        )
+    )
+)
+copy /y "dist\CVAFPI-IDSYS.exe" "dist\portable\CVAFPI-IDSYS.exe" >nul
 if errorlevel 1 exit /b 1
-copy /y settings.json dist\settings.json >nul
+copy /y data.example.csv dist\portable\data.csv >nul
 if errorlevel 1 exit /b 1
-copy /y README.md dist\README.md >nul
+copy /y data.example.csv dist\portable\backup-data.csv >nul
 if errorlevel 1 exit /b 1
-copy /y LICENSE dist\LICENSE >nul
+copy /y README.md dist\portable\README.md >nul
 if errorlevel 1 exit /b 1
-copy /y CVAIDSYSLOGO.ico dist\CVAIDSYSLOGO.ico >nul
+copy /y LICENSE dist\portable\LICENSE >nul
 if errorlevel 1 exit /b 1
-if not exist "dist\LICENSES" mkdir "dist\LICENSES"
-xcopy /y /e /i "LICENSES" "dist\LICENSES" >nul
+copy /y CVAIDSYSLOGO.ico dist\portable\CVAIDSYSLOGO.ico >nul
+if errorlevel 1 exit /b 1
+if not exist "dist\portable\LICENSES" mkdir "dist\portable\LICENSES"
+xcopy /y /e /i "LICENSES" "dist\portable\LICENSES" >nul
 if errorlevel 1 exit /b 1
 if not exist installer mkdir installer
 

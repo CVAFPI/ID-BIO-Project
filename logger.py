@@ -8,9 +8,13 @@ import shutil
 import tempfile
 import threading
 import logging
+import time
 from datetime import datetime, timedelta
 
 DATA_LOCK = threading.RLock()
+_SCAN_LOCK = threading.Lock()
+_LAST_SCAN_DEADLINES = {}
+_DOUBLE_SCAN_WINDOW_SECONDS = 3.0
 BASE_DIR = os.environ.get(
     'CVAFPI_DATA_DIR', os.path.dirname(os.path.abspath(__file__))
 )
@@ -127,6 +131,16 @@ def _safe_color(value):
     return value if re.fullmatch(r'#[0-9a-fA-F]{6}', value) else '#059669'
 
 
+def validate_student_identity(barcode, name):
+    if not barcode or not name:
+        return 'Barcode and name are required.'
+    if len(barcode) > 100:
+        return 'Barcode must not exceed 100 characters.'
+    if len(name) > 100:
+        return 'Name must not exceed 100 characters.'
+    return None
+
+
 def record_event(event_type, message, barcode='', details=''):
     row = [
         datetime.now().strftime('%m/%d/%Y %I:%M:%S %p'),
@@ -191,7 +205,15 @@ def _read_student_csv(uploaded_file):
     if not reader.fieldnames:
         raise ValueError('The CSV file must include a header row.')
 
-    headers = {header.strip().upper(): header for header in reader.fieldnames if header}
+    normalized_headers = [
+        header.strip().upper() if header else ''
+        for header in reader.fieldnames
+    ]
+    if any(not header for header in normalized_headers):
+        raise ValueError('The CSV header row cannot contain empty column names.')
+    if len(normalized_headers) != len(set(normalized_headers)):
+        raise ValueError('The CSV header row contains duplicate column names.')
+    headers = dict(zip(normalized_headers, reader.fieldnames))
     if 'BARCODE' not in headers or 'NAME' not in headers:
         raise ValueError('The CSV must include BARCODE and NAME columns.')
 
@@ -199,13 +221,21 @@ def _read_student_csv(uploaded_file):
     errors = []
     seen_barcodes = set()
     for row_number, source in enumerate(reader, start=2):
+        if None in source and any(value.strip() for value in source[None] if value):
+            errors.append(f'Row {row_number} contains more values than the header.')
+            continue
         barcode = (source.get(headers['BARCODE']) or '').strip()
         name = (source.get(headers['NAME']) or '').strip()
-        if not barcode or not name:
-            errors.append(f'Row {row_number} is missing a barcode or name.')
+        identity_error = validate_student_identity(barcode, name)
+        if identity_error:
+            errors.append(f'Row {row_number}: {identity_error}')
             continue
         if barcode in seen_barcodes:
             errors.append(f'Row {row_number} duplicates barcode {barcode}.')
+            continue
+        color = (source.get(headers.get('COLOR', '')) or '').strip()
+        if color and not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+            errors.append(f'Row {row_number} has an invalid color; use a six-digit hex value.')
             continue
         seen_barcodes.add(barcode)
         rows.append({
@@ -214,9 +244,11 @@ def _read_student_csv(uploaded_file):
             'grade': (source.get(headers.get('GRADE', '')) or '').strip(),
             'section': (source.get(headers.get('SECTION', '')) or '').strip(),
             'access': (source.get(headers.get('ACCESS', '')) or 'REGULAR').strip(),
-            'color': _safe_color((source.get(headers.get('COLOR', '')) or '#059669').strip()),
+            'color': color or '#059669',
             'topic': (source.get(headers.get('NTFY_TOPIC', '')) or 'None').strip()
         })
+    if not rows and not errors:
+        errors.append('The CSV must include at least one student record.')
     return rows, errors
 
 def preview_student_csv(uploaded_file):
@@ -226,7 +258,7 @@ def preview_student_csv(uploaded_file):
     return {
         'total_rows': len(rows) + len(errors),
         'valid_rows': len(rows),
-        'invalid_rows': bool(errors),
+        'invalid_rows': len(errors),
         'errors': errors[:10],
         'new_records': len(barcodes - existing.keys()),
         'updates': len(barcodes & existing.keys()),
@@ -237,6 +269,8 @@ def import_student_csv(uploaded_file, replace_existing=False):
     rows, errors = _read_student_csv(uploaded_file)
     if errors:
         raise ValueError(' '.join(errors[:10]))
+    if not rows:
+        raise ValueError('The CSV must include at least one student record.')
     with DATA_LOCK:
         students = {} if replace_existing else get_all_students()
         for row in rows:
@@ -312,41 +346,56 @@ def get_logs_by_filename_raw(filename):
     return rows
 
 def log_attendance(barcode):
-    with DATA_LOCK:
-        students = get_all_students()
-        if barcode not in students:
-            return {'status': 'error', 'message': 'Student not found'}
+    with _SCAN_LOCK:
+        with DATA_LOCK:
+            students = get_all_students()
+            if barcode not in students:
+                return {'status': 'error', 'message': 'Student not found'}
 
-        student = students[barcode]
-        file_path = get_todays_log_filepath()
+            now_monotonic = time.monotonic()
+            expired_barcodes = [
+                scanned_barcode
+                for scanned_barcode, deadline in _LAST_SCAN_DEADLINES.items()
+                if now_monotonic >= deadline
+            ]
+            for scanned_barcode in expired_barcodes:
+                del _LAST_SCAN_DEADLINES[scanned_barcode]
 
-        existing_ids = set()
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8-sig', newline='') as f:
-                reader = csv.reader(f)
-                for row in reader:
-                    if len(row) > 7:
-                        existing_ids.add(row[7])
+            if now_monotonic < _LAST_SCAN_DEADLINES.get(barcode, 0.0):
+                return {
+                    'status': 'duplicate',
+                    'message': 'Dual scan detected. Same ID scanned within 3 seconds.'
+                }
 
-        image_id = generate_unique_id(existing_ids)
-        filename_id = f"{image_id}.jpg"
+            student = students[barcode]
+            file_path = get_todays_log_filepath()
+            existing_ids = set()
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8-sig', newline='') as f:
+                    reader = csv.reader(f)
+                    for row in reader:
+                        if len(row) > 7:
+                            existing_ids.add(row[7])
 
-        now = datetime.now()
-        timestamp_str = now.strftime('%m/%d/%Y %I:%M:%S %p')
+            image_id = generate_unique_id(existing_ids)
+            filename_id = f"{image_id}.jpg"
+            timestamp_str = datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')
+            row_data = [
+                timestamp_str,
+                student.get('barcode', ''),
+                student.get('name', ''),
+                student.get('grade', ''),
+                student.get('section', ''),
+                student.get('access', 'REGULAR'),
+                student.get('color', '#059669'),
+                filename_id
+            ]
 
-        row_data = [
-            timestamp_str,
-            student.get('barcode', ''),
-            student.get('name', ''),
-            student.get('grade', ''),
-            student.get('section', ''),
-            student.get('access', 'REGULAR'),
-            student.get('color', '#059669'),
-            filename_id
-        ]
-
-        with open(file_path, 'a', newline='', encoding='utf-8') as f:
-            csv.writer(f).writerow(row_data)
+            with open(file_path, 'a', newline='', encoding='utf-8') as f:
+                csv.writer(f).writerow(row_data)
+            _LAST_SCAN_DEADLINES[barcode] = (
+                now_monotonic + _DOUBLE_SCAN_WINDOW_SECONDS
+            )
 
     return {
         'status': 'success',
